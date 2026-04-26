@@ -14,7 +14,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/css/style.css" />
+  <link rel="stylesheet" href="/css/style.css?v=20260423b" />
 </head>
 <body class="landing-state" x-data="appShell()" x-init="init()" :class="$store.app.mode === 'workspace' ? 'workspace-state' : 'landing-state'">
   <div class="bg-grid"></div>
@@ -232,38 +232,62 @@
         </section>
 
         <section id="thread-view" class="px-thread-view" x-data="resultsPage()" x-cloak x-show="$store.app.currentView === 'results'">
-          <div class="px-user-query">
-            <h2 id="thread-query-title" x-text="title()">Search results</h2>
-            <p id="thread-query-meta" class="thread-query-meta" x-text="meta()"></p>
-          </div>
-
-          <section class="thinking-shell" x-cloak x-show="$store.app.isLoading">
-            <div class="thinking-head">
-              <div>
-                <div class="thinking-kicker">Thinking</div>
-                <h3>Working through the query</h3>
-              </div>
-              <div class="thinking-pulse">
-                <span></span>
-                <span></span>
-                <span></span>
+          <div class="px-thread-top">
+            <div class="px-user-query">
+              <div class="thread-query-kicker" x-text="$store.app.isLoading ? 'Searching' : 'Current query'"></div>
+              <h2 id="thread-query-title" x-text="title()">Search results</h2>
+              <p id="thread-query-meta" class="thread-query-meta" x-text="meta()"></p>
+              <div class="thread-query-tags" x-cloak x-show="activeFilters().length || sourceBadges().length">
+                <template x-for="filter in activeFilters()" :key="`filter-${filter}`">
+                  <span class="thread-query-tag" x-text="filter"></span>
+                </template>
+                <template x-for="source in sourceBadges()" :key="`source-${source}`">
+                  <span class="thread-query-tag is-source" x-text="source"></span>
+                </template>
               </div>
             </div>
-            <p class="thinking-summary" x-text="thinkingSummary()"></p>
-            <div class="thinking-steps">
-              <template x-for="step in thinkingSteps()" :key="step.key">
-                <div class="thinking-step" :class="`is-${step.status}`">
-                  <div class="thinking-step-icon">
-                    <span x-show="step.status === 'complete'">✓</span>
-                    <span x-show="step.status === 'active'">•</span>
-                    <span x-show="step.status === 'pending'">·</span>
-                  </div>
-                  <div class="thinking-step-copy">
-                    <div class="thinking-step-title" x-text="step.title"></div>
-                    <p class="thinking-step-detail" x-text="step.detail"></p>
-                  </div>
-                  <div class="thinking-step-status" x-text="step.status === 'complete' ? 'Done' : (step.status === 'active' ? 'Working' : 'Queued')"></div>
+
+            <div class="thread-search-shell">
+              <form class="px-input-box search-form-shell compact thread-search-form" x-data="searchForm()" @submit.prevent="submit" @keydown.meta.enter.prevent="submit" @keydown.ctrl.enter.prevent="submit">
+                <label class="sr-only" for="thread-prompt">Topic</label>
+                <textarea id="thread-prompt" rows="2" placeholder="Refine the topic" x-model="$store.app.form.topic"></textarea>
+
+                <div class="filter-grid compact-grid">
+                  <label class="filter-field" for="thread-year-filter">
+                    <span class="filter-label">Year or range</span>
+                    <input id="thread-year-filter" type="text" inputmode="text" placeholder="Optional, e.g. 2025 or 2023-2026" x-model="$store.app.form.year" />
+                  </label>
+                  <label class="filter-field" for="thread-venue-filter">
+                    <span class="filter-label">Venue</span>
+                    <input id="thread-venue-filter" type="text" placeholder="Optional, e.g. icml" x-model="$store.app.form.venue" />
+                  </label>
+                  <label class="filter-field" for="thread-max-results-filter">
+                    <span class="filter-label">Max results</span>
+                    <input id="thread-max-results-filter" type="number" min="1" max="20" inputmode="numeric" x-model.number="$store.app.form.maxResults" />
+                  </label>
                 </div>
+
+                <div class="px-input-actions">
+                  <div class="px-action-left">
+                    <span class="input-contract-note">Refine and rerun this search</span>
+                  </div>
+                  <button class="px-submit-btn" type="submit" aria-label="Run search" :class="{ 'is-loading': $store.app.isLoading }" :disabled="$store.app.isLoading" x-text="$store.app.isLoading ? '…' : '➜'"></button>
+                </div>
+              </form>
+            </div>
+          </div>
+
+          <section class="search-status-strip" x-cloak x-show="$store.app.isLoading">
+            <div class="search-status-main">
+              <div class="search-status-spinner" aria-hidden="true"></div>
+              <div class="search-status-copy">
+                <div class="search-status-title">Searching literature</div>
+                <p class="search-status-summary" x-text="searchStatusSummary()"></p>
+              </div>
+            </div>
+            <div class="search-status-sources">
+              <template x-for="source in loadingSources()" :key="source">
+                <span class="search-status-chip" x-text="source"></span>
               </template>
             </div>
           </section>
@@ -278,8 +302,8 @@
               <div id="results-list" class="results-list compact-results-list">
                 <template x-if="$store.app.isLoading">
                   <div class="empty-results-card compact-empty-card loading-placeholder-card">
-                    <h3>Paper list is on the way</h3>
-                    <p>The retriever is still collecting and ranking candidate papers for this query.</p>
+                    <h3>Collecting papers</h3>
+                    <p>Results will appear here as the search sources finish ranking candidate papers.</p>
                   </div>
                 </template>
                 <template x-if="!$store.app.isLoading && !papers().length">
@@ -319,8 +343,8 @@
               <div id="gaps-list" class="gaps-list">
                 <template x-if="$store.app.isLoading">
                   <div class="empty-results-card compact-empty-card loading-placeholder-card">
-                    <h3>Gap synthesis is running</h3>
-                    <p>The analyzer is still scoring limitations, assumptions, and evaluation blind spots.</p>
+                    <h3>Drafting the brief</h3>
+                    <p>Recurring limitations and evidence patterns will appear here once the ranking pass completes.</p>
                   </div>
                 </template>
                 <template x-if="!$store.app.isLoading && !gaps().length">
@@ -400,9 +424,9 @@
   <script src="/js/search.js?v=20260417a"></script>
   <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.7/dist/gsap.min.js"></script>
   <script defer src="/vendor/@alpinejs/collapse/dist/cdn.min.js" onerror="this.onerror=null;this.src='https://cdn.jsdelivr.net/npm/@alpinejs/collapse@3.14.9/dist/cdn.min.js'"></script>
-  <script defer src="/js/alpine/stores/appStore.js?v=20260423a"></script>
+  <script defer src="/js/alpine/stores/appStore.js?v=20260423b"></script>
   <script defer src="/js/alpine/components/searchForm.js?v=20260423a"></script>
-  <script defer src="/js/alpine/components/resultsPage.js?v=20260423a"></script>
+  <script defer src="/js/alpine/components/resultsPage.js?v=20260423b"></script>
   <script defer src="/js/alpine/components/historySidebar.js?v=20260423a"></script>
   <script defer src="/js/alpine/app.js?v=20260423a"></script>
   <script defer src="/vendor/alpinejs/dist/cdn.min.js" onerror="this.onerror=null;this.src='https://cdn.jsdelivr.net/npm/alpinejs@3.14.9/dist/cdn.min.js'"></script>

@@ -1,16 +1,16 @@
 document.addEventListener('alpine:init', () => {
     Alpine.data('resultsPage', () => ({
         title() {
-            return this.$store.app.result?.searchData?.topic || this.$store.app.form.topic || 'Search results';
+            return this.$store.app.form.topic || this.$store.app.result?.searchData?.topic || 'Search results';
         },
 
         meta() {
             const searchData = this.$store.app.result?.searchData;
-            const filters = window.searchAPI.formatFilters(searchData?.filters || {});
+            const filters = this.activeFilters();
             const paperCount = searchData?.count ?? searchData?.papers?.length ?? 0;
 
             if (this.$store.app.isLoading) {
-                return 'Tracing papers, evaluating evidence, and preparing a gap brief';
+                return filters.length ? filters.join(' · ') : 'Topic only';
             }
 
             return filters.length
@@ -19,64 +19,57 @@ document.addEventListener('alpine:init', () => {
         },
 
         papers() {
+            if (this.$store.app.isLoading) {
+                return [];
+            }
             return this.$store.app.result?.searchData?.papers || [];
         },
 
         gaps() {
+            if (this.$store.app.isLoading) {
+                return [];
+            }
             return this.$store.app.result?.gapData?.gaps || [];
         },
 
-        thinkingSteps() {
-            const activeStage = this.$store.app.loadingStage;
-            const order = ['query', 'retrieval', 'analysis', 'synthesis'];
-            const labels = {
-                query: {
-                    title: 'Understanding your query',
-                    detail: 'Normalizing topic, year, and venue filters before dispatch.',
-                },
-                retrieval: {
-                    title: 'Searching the literature',
-                    detail: 'Querying retrieval sources and deduplicating candidate papers.',
-                },
-                analysis: {
-                    title: 'Reviewing evidence',
-                    detail: 'Scanning limitations, assumptions, datasets, and evaluation signals.',
-                },
-                synthesis: {
-                    title: 'Drafting research gaps',
-                    detail: 'Ranking the most defensible gaps and packaging the final view.',
-                },
-            };
+        activeFilters() {
+            const searchDataFilters = this.$store.app.isLoading ? null : this.$store.app.result?.searchData?.filters;
+            if (searchDataFilters) {
+                return window.searchAPI.formatFilters(searchDataFilters);
+            }
 
-            return order.map((stage, index) => {
-                const activeIndex = order.indexOf(activeStage);
-                let status = 'pending';
-                if (activeStage === 'complete' || index < activeIndex) {
-                    status = 'complete';
-                } else if (index === activeIndex) {
-                    status = 'active';
-                }
+            const filters = {};
+            const year = typeof this.$store.app.form.year === 'string' ? this.$store.app.form.year.trim() : '';
+            const venue = typeof this.$store.app.form.venue === 'string' ? this.$store.app.form.venue.trim() : '';
 
-                return {
-                    key: stage,
-                    status,
-                    ...labels[stage],
-                };
-            });
+            if (year) {
+                filters.year = year.replace(/\s*-\s*/g, '-');
+            }
+            if (venue) {
+                filters.venue = venue;
+            }
+
+            return window.searchAPI.formatFilters(filters);
         },
 
-        thinkingSummary() {
-            const stage = this.$store.app.loadingStage;
-            if (stage === 'retrieval') {
-                return 'Gathering candidate papers from the configured sources.';
+        sourceBadges() {
+            if (this.$store.app.isLoading) {
+                return [];
             }
-            if (stage === 'analysis') {
-                return 'Looking for recurring weaknesses and evidence patterns across the retrieved papers.';
+            return (this.$store.app.result?.searchData?.sources_used || []).map((source) => window.searchAPI.sourceLabel(source));
+        },
+
+        loadingSources() {
+            return ['Semantic Scholar', 'OpenAlex'];
+        },
+
+        searchStatusSummary() {
+            const filters = this.activeFilters();
+            if (filters.length) {
+                return `Checking indexed papers for "${this.title()}" with ${filters.join(' and ')}.`;
             }
-            if (stage === 'synthesis') {
-                return 'Scoring the strongest gaps and preparing the final thread.';
-            }
-            return 'Turning your query into a structured research brief.';
+
+            return `Checking indexed papers for "${this.title()}" and preparing a gap brief.`;
         },
 
         paperLink(paper) {

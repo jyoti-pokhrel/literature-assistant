@@ -182,9 +182,6 @@ document.addEventListener('alpine:init', () => {
         theme: localStorage.getItem('theme') || 'dark',
         sidebarCollapsed: storedSidebarState === null ? window.innerWidth <= 768 : storedSidebarState === 'true',
         isLoading: false,
-        loadingStage: 'idle',
-        loadingTick: 0,
-        loadingTimer: null,
         error: '',
         form: window.ResearchAgent.cloneSearchValues(window.ResearchAgent.defaults),
         history: window.ResearchAgent.loadSearchHistory(),
@@ -240,32 +237,6 @@ document.addEventListener('alpine:init', () => {
             }, 50);
         },
 
-        beginThinkingTimeline() {
-            this.loadingStage = 'query';
-            this.loadingTick = 0;
-            if (this.loadingTimer) {
-                window.clearInterval(this.loadingTimer);
-            }
-            this.loadingTimer = window.setInterval(() => {
-                this.loadingTick += 1;
-                if (this.loadingTick === 1) {
-                    this.loadingStage = 'retrieval';
-                } else if (this.loadingTick === 2) {
-                    this.loadingStage = 'analysis';
-                } else {
-                    this.loadingStage = 'synthesis';
-                }
-            }, 900);
-        },
-
-        finishThinkingTimeline() {
-            if (this.loadingTimer) {
-                window.clearInterval(this.loadingTimer);
-                this.loadingTimer = null;
-            }
-            this.loadingStage = 'complete';
-        },
-
         goToPath(pathname, { search = '', replace = false } = {}) {
             const currentSearch = window.location.search || '';
             if (window.location.pathname === pathname && currentSearch === search) {
@@ -317,7 +288,6 @@ document.addEventListener('alpine:init', () => {
             this.result = result;
             this.error = '';
             this.isLoading = false;
-            this.finishThinkingTimeline();
             this.currentView = 'results';
             this.activeSearchKey = window.ResearchAgent.searchKey(values);
             this.setMode('workspace');
@@ -348,7 +318,6 @@ document.addEventListener('alpine:init', () => {
             this.form = window.ResearchAgent.cloneSearchValues(window.ResearchAgent.defaults);
             this.error = '';
             this.isLoading = false;
-            this.finishThinkingTimeline();
             this.result = null;
             this.activeSearchKey = '';
             this.closeSidebar();
@@ -368,7 +337,6 @@ document.addEventListener('alpine:init', () => {
                 normalized = window.ResearchAgent.validateSearchValues(values);
             } catch (error) {
                 this.error = error.message || 'Search failed';
-                this.finishThinkingTimeline();
                 this.currentView = 'form';
                 return false;
             }
@@ -386,7 +354,6 @@ document.addEventListener('alpine:init', () => {
             this.currentView = 'results';
             this.error = '';
             this.isLoading = true;
-            this.beginThinkingTimeline();
             this.closeSidebar();
 
             if (pushRoute) {
@@ -423,7 +390,6 @@ document.addEventListener('alpine:init', () => {
                 return false;
             } finally {
                 this.isLoading = false;
-                this.finishThinkingTimeline();
             }
         },
 
