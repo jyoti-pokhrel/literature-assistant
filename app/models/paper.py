@@ -6,6 +6,7 @@ class Paper(BaseModel):
     paper_id: str
     title: str
     year: int
+    url: Optional[str] = None
 
     # Problem definition
     problem: Optional[str] = None

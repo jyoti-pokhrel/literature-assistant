@@ -11,9 +11,11 @@ from dotenv import load_dotenv
 env_path = Path(__file__).resolve().parent.parent / '.env'
 load_dotenv(dotenv_path=env_path)
 
-from app.api.routes import auth, papers, reports, search
+from app.api.routes import auth, papers, reports, search, synthesis
 
-app = FastAPI(title="Research Agent API")
+app = FastAPI(
+    title="Research Agent API",
+)
 BASE_DIR = Path(__file__).resolve().parent.parent
 FRONTEND_DIR = BASE_DIR / "frontend"
 STATIC_DIR = FRONTEND_DIR
@@ -48,9 +50,11 @@ app.include_router(auth.router, tags=["Auth"])
 app.include_router(papers.router, tags=["Papers"])
 app.include_router(reports.router, tags=["Reports"])
 app.include_router(search.router, tags=["Search"])
+app.include_router(synthesis.router) 
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 app.mount("/css", StaticFiles(directory=FRONTEND_DIR / "css"), name="frontend-css")
 app.mount("/js", StaticFiles(directory=FRONTEND_DIR / "js"), name="frontend-js")
+
 if NODE_MODULES_DIR.exists():
     app.mount("/vendor", StaticFiles(directory=NODE_MODULES_DIR), name="vendor-node-modules")
 
@@ -85,6 +89,11 @@ def frontend_workspace():
 
 @app.get("/workspace/search", include_in_schema=False)
 def frontend_workspace_search():
+    return FileResponse(INDEX_FILE)
+
+
+@app.get("/synthesis/share/{report_id}", include_in_schema=False)
+def frontend_share_link(report_id: str):
     return FileResponse(INDEX_FILE)
 
 

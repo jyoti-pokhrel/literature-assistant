@@ -4,6 +4,7 @@ window.ResearchAgent.routes = {
     landing: '/',
     workspace: '/workspace',
     search: '/workspace/search',
+    share: '/synthesis/share',
 };
 
 window.ResearchAgent.defaults = Object.freeze({
@@ -314,6 +315,11 @@ document.addEventListener('alpine:init', () => {
             window.ResearchAgent.saveSearchHistory(this.history);
         },
 
+        removeFromHistory(id) {
+            this.history = this.history.filter(item => item.id !== id);
+            window.ResearchAgent.saveSearchHistory(this.history);
+        },
+
         startNewSearch() {
             this.form = window.ResearchAgent.cloneSearchValues(window.ResearchAgent.defaults);
             this.error = '';
@@ -368,12 +374,9 @@ document.addEventListener('alpine:init', () => {
                     top_k_gaps: 5,
                 };
 
-                const [searchData, gapData] = await Promise.all([
-                    window.searchAPI.searchPapers(paperPayload),
-                    window.searchAPI.analyzeGaps(gapPayload),
-                ]);
+                const synthesisData = await window.searchAPI.analyzeGaps(gapPayload);
 
-                const result = { searchData, gapData };
+                const result = { searchData: synthesisData, gapData: synthesisData };
                 this.result = result;
                 this.activeSearchKey = window.ResearchAgent.searchKey(normalized);
 
@@ -431,7 +434,42 @@ document.addEventListener('alpine:init', () => {
                 return;
             }
 
+            if (pathname.startsWith(window.ResearchAgent.routes.share)) {
+                const parts = pathname.split('/').filter(Boolean);
+                const reportId = parts[parts.length - 1];
+                if (reportId && reportId !== 'share') {
+                    await this.loadSharedReport(reportId);
+                    return;
+                }
+            }
+
             this.openLanding({ replace: true });
+        },
+
+        async loadSharedReport(reportId) {
+            this.setMode('workspace');
+            this.currentView = 'results';
+            this.isLoading = true;
+            this.error = '';
+            this.closeSidebar();
+
+            try {
+                const data = await window.searchAPI.fetchPublicReport(reportId);
+                
+                // SynthesisResponse from API
+                const result = { searchData: data, gapData: data };
+                this.result = result;
+                this.form.topic = data.topic || '';
+                
+                return true;
+            } catch (error) {
+                console.error('Failed to load shared report:', error);
+                this.error = error.message || 'Failed to load report';
+                this.currentView = 'form';
+                return false;
+            } finally {
+                this.isLoading = false;
+            }
         },
     });
 });
