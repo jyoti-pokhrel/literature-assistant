@@ -10,7 +10,7 @@ document.addEventListener('alpine:init', () => {
             const paperCount = searchData?.count ?? searchData?.papers?.length ?? 0;
 
             if (this.$store.app.isLoading) {
-                return filters.length ? filters.join(' · ') : 'Topic only';
+                return filters.length ? filters.join(' · ') : '';
             }
 
             return filters.length
@@ -31,6 +31,14 @@ document.addEventListener('alpine:init', () => {
             }
             return this.$store.app.result?.gapData?.gaps || [];
         },
+
+        visualizations() {
+            if (this.$store.app.isLoading) {
+                return null;
+            }
+            return this.$store.app.result?.gapData?.visualizations || this.$store.app.result?.searchData?.visualizations || null;
+        },
+
 
         activeFilters() {
             const searchDataFilters = this.$store.app.isLoading ? null : this.$store.app.result?.searchData?.filters;
@@ -84,7 +92,13 @@ document.addEventListener('alpine:init', () => {
         },
 
         supportingPapers(gap) {
-            return gap?.evidence?.supporting_papers || [];
+            return gap?.citations || [];
+        },
+
+        getCitationLink(citation) {
+            if (citation.url) return citation.url;
+            const match = this.papers().find(p => p.title && p.title.toLowerCase() === citation.title.toLowerCase());
+            return match ? this.paperLink(match) : null;
         },
 
         scoreLabel(score) {
@@ -92,23 +106,23 @@ document.addEventListener('alpine:init', () => {
         },
 
         supportCountLabel(gap) {
-            const count = gap?.evidence?.support_count || 0;
+            const count = gap?.citations?.length || gap?.supporting_papers?.length || 0;
             return `${count} supporting paper${count === 1 ? '' : 's'}`;
         },
 
         recentCountLabel(gap) {
-            const count = gap?.evidence?.recent_support_count || 0;
+            const count = (gap?.citations || []).filter(c => c.year && c.year >= new Date().getFullYear() - 2).length;
             return `${count} recent`;
         },
 
         influentialCountLabel(gap) {
-            const count = gap?.evidence?.influential_support_count || 0;
+            const count = (gap?.citations || []).filter(c => c.citation_count > 10).length;
             return `${count} influential`;
         },
 
         supportingPaperMeta(paper) {
             const parts = [];
-            if (paper?.venue) {
+            if (paper?.venue && paper.venue !== "Unknown Venue") {
                 parts.push(paper.venue);
             }
             if (paper?.year) {
@@ -120,23 +134,206 @@ document.addEventListener('alpine:init', () => {
             return parts.join(' · ');
         },
 
-        evidenceTags(gap) {
-            const evidence = gap?.evidence || {};
-            const groups = [
-                ['Limitations', evidence.recurring_limitations],
-                ['Future work', evidence.recurring_future_work],
-                ['Assumptions', evidence.dominant_assumptions],
-                ['Missing metrics', evidence.missing_metrics],
-                ['Missing datasets', evidence.missing_datasets],
-                ['Weak baselines', evidence.weak_baselines],
-            ];
 
-            return groups.flatMap(([label, values]) =>
-                (values || []).slice(0, 3).map((value) => ({
-                    label,
-                    value: String(value).replace(/_/g, ' '),
-                }))
-            );
+
+        evidenceTags(gap) {
+            // Keep for backward compatibility if needed, but we'll use grouped version
+            return [];
+        },
+
+        hasValue(val) {
+            if (val === undefined || val === null) return false;
+            const s = String(val).trim();
+            return s.length > 0 && s !== 'undefined' && s !== 'null';
+        },
+
+        getGapField(gap, field) {
+            const val = gap ? gap[field] : '';
+            return this.hasValue(val) ? val : '';
+        },
+
+        renderTextWithCitations(text, gap) {
+            if (!this.hasValue(text)) return '';
+            text = String(text);
+            
+            const citations = this.supportingPapers(gap);
+            // Replace [n] with clickable links
+            return text.replace(/\[(\d+)\]/g, (match, n) => {
+                const idx = parseInt(n) - 1;
+                const citation = citations[idx];
+                const link = this.getCitationLink(citation);
+                if (link) {
+                    return `<a href="${link}" target="_blank" rel="noopener noreferrer" class="cite-badge" style="vertical-align: baseline; margin: 0 2px; text-decoration: none;">${match}</a>`;
+                }
+                return match;
+            });
+        },
+
+        reportId() {
+            return this.$store.app.result?.gapData?.report_id || '';
+        },
+
+        pdfUrl() {
+            const path = this.$store.app.result?.gapData?.pdf_url;
+            return path ? `${BASE_URL}${path}` : '';
+        },
+
+        shareUrl() {
+            const path = this.$store.app.result?.gapData?.share_url;
+            return path ? `${window.location.origin}${path}` : '';
+        },
+
+        isCopied: false,
+
+        async copyToClipboard() {
+            const text = this.$store.app.result?.gapData?.copy_text || '';
+            if (!text) {
+                console.warn('No synthesis text available to copy');
+                return;
+            }
+
+            try {
+                if (navigator.clipboard && window.isSecureContext) {
+                    await navigator.clipboard.writeText(text);
+                } else {
+                    // Fallback for non-secure contexts
+                    const textArea = document.createElement("textarea");
+                    textArea.value = text;
+                    textArea.style.position = "fixed";
+                    textArea.style.left = "-9999px";
+                    textArea.style.top = "0";
+                    document.body.appendChild(textArea);
+                    textArea.focus();
+                    textArea.select();
+                    document.execCommand('copy');
+                    textArea.remove();
+                }
+
+                this.isCopied = true;
+                setTimeout(() => {
+                    this.isCopied = false;
+                }, 2000);
+            } catch (err) {
+                console.error('Failed to copy text: ', err);
+                alert('Could not copy to clipboard. Please try manually selecting the text.');
+            }
+        },
+
+        isLiked: false,
+        isDisliked: false,
+
+        toggleLike() {
+            this.isLiked = !this.isLiked;
+            if (this.isLiked) this.isDisliked = false;
+        },
+
+        toggleDislike() {
+            this.isDisliked = !this.isDisliked;
+            if (this.isDisliked) this.isLiked = false;
+        },
+
+        isRefreshing: false,
+        async regenerateSynthesis() {
+            if (this.isRefreshing) return;
+            
+            const gapData = this.$store.app.result?.gapData;
+            const searchData = this.$store.app.result?.searchData;
+            
+            const topic = gapData?.topic || searchData?.topic || this.$store.app.form?.topic;
+            
+            if (!topic) {
+                alert("Original search topic not found. Cannot refresh.");
+                return;
+            }
+
+            const filters = gapData?.filters || searchData?.filters || {};
+
+            this.isRefreshing = true;
+            this.$store.app.isLoading = true; // Show the loading animation and status
+
+            try {
+                const response = await window.searchAPI.analyzeGaps({
+                    topic: topic,
+                    year: filters.year,
+                    venue: filters.venue,
+                    max_results: 10
+                });
+                
+                if (response && response.success) {
+                    // Update gap data
+                    this.$store.app.result.gapData = response;
+                } else {
+                    alert("Failed to refresh report: " + (response?.detail || "Unknown error"));
+                }
+            } catch (err) {
+                console.error("Regeneration failed:", err);
+                alert("Error refreshing report: " + err.message);
+            } finally {
+                this.isRefreshing = false;
+                this.$store.app.isLoading = false; // Hide loading animation
+            }
+        },
+
+        async copyShareLink() {
+            const url = this.shareUrl();
+            if (!url) return false;
+
+            try {
+                if (navigator.clipboard && window.isSecureContext) {
+                    await navigator.clipboard.writeText(url);
+                } else {
+                    // Fallback
+                    const textArea = document.createElement("textarea");
+                    textArea.value = url;
+                    textArea.style.position = "fixed";
+                    textArea.style.left = "-9999px";
+                    textArea.style.top = "0";
+                    document.body.appendChild(textArea);
+                    textArea.focus();
+                    textArea.select();
+                    document.execCommand('copy');
+                    textArea.remove();
+                }
+                return true;
+            } catch (err) {
+                console.error('Failed to copy share URL: ', err);
+                return false;
+            }
+        },
+
+        shareOnGmail() {
+            const url = this.shareUrl();
+            if (!url) return;
+            const subject = `Research Report: ${this.title()}`;
+            const body = `Check out this research synthesis on "${this.title()}" via Research Agent!\n\nView full report: ${url}`;
+            window.open(`https://mail.google.com/mail/?view=cm&fs=1&tf=1&to=&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`, '_blank');
+        },
+
+        shareOnWhatsApp() {
+            const url = this.shareUrl();
+            if (!url) return;
+            const text = `Check out this research synthesis on "${this.title()}" via Research Agent!\n\nView full report: ${url}`;
+            window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
+        },
+    async nativeShare() {
+            const url = this.shareUrl();
+            if (!url) return;
+            if (navigator.share) {
+                try {
+                    await navigator.share({
+                        title: `Research Report: ${this.title()}`,
+                        text: `Analysis and research gaps for ${this.title()}`,
+                        url: url
+                    });
+                } catch (err) {
+                    if (err.name !== 'AbortError') {
+                        console.error('Error sharing:', err);
+                    }
+                }
+            } else {
+                await this.copyShareLink();
+                alert('Share link copied to clipboard (native share not supported)');
+            }
         },
     }));
 });

@@ -8,16 +8,12 @@ const BASE_URL = (() => {
     }
 
     const currentOrigin = window.location?.origin;
-    const currentPort = window.location?.port;
-
+    
     if (currentOrigin && /^https?:/.test(currentOrigin)) {
-        if (currentPort === '8088') {
-            return currentOrigin;
-        }
-        return 'http://127.0.0.1:8088';
+        return currentOrigin;
     }
 
-    return "http://127.0.0.1:8088";
+    return "";
 })();
 
 function getHeaders({ hasBody = false, includeAuth = true } = {}) {

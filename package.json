@@ -3,7 +3,8 @@
   "private": true,
   "dependencies": {
     "@alpinejs/collapse": "^3.14.9",
-    "alpinejs": "^3.14.9"
+    "alpinejs": "^3.14.9",
+    "jsdom": "^29.1.0"
   },
   "scripts": {
     "test:e2e": "playwright test"
