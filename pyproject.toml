@@ -14,4 +14,11 @@ dependencies = [
     "anthropic",
     "python-multipart",
     "pydantic[email]",
+    "numpy>=2.4.4",
+    "dotenv>=0.9.9",
+    "sentence-transformers>=5.4.1",
+    "hdbscan>=0.8.42",
+    "umap-learn>=0.5.12",
+    "matplotlib>=3.10.9",
+    "reportlab>=4.4.10",
 ]

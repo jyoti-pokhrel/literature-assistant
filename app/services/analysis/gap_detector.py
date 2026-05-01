@@ -1,6 +1,8 @@
 from collections import Counter, defaultdict
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 import re
+
+NEPAL_TZ = timezone(timedelta(hours=5, minutes=45))
 
 from app.schemas.gap_analysis import CandidateGap, EvidenceSummary, GapAnalysisResponse, GapEvidence, SupportingPaperRef
 from app.services.analysis.normalization import normalize_analysis_paper, top_terms
@@ -349,7 +351,7 @@ def analyze_gaps(
     sources_used: list[str],
     top_k: int = 5,
 ) -> GapAnalysisResponse:
-    current_year = datetime.utcnow().year
+    current_year = datetime.now(NEPAL_TZ).year
     normalized_papers = [normalize_analysis_paper(paper) for paper in papers]
 
     candidates: list[CandidateGap] = []

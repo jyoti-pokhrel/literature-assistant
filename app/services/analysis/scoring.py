@@ -1,16 +1,17 @@
 import math
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 
+NEPAL_TZ = timezone(timedelta(hours=5, minutes=45))
 
 def citation_weight(citation_count: int | None, year: int | None, current_year: int | None = None) -> float:
-    current_year = current_year or datetime.utcnow().year
+    current_year = current_year or datetime.now(NEPAL_TZ).year
     citations = max(citation_count or 0, 0)
     age = max((current_year - year), 0) if year else 5
     return math.log1p(citations) / ((1 + age) ** 0.7)
 
 
 def recency_weight(year: int | None, current_year: int | None = None) -> float:
-    current_year = current_year or datetime.utcnow().year
+    current_year = current_year or datetime.now(NEPAL_TZ).year
     if not year:
         return 0.5
     age = max(current_year - year, 0)
@@ -24,7 +25,7 @@ def recency_weight(year: int | None, current_year: int | None = None) -> float:
 
 
 def score_support(candidate_papers: list[dict], current_year: int | None = None) -> float:
-    current_year = current_year or datetime.utcnow().year
+    current_year = current_year or datetime.now(NEPAL_TZ).year
     support_count = len(candidate_papers)
     weighted_support = sum(citation_weight(item.get("citation_count"), item.get("year"), current_year) for item in candidate_papers)
     recent_support = sum(1 for item in candidate_papers if recency_weight(item.get("year"), current_year) >= 1.0)
@@ -32,7 +33,7 @@ def score_support(candidate_papers: list[dict], current_year: int | None = None)
 
 
 def score_citation_confidence(candidate_papers: list[dict], current_year: int | None = None) -> float:
-    current_year = current_year or datetime.utcnow().year
+    current_year = current_year or datetime.now(NEPAL_TZ).year
     if not candidate_papers:
         return 0.0
     influential_support = sum(1 for item in candidate_papers if citation_weight(item.get("citation_count"), item.get("year"), current_year) >= 1.0)
@@ -74,7 +75,7 @@ def score_actionability(category: str, evidence: dict) -> float:
 
 
 def score_novelty(candidate_papers: list[dict], current_year: int | None = None) -> float:
-    current_year = current_year or datetime.utcnow().year
+    current_year = current_year or datetime.now(NEPAL_TZ).year
     if not candidate_papers:
         return 0.0
     recent_ratio = sum(recency_weight(item.get("year"), current_year) for item in candidate_papers) / len(candidate_papers)

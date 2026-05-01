@@ -161,15 +161,30 @@
       </div>
       <div class="sidebar-section">
         <div class="sidebar-label">Recent searches</div>
-        <div id="search-history">
+        <div id="search-history" x-data="{ activeMenu: null }">
           <template x-if="!$store.app.history.length">
             <div class="px-history-item">No searches yet</div>
           </template>
           <template x-for="item in $store.app.history" :key="item.id">
-            <button type="button" class="px-history-item history-button" @click="open(item)">
-              <strong x-text="item.topic"></strong>
-              <span x-text="item.summary"></span>
-            </button>
+            <div class="px-history-item-container" style="position: relative; display: block;" @click.outside="if(activeMenu === item.id) activeMenu = null">
+              <button type="button" class="px-history-item history-button" @click="open(item)" style="width: 100%; text-align: left; padding-right: 2.5rem;">
+                <strong x-text="item.topic"></strong>
+                <span x-text="item.summary"></span>
+              </button>
+              
+              <div class="history-item-actions" style="position: absolute; right: 0.5rem; top: 50%; transform: translateY(-50%); z-index: 5;">
+                <button type="button" @click.stop="activeMenu = activeMenu === item.id ? null : item.id" aria-label="Options" style="width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; opacity: 0.5; cursor: pointer; background: transparent; border: none; color: inherit; border-radius: 4px; transition: opacity 0.2s;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.5'">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"></circle><circle cx="5" cy="12" r="1"></circle><circle cx="19" cy="12" r="1"></circle></svg>
+                </button>
+                
+                <div x-show="activeMenu === item.id" x-cloak style="position: absolute; right: 0; top: 100%; z-index: 20; background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.2); min-width: 120px; overflow: hidden; margin-top: 4px;">
+                  <button type="button" @click.stop="$store.app.removeFromHistory(item.id); activeMenu = null" style="width: 100%; text-align: left; padding: 0.6rem 0.75rem; background: transparent; border: none; color: var(--text-color); cursor: pointer; font-size: 0.85rem; display: flex; align-items: center; gap: 0.5rem; transition: background 0.2s;" onmouseover="this.style.background='var(--bg-hover)'" onmouseout="this.style.background='transparent'">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                    Remove
+                  </button>
+                </div>
+              </div>
+            </div>
           </template>
         </div>
       </div>
@@ -187,7 +202,9 @@
           <button id="toggle-sidebar" class="btn-icon sidebar-toggle-btn" type="button" aria-label="Toggle history sidebar" @click="$store.app.toggleSidebar()">
             <span x-text="$store.app.sidebarCollapsed ? '☰' : '✕'"></span>
           </button>
-          <span class="workspace-toolbar-label">History</span>
+          <button class="btn-icon back-button-header" type="button" @click="$store.app.openLanding()" title="Back to home" style="margin-left: 0.5rem; width: 28px; height: 28px; border-radius: 8px;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+          </button>
         </div>
         <div class="header-actions">
           <button class="btn-icon theme-toggle-btn" type="button" aria-label="Toggle theme" @click="$store.app.toggleTheme()">
@@ -201,7 +218,7 @@
         <section id="initial-view" class="px-initial-view" x-show="$store.app.currentView === 'form'">
           <h1 class="px-logo-text">What research topic do you want to explore?</h1>
           <div class="px-input-container">
-            <form class="px-input-box search-form-shell" x-data="searchForm()" @submit.prevent="submit" @keydown.meta.enter.prevent="submit" @keydown.ctrl.enter.prevent="submit">
+            <form class="px-input-box search-form-shell" x-data="searchForm()" @submit.prevent="submit" @keydown.enter.prevent="submit">
               <label class="sr-only" for="main-prompt">Topic</label>
               <textarea id="main-prompt" rows="3" placeholder="Try: multi agent rl" x-model="$store.app.form.topic"></textarea>
 
@@ -245,10 +262,12 @@
                   <span class="thread-query-tag is-source" x-text="source"></span>
                 </template>
               </div>
+
+
             </div>
 
             <div class="thread-search-shell">
-              <form class="px-input-box search-form-shell compact thread-search-form" x-data="searchForm()" @submit.prevent="submit" @keydown.meta.enter.prevent="submit" @keydown.ctrl.enter.prevent="submit">
+              <form class="px-input-box search-form-shell compact thread-search-form" x-data="searchForm()" @submit.prevent="submit" @keydown.enter.prevent="submit">
                 <label class="sr-only" for="thread-prompt">Topic</label>
                 <textarea id="thread-prompt" rows="2" placeholder="Refine the topic" x-model="$store.app.form.topic"></textarea>
 
@@ -293,7 +312,7 @@
           </section>
 
           <div class="px-answer compact-results-shell">
-            <section class="compact-results-section" aria-labelledby="papers-section-title">
+            <section class="compact-results-section" aria-labelledby="papers-section-title" x-show="!$store.app.isLoading">
               <div class="compact-section-header">
                 <div>
                   <h3 id="papers-section-title" class="compact-section-title">Papers</h3>
@@ -334,7 +353,7 @@
               </div>
             </section>
 
-            <section class="compact-results-section" aria-labelledby="gaps-section-title">
+            <section class="compact-results-section" aria-labelledby="gaps-section-title" x-show="!$store.app.isLoading">
               <div class="compact-section-header">
                 <div>
                   <h3 id="gaps-section-title" class="compact-section-title">Research gaps</h3>
@@ -353,68 +372,219 @@
                     <p>The current evidence did not surface a strong recurring gap for this query.</p>
                   </div>
                 </template>
-                <template x-for="(gap, index) in gaps()" :key="gap.gap_id || `${gap.title}-${index}`">
+                <template x-for="(gap, index) in gaps()" :key="gap.gap_id || `${gap.gap_title}-${index}`">
                   <article class="gap-card" x-data="{ open: false }">
                     <div class="gap-card-head">
                       <span class="gap-rank" x-text="index + 1"></span>
                       <div class="gap-card-title-block">
-                        <h3 x-text="gap.title"></h3>
-                        <p class="gap-category" x-text="gap.category.replace(/_/g, ' ')"></p>
+                        <h3 x-text="gap.gap_title || 'Untitled Research Gap'"></h3>
                       </div>
                     </div>
 
-                    <p class="gap-statement" x-text="gap.statement"></p>
-                    <p class="gap-why" x-show="gap.why_it_matters" x-text="gap.why_it_matters"></p>
+                    <p class="gap-statement" x-show="hasValue(gap.description)" x-html="renderTextWithCitations(gap.description, gap)"></p>
+                    <p class="gap-why" x-show="hasValue(gap.what_fails)" x-html="'What fails: ' + renderTextWithCitations(gap.what_fails, gap)"></p>
+                    <p class="gap-why" x-show="hasValue(gap.missing_piece)" x-html="'Missing piece: ' + renderTextWithCitations(gap.missing_piece, gap)"></p>
+                    <p class="gap-why" x-show="hasValue(gap.why_it_exists)" x-html="'Why it exists: ' + renderTextWithCitations(gap.why_it_exists, gap)"></p>
 
-                    <div class="gap-score-row">
-                      <span class="gap-pill" x-text="supportCountLabel(gap)"></span>
-                      <span class="gap-pill" x-show="gap.overall_score" x-text="scoreLabel(gap.overall_score)"></span>
-                    </div>
-
-                    <div class="gap-action-box" x-show="gap.actionable_opportunity">
+                    <div class="gap-action-box" x-show="hasValue(gap.proposed_direction)">
                       <div class="gap-action-label">Suggested direction</div>
-                      <p x-text="gap.actionable_opportunity"></p>
+                      <p x-html="renderTextWithCitations(gap.proposed_direction, gap)"></p>
                     </div>
 
-                    <button class="gap-evidence-toggle" type="button" @click="open = !open" x-text="open ? 'Hide evidence' : 'Show evidence'"></button>
+                    <div class="gap-action-box" x-show="hasValue(gap.pattern_detected)">
+                      <div class="gap-action-label">Pattern detected</div>
+                      <p x-html="renderTextWithCitations(gap.pattern_detected, gap)"></p>
+                    </div>
+
+                    <button class="gap-evidence-toggle" type="button" @click="open = !open" style="display: inline-flex; align-items: center; gap: 0.8rem;">
+                      <div style="display: flex; align-items: center; gap: 0.5rem;">
+                        <span x-text="open ? 'Hide details' : supportCountLabel(gap)"></span>
+                        <template x-if="!open && gap.confidence_score">
+                          <span style="font-size: 0.75rem; color: var(--text-muted); padding-left: 0.5rem; border-left: 1px solid var(--border-color);" x-text="'Score ' + Number(gap.confidence_score).toFixed(2)"></span>
+                        </template>
+                      </div>
+                      <svg x-show="!open" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                      <svg x-show="open" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"></polyline></svg>
+                    </button>
 
                     <div class="gap-evidence" x-cloak x-show="open" x-collapse>
-                      <div class="gap-evidence-stats">
-                        <span class="gap-mini-stat" x-text="supportCountLabel(gap)"></span>
-                        <span class="gap-mini-stat" x-text="recentCountLabel(gap)"></span>
-                        <span class="gap-mini-stat" x-text="influentialCountLabel(gap)"></span>
-                      </div>
-
-                      <template x-if="evidenceTags(gap).length">
-                        <div class="gap-tag-grid">
-                          <template x-for="tag in evidenceTags(gap)" :key="`${gap.gap_id}-${tag.label}-${tag.value}`">
-                            <span class="gap-tag"><strong x-text="tag.label"></strong><span x-text="tag.value"></span></span>
-                          </template>
-                        </div>
-                      </template>
-
                       <template x-if="supportingPapers(gap).length">
-                        <div class="gap-support-block">
+                        <div class="gap-support-block" style="margin-top: 0; border-top: none; padding-top: 0; margin-bottom: 1.5rem;">
                           <div class="gap-support-title">Supporting papers</div>
                           <div class="gap-support-list">
-                            <template x-for="paper in supportingPapers(gap)" :key="paper.paper_id || paper.title">
+                            <template x-for="(paper, index) in supportingPapers(gap)" :key="paper.paper_id || paper.title">
                               <div class="gap-support-item">
                                 <div class="gap-support-heading">
-                                  <span class="gap-support-paper" x-text="paper.title"></span>
+                                  <template x-if="getCitationLink(paper)">
+                                    <a :href="getCitationLink(paper)" target="_blank" rel="noopener noreferrer" class="source-link-hover" style="color: inherit;">
+                                      <span class="gap-support-paper" x-text="'[' + (index + 1) + '] ' + paper.title"></span>
+                                    </a>
+                                  </template>
+                                  <template x-if="!getCitationLink(paper)">
+                                    <span class="gap-support-paper" x-text="'[' + (index + 1) + '] ' + paper.title"></span>
+                                  </template>
                                   <span class="gap-support-meta" x-text="supportingPaperMeta(paper)"></span>
                                 </div>
+                                
+                                <template x-if="paper.extracted_evidence && paper.extracted_evidence.length">
+                                  <ul class="evidence-list-mini" style="margin-top: 0.65rem; padding-left: 0; list-style: none;">
+                                    <template x-for="snippet in paper.extracted_evidence" :key="snippet">
+                                      <li class="evidence-item-mini" style="margin-bottom: 0.4rem;">
+                                        <span class="evidence-bullet-mini" style="opacity: 0.4; margin-right: 0.5rem;">•</span>
+                                        <span style="font-size: 0.85rem; color: var(--text-muted); line-height: 1.5;" x-text="snippet"></span>
+                                      </li>
+                                    </template>
+                                  </ul>
+                                </template>
                               </div>
                             </template>
                           </div>
                         </div>
                       </template>
+
+
                     </div>
                   </article>
                 </template>
               </div>
             </section>
-          </div>
 
+            <section class="compact-results-section" aria-labelledby="viz-section-title" x-cloak x-show="visualizations()">
+              <div class="compact-section-header">
+                <div>
+                  <h3 id="viz-section-title" class="compact-section-title">Visualizations</h3>
+                </div>
+              </div>
+              <div id="viz-list" class="viz-list" style="display: flex; flex-direction: column; gap: 24px; padding-top: 16px;">
+                <template x-if="visualizations()?.confidence_bars">
+                  <div class="viz-card">
+                    <h4>Research Gap Confidence</h4>
+                    <img :src="'data:image/png;base64,' + visualizations().confidence_bars" alt="Research Gap Confidence" style="max-width: 100%; height: auto; border-radius: 8px;" />
+                  </div>
+                </template>
+                <template x-if="visualizations()?.year_distribution">
+                  <div class="viz-card">
+                    <h4>Year Distribution</h4>
+                    <img :src="'data:image/png;base64,' + visualizations().year_distribution" alt="Year Distribution" style="max-width: 100%; height: auto; border-radius: 8px;" />
+                  </div>
+                </template>
+                <template x-if="visualizations()?.method_trends">
+                  <div class="viz-card">
+                    <h4>Method Trends</h4>
+                    <img :src="'data:image/png;base64,' + visualizations().method_trends" alt="Method Trends" style="max-width: 100%; height: auto; border-radius: 8px;" />
+                  </div>
+                </template>
+                <template x-if="visualizations()?.dataset_frequency">
+                  <div class="viz-card">
+                    <h4>Dataset Frequency</h4>
+                    <img :src="'data:image/png;base64,' + visualizations().dataset_frequency" alt="Dataset Frequency" style="max-width: 100%; height: auto; border-radius: 8px;" />
+                  </div>
+                </template>
+                <template x-if="visualizations()?.metric_frequency">
+                  <div class="viz-card">
+                    <h4>Metric Frequency</h4>
+                    <img :src="'data:image/png;base64,' + visualizations().metric_frequency" alt="Metric Frequency" style="max-width: 100%; height: auto; border-radius: 8px;" />
+                  </div>
+                </template>
+                <template x-if="visualizations()?.umap_scatter">
+                  <div class="viz-card">
+                    <h4>UMAP Scatter</h4>
+                    <img :src="'data:image/png;base64,' + visualizations().umap_scatter" alt="UMAP Scatter Plot" style="max-width: 100%; height: auto; border-radius: 8px;" />
+                  </div>
+                </template>
+              </div>
+            </section>
+
+            <div class="thread-action-bar" x-cloak x-show="!$store.app.isLoading && reportId()" style="position: relative;">
+              <div class="action-bar-left">
+                <!-- Copy -->
+                <button class="action-icon-btn" type="button" @click="copyToClipboard()" title="Copy Report" :class="{ 'is-success': isCopied }">
+                  <svg x-show="!isCopied" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                  <svg x-show="isCopied" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke="currentColor" style="color: var(--success-color);"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                </button>
+
+                   <div style="position: relative;" x-data="{ showShareOptions: false, isLinkCopied: false }" @click.away="showShareOptions = false">
+                  <button class="action-icon-btn" type="button" @click="showShareOptions = !showShareOptions" title="Share Options">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                  </button>
+                  <div x-cloak x-show="showShareOptions" class="share-options-dropdown" style="position: absolute; bottom: 100%; left: 0; margin-bottom: 12px; width: 180px; background: var(--glass-bg); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid var(--border-color); border-radius: 12px; padding: 6px; box-shadow: var(--shadow-soft); z-index: 100;">
+                    <button @click="copyShareLink().then(success => { if(success) { isLinkCopied = true; setTimeout(() => { isLinkCopied = false; showShareOptions = false; }, 1000); } })" class="share-option-item" style="width: 100%; display: flex; align-items: center; gap: 10px; padding: 10px; background: transparent; border: none; color: var(--text-main); font-size: 0.9rem; cursor: pointer; border-radius: 8px; transition: background 0.2s;">
+                      <template x-if="!isLinkCopied">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
+                      </template>
+                      <template x-if="isLinkCopied">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke="currentColor" style="color: var(--success-color);"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                      </template>
+                      <span x-text="isLinkCopied ? 'Copied!' : 'Copy Link'"></span>
+                    </button>
+                    <button @click="shareOnGmail(); showShareOptions = false;" class="share-option-item" style="width: 100%; display: flex; align-items: center; gap: 10px; padding: 10px; background: transparent; border: none; color: var(--text-main); font-size: 0.9rem; cursor: pointer; border-radius: 8px; transition: background 0.2s;">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
+                      <span>Gmail</span>
+                    </button>
+                    <button @click="shareOnWhatsApp(); showShareOptions = false;" class="share-option-item" style="width: 100%; display: flex; align-items: center; gap: 10px; padding: 10px; background: transparent; border: none; color: var(--text-main); font-size: 0.9rem; cursor: pointer; border-radius: 8px; transition: background 0.2s;">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.414 0 .004 5.411.001 12.047c0 2.12.554 4.188 1.597 6.048L0 24l6.135-1.61a11.77 11.77 0 005.911 1.586h.005c6.634 0 12.043-5.411 12.047-12.047a11.8 11.8 0 00-3.488-8.482z"/></svg>
+                      <span>WhatsApp</span>
+                    </button>
+                    <template x-if="navigator.share">
+                      <button @click="nativeShare(); showShareOptions = false;" class="share-option-item" style="width: 100%; border-top: 1px solid var(--border-color); margin-top: 4px; display: flex; align-items: center; gap: 10px; padding: 10px; background: transparent; border: none; color: var(--text-main); font-size: 0.9rem; cursor: pointer; border-radius: 8px; transition: background 0.2s;">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>
+                        <span>More Options...</span>
+                      </button>
+                    </template>
+                  </div>
+                </div>
+
+                <!-- Download -->
+                <a class="action-icon-btn" :href="pdfUrl()" title="Download PDF" download>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                </a>
+                <!-- Refresh -->
+                <button class="action-icon-btn" type="button" @click="regenerateSynthesis()" title="Refresh Report" :disabled="isRefreshing" :class="{ 'is-loading': isRefreshing }">
+                  <svg :class="{ 'spin': isRefreshing }" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"></path><path d="M1 20v-6h6"></path><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
+                </button>
+              </div>
+
+              <div class="action-bar-right">
+                <!-- Like -->
+                <button class="action-icon-btn" type="button" @click="toggleLike()" :class="{ 'active': isLiked }" title="Helpful">
+                  <svg width="18" height="18" viewBox="0 0 24 24" :fill="isLiked ? 'currentColor' : 'none'" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"></path></svg>
+                </button>
+                <!-- Unlike -->
+                <button class="action-icon-btn" type="button" @click="toggleDislike()" :class="{ 'active': isDisliked }" title="Not Helpful">
+                  <svg width="18" height="18" viewBox="0 0 24 24" :fill="isDisliked ? 'currentColor' : 'none'" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3zm7-13h2.67A2.31 2.31 0 0 1 22 4v7a2.31 2.31 0 0 1-2.33 2H17"></path></svg>
+                </button>
+                <!-- Sources -->
+                <div style="position: relative;" x-data="{ showSources: false }" @click.away="showSources = false">
+                  <button class="action-icon-btn" type="button" title="Sources" @click="showSources = !showSources" style="padding: 4px 10px; font-size: 0.85rem; font-weight: 600; gap: 6px;">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
+                    <span>Sources</span>
+                  </button>
+                  <div x-cloak x-show="showSources" class="sources-dropdown" style="position: absolute; bottom: 100%; right: 0; margin-bottom: 12px; width: 320px; max-height: 280px; overflow-y: auto; background: var(--glass-bg); backdrop-filter: blur(12px); border: 1px solid var(--border-color); border-radius: 12px; padding: 8px; box-shadow: var(--shadow-soft); z-index: 100;">
+                    <div style="font-size: 0.8rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; padding: 4px 8px 8px; border-bottom: 1px solid var(--border-color); margin-bottom: 4px;">Sources</div>
+                    <template x-for="paper in papers()" :key="paper.title">
+                      <div class="source-item" style="padding: 10px 8px; border-bottom: 1px solid rgba(255, 255, 255, 0.05);">
+                        <template x-if="paperLink(paper)">
+                          <a :href="paperLink(paper)" target="_blank" rel="noopener noreferrer" class="source-link-hover">
+                            <div class="source-title" style="font-size: 0.88rem; font-weight: 500; color: var(--text-main); margin-bottom: 6px; line-height: 1.3;" x-text="paper.title"></div>
+                            <div style="font-size: 0.75rem; color: var(--text-muted);" x-text="paper.venue || 'Unknown Venue'"></div>
+                          </a>
+                        </template>
+                        <template x-if="!paperLink(paper)">
+                          <div>
+                            <div style="font-size: 0.88rem; font-weight: 500; color: var(--text-main); margin-bottom: 6px; line-height: 1.3;" x-text="paper.title"></div>
+                            <div style="font-size: 0.75rem; color: var(--text-muted);" x-text="paper.venue || 'Unknown Venue'"></div>
+                          </div>
+                        </template>
+                      </div>
+                    </template>
+                    <template x-if="!papers().length">
+                      <div style="padding: 12px 8px; font-size: 0.85rem; color: var(--text-muted); text-align: center;">No sources available</div>
+                    </template>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </section>
       </div>
     </section>
@@ -423,12 +593,12 @@
   <script src="/js/api.js?v=20260417a"></script>
   <script src="/js/search.js?v=20260417a"></script>
   <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.7/dist/gsap.min.js"></script>
-  <script defer src="/vendor/@alpinejs/collapse/dist/cdn.min.js" onerror="this.onerror=null;this.src='https://cdn.jsdelivr.net/npm/@alpinejs/collapse@3.14.9/dist/cdn.min.js'"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/@alpinejs/collapse@3.14.9/dist/cdn.min.js"></script>
   <script defer src="/js/alpine/stores/appStore.js?v=20260423b"></script>
   <script defer src="/js/alpine/components/searchForm.js?v=20260423a"></script>
   <script defer src="/js/alpine/components/resultsPage.js?v=20260423b"></script>
   <script defer src="/js/alpine/components/historySidebar.js?v=20260423a"></script>
   <script defer src="/js/alpine/app.js?v=20260423a"></script>
-  <script defer src="/vendor/alpinejs/dist/cdn.min.js" onerror="this.onerror=null;this.src='https://cdn.jsdelivr.net/npm/alpinejs@3.14.9/dist/cdn.min.js'"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.9/dist/cdn.min.js"></script>
 </body>
 </html>

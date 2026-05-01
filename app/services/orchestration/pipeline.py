@@ -14,9 +14,16 @@ def _split_sentences(text: str | None) -> list[str]:
 
 def _extract_limitations(text: str | None) -> list[str]:
     results: list[str] = []
+    # Keywords that suggest a limitation or a challenge
+    limitation_keywords = ["limit", "challenge", "bottleneck", "robustness", "trade-off", "downside", "drawback", "lack of", "underexplored"]
+    
     for sentence in _split_sentences(text):
         lowered = sentence.lower()
-        if any(token in lowered for token in ["limit", "robust", "future work", "partial observability", "sensor", "deploy", "scal"]):
+        # Avoid general descriptions like "this paper explores limitations"
+        if any(intro in lowered for intro in ["this paper", "in this work", "we propose", "we present"]):
+            continue
+            
+        if any(token in lowered for token in limitation_keywords):
             results.append(sentence)
 
     joined = (text or "").lower()
@@ -34,9 +41,16 @@ def _extract_limitations(text: str | None) -> list[str]:
 
 def _extract_future_work(text: str | None) -> list[str]:
     results: list[str] = []
+    # Keywords that specifically suggest future directions
+    future_keywords = ["future work", "future direction", "next steps", "avenue for research", "remains for future", "beyond the scope"]
+    
     for sentence in _split_sentences(text):
         lowered = sentence.lower()
-        if any(token in lowered for token in ["future work", "future", "evaluate", "benchmark", "explore", "test"]):
+        # Avoid sentences that are just about what the paper already does
+        if any(intro in lowered for intro in ["this paper", "in this work", "we explore", "we evaluate", "we test"]):
+            continue
+            
+        if any(token in lowered for token in future_keywords):
             results.append(sentence)
     return results
 
@@ -92,6 +106,7 @@ def paper_from_retrieved(item: RetrievedPaper) -> dict:
         paper_id=item.external_id or item.url or item.title,
         title=item.title,
         year=item.year or 0,
+        url=item.url,
         abstract=item.abstract,
         method=_extract_method(item.title, item.abstract),
         assumptions=_extract_assumptions(text),
@@ -106,6 +121,7 @@ def paper_from_retrieved(item: RetrievedPaper) -> dict:
         "source": item.source,
         "venue": item.venue,
         "citation_count": item.citation_count,
+        "url": item.url,
     }
 
 

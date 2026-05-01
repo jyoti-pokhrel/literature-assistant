@@ -1,8 +1,21 @@
 import re
-from typing import List, Optional
+from typing import Any, List, Optional
 
 from pydantic import BaseModel, Field, field_validator
 
+def sanitize_string(v: Any) -> str:
+    if v is None:
+        return ""
+    s = str(v).strip()
+    # Check for junk values commonly returned by sources or LLMs
+    lower_s = s.lower()
+    junk_patterns = {"undefined", "null", "[object object]", "none", "n/a", "unknown", "string"}
+    if not s or lower_s in junk_patterns:
+        return ""
+    # If it's a short string containing 'undefined' or 'null', it's likely a bug
+    if len(s) < 20 and ("undefined" in lower_s or "null" in lower_s):
+        return ""
+    return s
 
 class PaperSearchRequest(BaseModel):
     topic: str = Field(..., examples=["multi agent rl"])
@@ -66,6 +79,11 @@ class RetrievedPaper(BaseModel):
     url: Optional[str] = None
     pdf_url: Optional[str] = None
     citation_count: Optional[int] = None
+
+    @field_validator("title", "abstract", "venue", mode="before")
+    @classmethod
+    def sanitize_paper_fields(cls, v: Any) -> str:
+        return sanitize_string(v)
 
 
 class PaperSearchResponse(BaseModel):

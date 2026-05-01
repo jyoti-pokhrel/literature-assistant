@@ -22,13 +22,22 @@ async function searchPapers(payload) {
 }
 
 async function analyzeGaps(payload) {
-    const response = await fetch(`${BASE_URL}/analysis/gaps`, {
+    const response = await fetch(`${BASE_URL}/synthesis/gaps`, {
         method: "POST",
         headers: getHeaders({ hasBody: true, includeAuth: false }),
         body: JSON.stringify(payload),
     });
 
-    return await parseResponse(response, "Gap analysis failed");
+    return await parseResponse(response, "Synthesis failed");
+}
+
+async function fetchPublicReport(report_id) {
+    const response = await fetch(`${BASE_URL}/synthesis/public/report/${report_id}`, {
+        method: "GET",
+        headers: getHeaders({ includeAuth: false }),
+    });
+
+    return await parseResponse(response, "Failed to load shared report");
 }
 
 function buildSearchPayload({ topic, year, venue, maxResults }) {
@@ -74,6 +83,7 @@ function sourceLabel(source) {
 window.searchAPI = {
     searchPapers,
     analyzeGaps,
+    fetchPublicReport,
     buildSearchPayload,
     formatFilters,
     sourceLabel,
