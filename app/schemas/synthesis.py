@@ -3,36 +3,32 @@ from __future__ import annotations
 import re
 from typing import Any, Dict, List, Optional
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
+
 
 def sanitize_string(v: Any) -> str:
     if v is None:
         return ""
-    
-    # Convert to string
+
     s = str(v)
-    
-    # Aggressively strip out standalone "undefined" occurrences (even multiline)
     s = re.sub(r'(?i)\bundefined\b', '', s)
-    
     s = s.strip()
     if not s or s.lower() in {"null", "none"}:
         return ""
-        
+
     lower_s = s.lower()
-    
-    # Common junk patterns returned by LLMs or leaked from JS
     junk_patterns = {
-        "null", "[object object]", "none", "n/a", 
+        "null", "[object object]", "none", "n/a",
         "unknown", "string", "empty", "all", "any", "npt",
         "javascript:void(0)", "void(0)", "not available", "no information"
     }
-    
-    # Direct match check (case-insensitive)
     if lower_s in junk_patterns:
         return ""
-            
+
     return s
+
+
+# ── Core models ───────────────────────────────────────────────────────────────
 
 class CitationRef(BaseModel):
     paper_id: Optional[str] = None
@@ -53,8 +49,10 @@ class CitationRef(BaseModel):
     @field_validator("extracted_evidence", mode="before")
     @classmethod
     def sanitize_evidence(cls, v: Any) -> List[str]:
-        if not isinstance(v, list): return []
+        if not isinstance(v, list):
+            return []
         return [sanitize_string(i) for i in v if sanitize_string(i)]
+
 
 class SynthesisGap(BaseModel):
     gap_id: str
@@ -70,11 +68,30 @@ class SynthesisGap(BaseModel):
     supporting_papers: List[str] = Field(default_factory=list)
     citations: List[CitationRef] = Field(default_factory=list)
 
-    @field_validator("gap_title", "description", "what_fails", "why_it_exists", 
-                     "missing_piece", "pattern_detected", "proposed_direction", mode="before")
+    @field_validator(
+        "gap_title", "description", "what_fails", "why_it_exists",
+        "missing_piece", "pattern_detected", "proposed_direction",
+        mode="before"
+    )
     @classmethod
     def sanitize_gap_fields(cls, v: Any) -> str:
         return sanitize_string(v)
+
+
+class ClusterSummary(BaseModel):
+    """Summarises one HDBSCAN cluster — returned in SynthesisResponse.clusters[]."""
+    cluster_id: int
+    theme_label: str
+    paper_count: int
+    top_limitations: List[str] = Field(default_factory=list)
+    top_future_work: List[str] = Field(default_factory=list)
+    gap_id: Optional[str] = None  # linked SynthesisGap.gap_id
+
+    @field_validator("theme_label", mode="before")
+    @classmethod
+    def sanitize_theme(cls, v: Any) -> str:
+        return sanitize_string(v) or "unspecified"
+
 
 class PatternAnalysis(BaseModel):
     top_methods: List[str] = Field(default_factory=list)
@@ -88,12 +105,15 @@ class PatternAnalysis(BaseModel):
     baseline_stagnation: bool = False
     emerging_opportunities: List[str] = Field(default_factory=list)
 
-    @field_validator("top_methods", "top_datasets", "top_metrics", 
-                     "top_limitations", "top_future_work", "emerging_opportunities", mode="before")
+    @field_validator(
+        "top_methods", "top_datasets", "top_metrics",
+        "top_limitations", "top_future_work", "emerging_opportunities",
+        mode="before"
+    )
     @classmethod
     def sanitize_list_fields(cls, v: Any) -> List[str]:
         if not isinstance(v, list):
-            if isinstance(v, str): # Handle potential single string from LLM
+            if isinstance(v, str):
                 val = sanitize_string(v)
                 return [val] if val else []
             return []
@@ -101,22 +121,40 @@ class PatternAnalysis(BaseModel):
 
 
 class VisualizationData(BaseModel):
-    umap_scatter: Optional[str] = None         
-    confidence_bars: Optional[str] = None      
-    year_distribution: Optional[str] = None     
-    dataset_frequency: Optional[str] = None     
-    metric_frequency: Optional[str] = None      
+    # Static base64-encoded PNG charts (for PDF embedding)
+    umap_scatter: Optional[str] = None
+    confidence_bars: Optional[str] = None
+    year_distribution: Optional[str] = None
+    dataset_frequency: Optional[str] = None
+    metric_frequency: Optional[str] = None
 
-    @field_validator("*", mode="before")
+    # Interactive Plotly JSON charts (for frontend)
+    plotly_umap: Optional[Dict[str, Any]] = None
+    plotly_dataset_freq: Optional[Dict[str, Any]] = None
+    plotly_metric_freq: Optional[Dict[str, Any]] = None
+    plotly_confidence_bars: Optional[Dict[str, Any]] = None
+
+    # New charts (added in synthesis rebuild)
+    plotly_research_intensity: Optional[Dict[str, Any]] = None
+    plotly_cluster_distribution: Optional[Dict[str, Any]] = None
+    plotly_gap_frequency: Optional[Dict[str, Any]] = None
+    paper_gap_mapping: Optional[Dict[str, Any]] = None
+
+    @model_validator(mode="before")
     @classmethod
-    def sanitize_viz_fields(cls, v: Any) -> Any:
-        if isinstance(v, str):
-            return sanitize_string(v)
-        return v
+    def sanitize_viz_fields(cls, values: Any) -> Any:
+        if not isinstance(values, dict):
+            return values
+        cleaned: dict = {}
+        for k, v in values.items():
+            if isinstance(v, str):
+                cleaned[k] = sanitize_string(v) or None
+            else:
+                cleaned[k] = v
+        return cleaned
 
 
-# Request
-
+# ── Request / Response ────────────────────────────────────────────────────────
 
 class SynthesisRequest(BaseModel):
     topic: str = Field(..., min_length=3, examples=["multi agent rl"])
@@ -160,8 +198,6 @@ class SynthesisRequest(BaseModel):
             return None
         return v
 
-#Responses
-
 
 class SynthesisResponse(BaseModel):
     report_id: str
@@ -172,7 +208,7 @@ class SynthesisResponse(BaseModel):
     papers_analyzed: int = 0
     pattern_analysis: PatternAnalysis
     gaps: List[SynthesisGap] = Field(default_factory=list)
-    clusters: List[Dict[str, Any]] = Field(default_factory=list)
+    clusters: List[ClusterSummary] = Field(default_factory=list)   # now populated
     stats: Dict[str, Any] = Field(default_factory=dict)
     visualizations: VisualizationData
     pdf_url: Optional[str] = None

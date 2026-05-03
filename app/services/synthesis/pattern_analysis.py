@@ -79,6 +79,52 @@ def _emerging_opportunities(
     return [t.capitalize() for t in top if t]
 
 
+def _shorten_theme(text: str, max_words: int = 4) -> str:
+    """Extract a short 2-4 word label from a limitation/future-work phrase."""
+    import re
+    # Strip leading filler words common in academic text
+    filler = re.compile(
+        r'^(in addition|furthermore|however|additionally|moreover|we|our|this|the|'
+        r'after|although|since|as a result|due to|based on|given that|'
+        r'it is|there is|there are|which|that)\b[,\s]*',
+        re.IGNORECASE,
+    )
+    cleaned = filler.sub('', text).strip(' .,;:')
+    # Take the first max_words words
+    words = cleaned.split()
+    short = ' '.join(words[:max_words])
+    return short.capitalize() if short else text[:40].capitalize()
+
+
+def extract_cluster_themes(cluster_papers: list[dict]) -> dict:
+
+    lim_counter: Counter[str] = Counter()
+    fw_counter: Counter[str] = Counter()
+
+    for paper in cluster_papers:
+        for lim in paper.get("normalized_limitations") or []:
+            if lim and lim.strip():
+                lim_counter[lim.strip()] += 1
+        for fw in paper.get("normalized_future_work") or []:
+            if fw and fw.strip():
+                fw_counter[fw.strip()] += 1
+
+    top_lims = [item for item, _ in lim_counter.most_common(5)]
+    top_fw = [item for item, _ in fw_counter.most_common(5)]
+
+    # Theme label
+    raw_label = top_lims[0] if top_lims else (top_fw[0] if top_fw else "unspecified gap")
+    theme_label = _shorten_theme(raw_label)
+
+    return {
+        "top_limitations": top_lims,
+        "top_future_work": top_fw,
+        "theme_label": theme_label,
+        "paper_count": len(cluster_papers),
+        "limitation_freq": dict(lim_counter.most_common(10)),
+    }
+
+
 def run_pattern_analysis(papers: list[dict]) -> PatternAnalysis:
 
     current_year = datetime.now(NEPAL_TZ).year
