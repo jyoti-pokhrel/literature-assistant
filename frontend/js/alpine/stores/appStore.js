@@ -210,6 +210,7 @@ document.addEventListener('alpine:init', () => {
         currentView: 'form',
         theme: localStorage.getItem('theme') || 'dark',
         sidebarCollapsed: storedSidebarState === null ? window.innerWidth <= 768 : storedSidebarState === 'true',
+        techPanelOpen: false,
         isLoading: false,
         error: '',
         progressEvents: [],

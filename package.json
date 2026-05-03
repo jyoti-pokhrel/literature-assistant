@@ -3,7 +3,9 @@
   "private": true,
   "dependencies": {
     "@alpinejs/collapse": "^3.14.9",
-    "alpinejs": "^3.14.9"
+    "alpinejs": "^3.14.9",
+    "d3": "^7.9.0",
+    "d3-shape": "^3.2.0"
   },
   "scripts": {
     "test:e2e": "playwright test"

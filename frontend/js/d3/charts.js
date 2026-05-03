@@ -30,7 +30,7 @@
         slate: '#9ca3af',
         green: '#59a14f',
         barGradient: ['#4e79a7', '#76b7b2', '#59a14f'],
-        multiBar: ['#4e79a7', '#f28e2b', '#e15759', '#76b7b2', '#59a14f', '#edc949', '#af7aa1', '#ff9da7', '#9c755f', '#bab0ab'],
+        multiBar: ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#06b6d4', '#ef4444', '#84cc16', '#14b8a6', '#f43f5e'],
     };
 
     function getThemeColors() {

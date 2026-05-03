@@ -1,5 +1,7 @@
 document.addEventListener('alpine:init', () => {
     Alpine.data('resultsPage', () => ({
+        activeTab: 'gaps',
+        
         title() {
             return this.$store.app.form.topic || this.$store.app.result?.searchData?.topic || 'Search results';
         },
