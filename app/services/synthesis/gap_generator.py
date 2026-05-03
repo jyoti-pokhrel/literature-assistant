@@ -5,9 +5,8 @@ import logging
 import os
 import re
 import math
-import uuid
 from pathlib import Path
-from typing import List, Any
+from typing import Any
 
 from dotenv import load_dotenv
 
@@ -15,10 +14,14 @@ load_dotenv(dotenv_path=Path(__file__).resolve().parent.parent.parent.parent / "
 
 OPENROUTER_API_KEY: str = os.getenv("OPENROUTER_API_KEY", "")
 MODEL_NAME: str = os.getenv("MODEL_NAME", "qwen/qwen-2.5-7b-instruct")
+LLM_PROVIDER: str = os.getenv("LLM_PROVIDER", "").lower()
+LOCAL_LLM_URL: str = os.getenv("LOCAL_LLM_URL", "http://127.0.0.1:11434/api/generate")
+LOCAL_MODEL_NAME: str = os.getenv("LOCAL_MODEL_NAME", os.getenv("MODEL_NAME", "qwen2.5:7b"))
 
 logger = logging.getLogger(__name__)
 
 from app.schemas.synthesis import CitationRef, SynthesisGap
+from app.services.synthesis.citation_validation import validate_gap_citations
 
 
 # Prompt helpers
@@ -120,6 +123,35 @@ def _call_openrouter(prompt: str) -> str:
     return raw["choices"][0]["message"]["content"].strip()
 
 
+def _call_local_model(prompt: str) -> str:
+    """Call a local Ollama-compatible generation endpoint."""
+    import urllib.request
+
+    payload = json.dumps(
+        {
+            "model": LOCAL_MODEL_NAME,
+            "prompt": prompt,
+            "stream": False,
+            "options": {"temperature": 0.3, "num_predict": 700},
+        }
+    ).encode()
+    req = urllib.request.Request(
+        LOCAL_LLM_URL,
+        data=payload,
+        headers={"Content-Type": "application/json"},
+        method="POST",
+    )
+    with urllib.request.urlopen(req, timeout=90) as resp:
+        raw = json.loads(resp.read().decode())
+    return str(raw.get("response") or raw.get("content") or "").strip()
+
+
+def _call_llm(prompt: str) -> str:
+    if LLM_PROVIDER == "local" or (not OPENROUTER_API_KEY and LOCAL_LLM_URL):
+        return _call_local_model(prompt)
+    return _call_openrouter(prompt)
+
+
 def _extract_json(text: str) -> dict:
 
     text = re.sub(r"^```(?:json)?|```$", "", text, flags=re.MULTILINE).strip()
@@ -173,8 +205,29 @@ def _make_citations(papers: list[dict], cited_indices: set[int] | None = None) -
 
 from app.services.analysis.scoring import (
     score_support, score_severity, score_actionability, 
-    score_novelty, score_citation_confidence, compute_overall_score
+    score_novelty, score_citation_confidence, compute_overall_score,
+    build_gap_score_breakdown,
 )
+
+
+def _build_evidence(cluster_papers: list[dict]) -> dict:
+    return {
+        "recurring_limitations": [l for p in cluster_papers for l in p.get("normalized_limitations", [])],
+        "recurring_future_work": [f for p in cluster_papers for f in p.get("normalized_future_work", [])],
+        "dominant_assumptions": [a for p in cluster_papers for a in p.get("normalized_assumptions", [])],
+        "missing_metrics": [m for p in cluster_papers for m in p.get("normalized_metrics", [])],
+        "missing_datasets": [d for p in cluster_papers for d in p.get("normalized_datasets", [])],
+        "weak_baselines": [b for p in cluster_papers for b in p.get("normalized_baselines", [])],
+    }
+
+
+def _gap_category(evidence: dict) -> str:
+    evidence_text = str(evidence).lower()
+    if any(term in evidence_text for term in ["metric", "baseline", "evaluation", "reward"]):
+        return "evaluation"
+    if any(term in evidence_text for term in ["deployment", "safe", "robust", "real-world"]):
+        return "deployment"
+    return "methodology"
 
 def _score_from_evidence(cluster_papers: list[dict], cluster_id: int = -1) -> float:
     """Compute a high-fidelity confidence score using the core scoring modules."""
@@ -182,17 +235,10 @@ def _score_from_evidence(cluster_papers: list[dict], cluster_id: int = -1) -> fl
         return 0.0
         
     # Prepare dummy evidence dict for scoring modules
-    evidence = {
-        "recurring_limitations": [l for p in cluster_papers for l in p.get("normalized_limitations", [])],
-        "recurring_future_work": [f for p in cluster_papers for f in p.get("normalized_future_work", [])],
-        "dominant_assumptions": [a for p in cluster_papers for a in p.get("normalized_assumptions", [])],
-        "missing_metrics": [m for p in cluster_papers for m in p.get("normalized_metrics", [])],
-    }
+    evidence = _build_evidence(cluster_papers)
     
     # Determine category based on content
-    category = "methodology"
-    if any(term in str(evidence).lower() for term in ["deployment", "safe", "robust", "real-world"]):
-        category = "deployment"
+    category = _gap_category(evidence)
     
     # Calculate sub-scores
     s_support = score_support(cluster_papers)
@@ -226,7 +272,7 @@ def generate_gaps_for_cluster(
 
     try:
         prompt = _gap_prompt(cluster_id, cluster_papers, topic, pattern_data)
-        raw = _call_openrouter(prompt)
+        raw = _call_llm(prompt)
         data = _extract_json(raw)
 
         # Citation Awareness: Extract cited indices from text fields
@@ -282,20 +328,35 @@ def generate_gaps_for_cluster(
 
         # Always calculate our own confidence score to ensure it's data-driven and unique
         final_score = _score_from_evidence(cluster_papers, cluster_id)
+        evidence = _build_evidence(cluster_papers)
+        score_breakdown = build_gap_score_breakdown(cluster_papers, evidence, _gap_category(evidence))
+
+        gap_fields = {
+            "gap_title": _clean_val(data.get("gap_title", f"Research gap in cluster {cluster_id}")),
+            "description": _clean_val(data.get("description", "")),
+            "what_fails": _clean_val(data.get("what_fails", "")),
+            "why_it_exists": _clean_val(data.get("why_it_exists", "")),
+            "missing_piece": _clean_val(data.get("missing_piece", "")),
+            "pattern_detected": _clean_val(data.get("pattern_detected", "")),
+            "proposed_direction": _clean_val(data.get("proposed_direction", "")),
+        }
+        citation_validation = validate_gap_citations(gap_fields, citations)
 
         return SynthesisGap(
             gap_id=gap_serial,
-            gap_title=_clean_val(data.get("gap_title", f"Research gap in cluster {cluster_id}")),
-            description=_clean_val(data.get("description", "")),
-            what_fails=_clean_val(data.get("what_fails", "")),
-            why_it_exists=_clean_val(data.get("why_it_exists", "")),
-            missing_piece=_clean_val(data.get("missing_piece", "")),
-            pattern_detected=_clean_val(data.get("pattern_detected", "")),
-            proposed_direction=_clean_val(data.get("proposed_direction", "")),
+            gap_title=gap_fields["gap_title"],
+            description=gap_fields["description"],
+            what_fails=gap_fields["what_fails"],
+            why_it_exists=gap_fields["why_it_exists"],
+            missing_piece=gap_fields["missing_piece"],
+            pattern_detected=gap_fields["pattern_detected"],
+            proposed_direction=gap_fields["proposed_direction"],
             confidence_score=final_score,
             cluster_id=cluster_id,
             supporting_papers=cited_paper_ids,
             citations=citations,
+            score_breakdown=score_breakdown,
+            citation_validation=citation_validation,
         )
     except Exception as exc:
         logger.warning("LLM gap generation failed for cluster %d: %s", cluster_id, exc)
@@ -328,22 +389,32 @@ def _heuristic_gap(
     lim_text = top_lim[0][0] if top_lim else "unclear limitations"
     fw_text = top_fw[0][0] if top_fw else "unspecified future work"
 
-    return SynthesisGap(
-        gap_id=gap_id,
-        gap_title=f"Unresolved gap in {topic}: {lim_text[:60]}",
-        description=(
+    gap_fields = {
+        "description": (
             f"Across {len(papers)} papers in this cluster, a recurring limitation is '{lim_text}'. "
             f"Authors frequently cite '{fw_text}' as open future work."
         ),
-        what_fails=lim_text,
-        why_it_exists="This limitation appears repeatedly without resolution across the surveyed literature.",
-        missing_piece=fw_text,
+        "what_fails": lim_text,
+        "why_it_exists": "This limitation appears repeatedly without resolution across the surveyed literature.",
+        "missing_piece": fw_text,
+        "proposed_direction": f"Address '{lim_text}' through a targeted study focused on '{fw_text}'.",
+    }
+    evidence = _build_evidence(papers)
+    return SynthesisGap(
+        gap_id=gap_id,
+        gap_title=f"Unresolved gap in {topic}: {lim_text[:60]}",
+        description=gap_fields["description"],
+        what_fails=gap_fields["what_fails"],
+        why_it_exists=gap_fields["why_it_exists"],
+        missing_piece=gap_fields["missing_piece"],
         pattern_detected=f"Recurring limitation: {lim_text}",
-        proposed_direction=f"Address '{lim_text}' through a targeted study focused on '{fw_text}'.",
+        proposed_direction=gap_fields["proposed_direction"],
         confidence_score=score,
         cluster_id=cluster_id,
         supporting_papers=paper_ids,
         citations=citations,
+        score_breakdown=build_gap_score_breakdown(papers, evidence, _gap_category(evidence)),
+        citation_validation=validate_gap_citations(gap_fields, citations),
     )
 
 

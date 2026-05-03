@@ -130,7 +130,30 @@ def make_year_distribution(papers: list[dict]) -> Optional[str]:
         return None
 
 
-# Removed make_method_trends as requested
+def make_method_trends(method_trend_by_year: Dict[str, List[str]]) -> Optional[str]:
+    if not method_trend_by_year:
+        return None
+    try:
+        plt = _safe_import_matplotlib()
+        years = sorted(method_trend_by_year.keys())
+        counts = [len(method_trend_by_year.get(year, [])) for year in years]
+        if not any(counts):
+            return None
+
+        fig, ax = plt.subplots(figsize=(8, 4))
+        ax.plot(years, counts, color="#14b8a6", linewidth=2.5, marker="o")
+        ax.fill_between(years, counts, color="#14b8a6", alpha=0.16)
+        ax.set_title("Method Mentions by Year", fontsize=13, fontweight="bold")
+        ax.set_xlabel("Year")
+        ax.set_ylabel("Method mentions")
+        ax.grid(True, alpha=0.3)
+        fig.tight_layout()
+        result = _fig_to_b64(fig)
+        plt.close(fig)
+        return result
+    except Exception as exc:
+        logger.warning("method_trends failed: %s", exc)
+        return None
 
 
 def make_frequency_bar(freq_data: Dict[str, int], title: str) -> Optional[str]:
@@ -178,6 +201,7 @@ def generate_all_visualizations(
         "umap_scatter": make_umap_scatter(reduced, labels, titles),
         "confidence_bars": make_confidence_bars(gaps),
         "year_distribution": make_year_distribution(papers),
+        "method_trends": make_method_trends(pattern.method_trend_by_year),
         "dataset_frequency": make_frequency_bar(pattern.dataset_frequency, "Dataset Frequency"),
         "metric_frequency": make_frequency_bar(pattern.metric_frequency, "Metric Frequency"),
     }

@@ -39,6 +39,13 @@ document.addEventListener('alpine:init', () => {
             return this.$store.app.result?.gapData?.visualizations || this.$store.app.result?.searchData?.visualizations || null;
         },
 
+        clusters() {
+            if (this.$store.app.isLoading) {
+                return [];
+            }
+            return this.$store.app.result?.gapData?.clusters || this.$store.app.result?.searchData?.clusters || [];
+        },
+
 
         activeFilters() {
             const searchDataFilters = this.$store.app.isLoading ? null : this.$store.app.result?.searchData?.filters;
@@ -67,17 +74,32 @@ document.addEventListener('alpine:init', () => {
             return (this.$store.app.result?.searchData?.sources_used || []).map((source) => window.searchAPI.sourceLabel(source));
         },
 
-        loadingSources() {
-            return ['Semantic Scholar', 'OpenAlex'];
-        },
-
         searchStatusSummary() {
             const filters = this.activeFilters();
+            const current = this.currentProgressEvent();
             if (filters.length) {
-                return `Checking indexed papers for "${this.title()}" with ${filters.join(' and ')}.`;
+                return `${current.detail} Filters: ${filters.join(' and ')}.`;
             }
 
-            return `Checking indexed papers for "${this.title()}" and preparing a gap brief.`;
+            return `${current.detail} Topic: "${this.title()}".`;
+        },
+
+        progressEvents() {
+            return this.$store.app.progressEvents || [];
+        },
+
+        currentProgressEvent() {
+            const events = this.progressEvents();
+            return events[events.length - 1] || {
+                label: 'Starting research',
+                detail: 'Connecting to the analysis pipeline.',
+                progress: 4,
+            };
+        },
+
+        loadingProgress() {
+            const progress = Number(this.currentProgressEvent().progress || 4);
+            return Math.max(4, Math.min(100, Math.round(progress)));
         },
 
         paperLink(paper) {
@@ -103,6 +125,27 @@ document.addEventListener('alpine:init', () => {
 
         scoreLabel(score) {
             return `Score ${Number(score).toFixed(2)}`;
+        },
+
+        scoreBreakdown(gap) {
+            const breakdown = gap?.score_breakdown || {};
+            return [
+                ['support', 'Support'],
+                ['severity', 'Severity'],
+                ['actionability', 'Actionability'],
+                ['novelty', 'Novelty'],
+                ['citation_confidence', 'Citation'],
+            ]
+                .filter(([key]) => breakdown[key] !== undefined)
+                .map(([key, label]) => ({ label, value: Number(breakdown[key]).toFixed(2) }));
+        },
+
+        validationLabel(gap) {
+            const validation = gap?.citation_validation || {};
+            if (validation.status === 'grounded') {
+                return `Citation grounded · ${validation.evidence_snippet_count || 0} evidence snippets`;
+            }
+            return `Needs review · ${(validation.issues || []).length || 0} checks`;
         },
 
         supportCountLabel(gap) {
@@ -261,8 +304,13 @@ document.addEventListener('alpine:init', () => {
                 });
                 
                 if (response && response.success) {
-                    // Update gap data
-                    this.$store.app.result.gapData = response;
+                    // Replace the result reference so dependent explorer views rerender.
+                    this.$store.app.result = {
+                        ...this.$store.app.result,
+                        searchData: { ...this.$store.app.result?.searchData, ...response },
+                        gapData: response,
+                    };
+                    this.$store.app.resetExplorer?.();
                 } else {
                     alert("Failed to refresh report: " + (response?.detail || "Unknown error"));
                 }

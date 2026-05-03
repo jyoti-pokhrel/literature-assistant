@@ -1,10 +1,11 @@
 from app.schemas.paper import PaperSearchResponse, RetrievedPaper
 from app.services.extraction.normalizer import clean_text, deduplicate_papers
 from app.services.retrieval.openalex_client import search_openalex
+from app.services.retrieval.arxiv_client import search_arxiv
 from app.services.retrieval.semantic_scholar_client import search_semantic_scholar
 from app.services.retrieval.tavily_client import search_tavily
 
-PRIMARY_SOURCES: tuple[str, str] = ("semantic_scholar", "openalex")
+PRIMARY_SOURCES: tuple[str, str, str] = ("semantic_scholar", "openalex", "arxiv")
 FALLBACK_SOURCE = "tavily"
 PLACEHOLDER_FILTER_VALUES = {"string", "none", "null", "undefined", "all", "any"}
 
@@ -34,6 +35,7 @@ async def retrieve_papers(
     for source_name, fetcher in (
         ("semantic_scholar", search_semantic_scholar),
         ("openalex", search_openalex),
+        ("arxiv", search_arxiv),
     ):
         results = await fetcher(
             topic,

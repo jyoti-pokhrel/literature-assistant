@@ -1,13 +1,15 @@
 from __future__ import annotations
 
 import logging
+import asyncio
+import json
 import os
 from pathlib import Path
 
 from bson import ObjectId
 from dotenv import load_dotenv
 from fastapi import APIRouter, Depends, HTTPException, status
-from fastapi.responses import Response
+from fastapi.responses import Response, StreamingResponse
 
 from app.api.dependencies import get_current_user
 from app.schemas.synthesis import (
@@ -86,6 +88,47 @@ async def detect_gaps(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Synthesis failed: {exc}",
         )
+
+
+@router.post(
+    "/gaps/stream",
+    status_code=status.HTTP_200_OK,
+    summary="Analyze gaps with streamed progress",
+)
+async def stream_detect_gaps(
+    payload: SynthesisRequest,
+    current_user: dict = Depends(get_current_user),
+) -> StreamingResponse:
+    from app.services.synthesis.report_pipeline import run_synthesis_pipeline
+
+    queue: asyncio.Queue[dict] = asyncio.Queue()
+
+    async def progress_callback(event: dict) -> None:
+        await queue.put({"type": "progress", **event})
+
+    async def run_pipeline() -> None:
+        try:
+            result = await run_synthesis_pipeline(payload, progress_callback=progress_callback)
+            await queue.put({"type": "result", "data": result.model_dump()})
+        except Exception as exc:
+            logger.exception("Synthesis stream error: %s", exc)
+            await queue.put({"type": "error", "detail": f"Synthesis failed: {exc}"})
+        finally:
+            await queue.put({"type": "done"})
+
+    async def event_stream():
+        task = asyncio.create_task(run_pipeline())
+        try:
+            while True:
+                event = await queue.get()
+                yield json.dumps(event, default=str) + "\n"
+                if event.get("type") == "done":
+                    break
+        finally:
+            if not task.done():
+                task.cancel()
+
+    return StreamingResponse(event_stream(), media_type="application/x-ndjson")
 
 
 @router.get(

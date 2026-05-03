@@ -1,0 +1,26 @@
+from __future__ import annotations
+
+import json
+import os
+from pathlib import Path
+from typing import Any
+
+
+DEFAULT_DATASET_PATH = Path(__file__).resolve().parent.parent.parent.parent / "data" / "research_gap_dataset.jsonl"
+
+
+def dataset_path() -> Path:
+    configured = os.getenv("RESEARCH_GAP_DATASET_PATH")
+    return Path(configured).expanduser() if configured else DEFAULT_DATASET_PATH
+
+
+def append_gap_dataset_record(record: dict[str, Any]) -> str | None:
+    """Append one synthesis run as JSONL without storing heavy visualization payloads."""
+    path = dataset_path()
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        with path.open("a", encoding="utf-8") as handle:
+            handle.write(json.dumps(record, ensure_ascii=False, default=str) + "\n")
+        return str(path)
+    except OSError:
+        return None

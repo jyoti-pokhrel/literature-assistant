@@ -14,7 +14,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/css/style.css?v=20260423b" />
+  <link rel="stylesheet" href="/css/style.css?v=20260502d" />
 </head>
 <body class="landing-state" x-data="appShell()" x-init="init()" :class="$store.app.mode === 'workspace' ? 'workspace-state' : 'landing-state'">
   <div class="bg-grid"></div>
@@ -245,6 +245,20 @@
               </div>
             </form>
             <p id="search-error" class="search-error" x-cloak x-show="$store.app.error" x-text="$store.app.error"></p>
+            <section class="explore-panel" aria-labelledby="explore-title">
+              <div class="explore-header">
+                <h2 id="explore-title">Explore</h2>
+                <span>Based on search history</span>
+              </div>
+              <div class="explore-grid">
+                <template x-for="item in $store.app.exploreSuggestions()" :key="item.topic">
+                  <button class="explore-card" type="button" @click="$store.app.runExploreSuggestion(item)">
+                    <strong x-text="item.topic"></strong>
+                    <span x-text="item.reason"></span>
+                  </button>
+                </template>
+              </div>
+            </section>
           </div>
         </section>
 
@@ -298,201 +312,328 @@
 
           <section class="search-status-strip" x-cloak x-show="$store.app.isLoading">
             <div class="search-status-main">
-              <div class="search-status-spinner" aria-hidden="true"></div>
               <div class="search-status-copy">
-                <div class="search-status-title">Searching literature</div>
+                <div class="search-status-title">Researching</div>
+                <h3 class="search-status-current" x-text="currentProgressEvent().label"></h3>
                 <p class="search-status-summary" x-text="searchStatusSummary()"></p>
               </div>
             </div>
-            <div class="search-status-sources">
-              <template x-for="source in loadingSources()" :key="source">
-                <span class="search-status-chip" x-text="source"></span>
+            <div class="search-status-progress" aria-hidden="true">
+              <div class="search-progress-bar">
+                <span :style="`width: ${loadingProgress()}%`"></span>
+              </div>
+              <span class="search-progress-label" x-text="`${loadingProgress()}%`"></span>
+            </div>
+            <div class="search-process-rail" x-show="progressEvents().length">
+              <template x-for="(event, index) in progressEvents()" :key="`${event.stage}-${event.progress}`">
+                <div class="search-process-item" :class="index === progressEvents().length - 1 ? 'current' : 'complete'">
+                  <span class="process-dot"></span>
+                  <div class="process-copy">
+                    <span x-text="event.label"></span>
+                    <small x-show="index === progressEvents().length - 1" x-text="event.detail"></small>
+                  </div>
+                </div>
               </template>
             </div>
           </section>
 
-          <div class="px-answer compact-results-shell">
-            <section class="compact-results-section" aria-labelledby="papers-section-title" x-show="!$store.app.isLoading">
-              <div class="compact-section-header">
-                <div>
-                  <h3 id="papers-section-title" class="compact-section-title">Papers</h3>
+          <div class="px-answer compact-results-shell explorer-results-shell" x-data="gapExplorer()" @paper:select.window="handlePaperSelect($event)" @cluster:select.window="handleClusterSelect($event)" @map:clear.window="handleMapClear()">
+            <section class="explorer-shell" x-show="!$store.app.isLoading">
+              <div class="filter-bar">
+                <label class="explorer-filter-field">
+                  <span>Min confidence</span>
+                  <input type="range" min="0" max="1" step="0.05" x-model.number="$store.app.explorer.filters.minConfidence" />
+                  <strong x-text="Number($store.app.explorer.filters.minConfidence).toFixed(2)"></strong>
+                </label>
+                <label class="explorer-filter-field">
+                  <span>Max confidence</span>
+                  <input type="range" min="0" max="1" step="0.05" x-model.number="$store.app.explorer.filters.maxConfidence" />
+                  <strong x-text="Number($store.app.explorer.filters.maxConfidence).toFixed(2)"></strong>
+                </label>
+                <label class="explorer-filter-field">
+                  <span>Cluster</span>
+                  <select x-model="$store.app.explorer.filters.clusterId">
+                    <option value="">All clusters</option>
+                    <template x-for="cluster in clusterOptions()" :key="cluster.id">
+                      <option :value="cluster.id" x-text="`${cluster.label} · ${cluster.count}`"></option>
+                    </template>
+                  </select>
+                </label>
+                <label class="explorer-filter-field explorer-search-field">
+                  <span>Search gaps</span>
+                  <input type="search" placeholder="Title, description, evidence" x-model.debounce.150ms="$store.app.explorer.filters.searchText" />
+                </label>
+                <label class="explorer-filter-field">
+                  <span>Sort</span>
+                  <select x-model="$store.app.explorer.filters.sortBy">
+                    <option value="confidence_desc">Confidence high to low</option>
+                    <option value="confidence_asc">Confidence low to high</option>
+                    <option value="cluster">Cluster</option>
+                  </select>
+                </label>
+                <div class="active-filter-pills" x-show="activeFilterPills().length">
+                  <template x-for="pill in activeFilterPills()" :key="pill">
+                    <span x-text="pill"></span>
+                  </template>
+                  <button type="button" @click="clearFilters()">Clear</button>
                 </div>
               </div>
-              <div id="results-list" class="results-list compact-results-list">
-                <template x-if="$store.app.isLoading">
-                  <div class="empty-results-card compact-empty-card loading-placeholder-card">
-                    <h3>Collecting papers</h3>
-                    <p>Results will appear here as the search sources finish ranking candidate papers.</p>
-                  </div>
-                </template>
-                <template x-if="!$store.app.isLoading && !papers().length">
-                  <div class="empty-results-card compact-empty-card">
-                    <h3>No papers found</h3>
-                    <p>Try broadening the topic or removing one of the optional filters.</p>
-                  </div>
-                </template>
-                <template x-for="(paper, index) in papers()" :key="paper.external_id || paper.url || paper.title">
-                  <article class="paper-card compact-paper-card">
-                    <div class="compact-paper-index" x-text="index + 1"></div>
-                    <div class="compact-paper-body">
-                      <h3 x-text="paper.title"></h3>
-                      <p class="compact-paper-meta">
-                        <span x-text="paper.venue || 'Unknown venue'"></span>
-                        <span> · </span>
-                        <span x-text="paper.year || 'Unknown year'"></span>
-                      </p>
-                    </div>
-                    <div class="compact-paper-side">
-                      <span class="compact-paper-source" x-text="sourceLabel(paper.source)"></span>
-                      <template x-if="paperLink(paper)">
-                        <a class="paper-link compact-paper-link" :href="paperLink(paper)" target="_blank" rel="noopener noreferrer">Open</a>
-                      </template>
-                    </div>
-                  </article>
-                </template>
-              </div>
-            </section>
 
-            <section class="compact-results-section" aria-labelledby="gaps-section-title" x-show="!$store.app.isLoading">
-              <div class="compact-section-header">
-                <div>
-                  <h3 id="gaps-section-title" class="compact-section-title">Research gaps</h3>
-                </div>
-              </div>
-              <div id="gaps-list" class="gaps-list">
-                <template x-if="$store.app.isLoading">
-                  <div class="empty-results-card compact-empty-card loading-placeholder-card">
-                    <h3>Drafting the brief</h3>
-                    <p>Recurring limitations and evidence patterns will appear here once the ranking pass completes.</p>
+              <div class="explorer-layout">
+                <section class="explorer-map-pane" aria-labelledby="cluster-map-title">
+                  <div class="compact-section-header">
+                    <div>
+                      <h3 id="cluster-map-title" class="compact-section-title">UMAP cluster map</h3>
+                    </div>
+                    <span class="explorer-count" x-text="`${papers().length} papers`"></span>
                   </div>
-                </template>
-                <template x-if="!$store.app.isLoading && !gaps().length">
-                  <div class="empty-results-card compact-empty-card">
-                    <h3>No gaps found</h3>
-                    <p>The current evidence did not surface a strong recurring gap for this query.</p>
+                  <div class="cluster-map-container" x-ref="clusterMap"></div>
+                </section>
+
+                <section class="explorer-list-pane" aria-labelledby="gaps-section-title">
+                  <div class="compact-section-header">
+                    <div>
+                      <h3 id="gaps-section-title" class="compact-section-title">Research gaps</h3>
+                    </div>
+                    <span class="explorer-count" x-text="`${filteredGaps().length} of ${gaps().length}`"></span>
                   </div>
-                </template>
-                <template x-for="(gap, index) in gaps()" :key="gap.gap_id || `${gap.gap_title}-${index}`">
-                  <article class="gap-card" x-data="{ open: false }">
-                    <div class="gap-card-head">
-                      <span class="gap-rank" x-text="index + 1"></span>
-                      <div class="gap-card-title-block">
-                        <h3 x-text="gap.gap_title || 'Untitled Research Gap'"></h3>
+                  <div id="gaps-list" class="gaps-list explorer-gaps-list">
+                    <template x-if="!gaps().length">
+                      <div class="empty-results-card compact-empty-card">
+                        <h3>No gaps found</h3>
+                        <p>The current evidence did not surface a strong recurring gap for this query.</p>
                       </div>
-                    </div>
-
-                    <p class="gap-statement" x-show="hasValue(gap.description)" x-html="renderTextWithCitations(gap.description, gap)"></p>
-                    <p class="gap-why" x-show="hasValue(gap.what_fails)" x-html="'What fails: ' + renderTextWithCitations(gap.what_fails, gap)"></p>
-                    <p class="gap-why" x-show="hasValue(gap.missing_piece)" x-html="'Missing piece: ' + renderTextWithCitations(gap.missing_piece, gap)"></p>
-                    <p class="gap-why" x-show="hasValue(gap.why_it_exists)" x-html="'Why it exists: ' + renderTextWithCitations(gap.why_it_exists, gap)"></p>
-
-                    <div class="gap-action-box" x-show="hasValue(gap.proposed_direction)">
-                      <div class="gap-action-label">Suggested direction</div>
-                      <p x-html="renderTextWithCitations(gap.proposed_direction, gap)"></p>
-                    </div>
-
-                    <div class="gap-action-box" x-show="hasValue(gap.pattern_detected)">
-                      <div class="gap-action-label">Pattern detected</div>
-                      <p x-html="renderTextWithCitations(gap.pattern_detected, gap)"></p>
-                    </div>
-
-                    <button class="gap-evidence-toggle" type="button" @click="open = !open" style="display: inline-flex; align-items: center; gap: 0.8rem;">
-                      <div style="display: flex; align-items: center; gap: 0.5rem;">
-                        <span x-text="open ? 'Hide details' : supportCountLabel(gap)"></span>
-                        <template x-if="!open && gap.confidence_score">
-                          <span style="font-size: 0.75rem; color: var(--text-muted); padding-left: 0.5rem; border-left: 1px solid var(--border-color);" x-text="'Score ' + Number(gap.confidence_score).toFixed(2)"></span>
-                        </template>
+                    </template>
+                    <template x-if="gaps().length && !filteredGaps().length">
+                      <div class="empty-results-card compact-empty-card">
+                        <h3>No gaps match filters</h3>
+                        <p>Relax the confidence, cluster, or search filters.</p>
                       </div>
-                      <svg x-show="!open" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
-                      <svg x-show="open" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"></polyline></svg>
-                    </button>
+                    </template>
+                    <template x-for="(gap, index) in filteredGaps()" :key="gapKey(gap, index)">
+                      <article class="gap-card explorer-gap-card" :data-gap-id="gapKey(gap, index)" :class="{ 'is-selected': $store.app.explorer.selectedGapId === gapKey(gap, index) }" @click="selectGap(gap)">
+                        <div class="gap-card-head">
+                          <span class="gap-rank" x-text="index + 1"></span>
+                          <span class="cluster-dot" :style="`--cluster-color: ${clusterColor(gap.cluster_id)}`"></span>
+                          <div class="gap-card-title-block">
+                            <h3 x-text="gap.gap_title || 'Untitled Research Gap'"></h3>
+                            <span class="gap-category" x-text="`Cluster ${gap.cluster_id} · ${supportCountLabel(gap)} · Score ${confidence(gap).toFixed(2)}`"></span>
+                          </div>
+                        </div>
+                        <p class="gap-statement" x-show="hasValue(gap.description)" x-html="renderTextWithCitations(gap.description, gap)"></p>
+                        <div class="gap-score-row">
+                          <span class="gap-pill" x-text="validationLabel(gap)"></span>
+                          <template x-for="item in scoreBreakdown(gap)" :key="item.label">
+                            <span class="gap-mini-stat" x-text="`${item.label}: ${item.formatted}`"></span>
+                          </template>
+                        </div>
+                      </article>
+                    </template>
+                  </div>
+                </section>
 
-                    <div class="gap-evidence" x-cloak x-show="open" x-collapse>
-                      <template x-if="supportingPapers(gap).length">
-                        <div class="gap-support-block" style="margin-top: 0; border-top: none; padding-top: 0; margin-bottom: 1.5rem;">
-                          <div class="gap-support-title">Supporting papers</div>
-                          <div class="gap-support-list">
-                            <template x-for="(paper, index) in supportingPapers(gap)" :key="paper.paper_id || paper.title">
-                              <div class="gap-support-item">
-                                <div class="gap-support-heading">
-                                  <template x-if="getCitationLink(paper)">
-                                    <a :href="getCitationLink(paper)" target="_blank" rel="noopener noreferrer" class="source-link-hover" style="color: inherit;">
-                                      <span class="gap-support-paper" x-text="'[' + (index + 1) + '] ' + paper.title"></span>
-                                    </a>
-                                  </template>
-                                  <template x-if="!getCitationLink(paper)">
-                                    <span class="gap-support-paper" x-text="'[' + (index + 1) + '] ' + paper.title"></span>
-                                  </template>
-                                  <span class="gap-support-meta" x-text="supportingPaperMeta(paper)"></span>
-                                </div>
-                                
-                                <template x-if="paper.extracted_evidence && paper.extracted_evidence.length">
-                                  <ul class="evidence-list-mini" style="margin-top: 0.65rem; padding-left: 0; list-style: none;">
-                                    <template x-for="snippet in paper.extracted_evidence" :key="snippet">
-                                      <li class="evidence-item-mini" style="margin-bottom: 0.4rem;">
-                                        <span class="evidence-bullet-mini" style="opacity: 0.4; margin-right: 0.5rem;">•</span>
-                                        <span style="font-size: 0.85rem; color: var(--text-muted); line-height: 1.5;" x-text="snippet"></span>
-                                      </li>
-                                    </template>
-                                  </ul>
-                                </template>
+                <section class="explorer-paper-pane" aria-labelledby="papers-section-title">
+                  <div class="compact-section-header">
+                    <div>
+                      <h3 id="papers-section-title" class="compact-section-title">Papers</h3>
+                    </div>
+                    <span class="explorer-count" x-text="`${papers().length}`"></span>
+                  </div>
+                  <div id="results-list" class="results-list compact-results-list explorer-paper-list">
+                    <template x-if="!papers().length">
+                      <div class="empty-results-card compact-empty-card">
+                        <h3>No papers found</h3>
+                        <p>Try broadening the topic or removing one of the optional filters.</p>
+                      </div>
+                    </template>
+                    <template x-for="(paper, index) in papers()" :key="paperKey(paper, index)">
+                      <article class="paper-card compact-paper-card explorer-paper-card" :data-paper-id="paperKey(paper, index)" :class="{ 'is-selected': $store.app.explorer.selectedPaperId === paperKey(paper, index), 'is-dimmed': $store.app.explorer.filters.clusterId && String(paper.cluster_id) !== String($store.app.explorer.filters.clusterId) }" @click="selectPaper(paper)">
+                        <span class="cluster-dot" :style="`--cluster-color: ${clusterColor(paper.cluster_id)}`"></span>
+                        <div class="compact-paper-body">
+                          <h3 x-text="paper.title"></h3>
+                          <p class="compact-paper-meta">
+                            <span x-text="paper.venue || 'Unknown venue'"></span>
+                            <span> · </span>
+                            <span x-text="paper.year || 'Unknown year'"></span>
+                            <span x-show="paper.cluster_id !== null && paper.cluster_id !== undefined"> · </span>
+                            <span x-show="paper.cluster_id !== null && paper.cluster_id !== undefined" x-text="`Cluster ${paper.cluster_id}`"></span>
+                          </p>
+                        </div>
+                        <div class="compact-paper-side">
+                          <span class="compact-paper-source" x-text="sourceLabel(paper.source)"></span>
+                          <template x-if="paperLink(paper)">
+                            <a class="paper-link compact-paper-link" :href="paperLink(paper)" target="_blank" rel="noopener noreferrer" @click.stop>Open</a>
+                          </template>
+                        </div>
+                      </article>
+                    </template>
+                  </div>
+                </section>
+
+                <section class="explorer-charts-pane" aria-labelledby="charts-section-title" x-cloak x-show="hasChartData()">
+                  <div class="compact-section-header">
+                    <div>
+                      <h3 id="charts-section-title" class="compact-section-title">Charts</h3>
+                    </div>
+                    <span class="explorer-count">Live data</span>
+                  </div>
+                  <div class="d3-charts-grid">
+                    <div class="d3-chart-card" x-show="gaps().length">
+                      <h4>Gap Confidence</h4>
+                      <div class="d3-chart-container" x-ref="chartConfidence"></div>
+                    </div>
+                    <div class="d3-chart-card" x-show="hasYearChartData()">
+                      <h4>Papers by Year</h4>
+                      <div class="d3-chart-container" x-ref="chartYear"></div>
+                    </div>
+                    <div class="d3-chart-card" x-show="clusters().length">
+                      <h4>Cluster Size</h4>
+                      <div class="d3-chart-container" x-ref="chartClusters"></div>
+                    </div>
+                    <div class="d3-chart-card" x-show="patternAnalysis()?.method_trend_by_year && Object.keys(patternAnalysis()?.method_trend_by_year || {}).length">
+                      <h4>Method Trends</h4>
+                      <div class="d3-chart-container" x-ref="chartMethods"></div>
+                    </div>
+                    <div class="d3-chart-card" x-show="patternAnalysis()?.dataset_frequency && Object.keys(patternAnalysis()?.dataset_frequency || {}).length">
+                      <h4>Dataset Frequency</h4>
+                      <div class="d3-chart-container" x-ref="chartDatasets"></div>
+                    </div>
+                    <div class="d3-chart-card" x-show="patternAnalysis()?.metric_frequency && Object.keys(patternAnalysis()?.metric_frequency || {}).length">
+                      <h4>Metric Frequency</h4>
+                      <div class="d3-chart-container" x-ref="chartMetrics"></div>
+                    </div>
+                  </div>
+                </section>
+
+              </div>
+
+              <template x-teleport="body">
+                <div class="detail-panel-shell" x-cloak x-show="$store.app.explorer.panelOpen">
+                  <button type="button" class="detail-panel-backdrop" aria-label="Close detail panel" @click="closePanel()"></button>
+                  <aside class="detail-panel" role="dialog" aria-modal="true" aria-labelledby="detail-panel-title">
+                    <div class="detail-panel-head">
+                      <div>
+                        <span class="detail-panel-kicker" x-text="$store.app.explorer.panelType"></span>
+                        <h3 id="detail-panel-title" x-text="panelTitle()"></h3>
+                      </div>
+                      <button class="btn-icon" type="button" aria-label="Close detail panel" @click="closePanel()">✕</button>
+                    </div>
+
+                    <template x-if="$store.app.explorer.panelType === 'gap' && selectedGap()">
+                      <div class="detail-panel-body">
+                        <p class="detail-lede" x-html="renderTextWithCitations(selectedGap().description, selectedGap())"></p>
+                        <div class="detail-section" x-show="hasValue(selectedGap().what_fails)">
+                          <h4>What fails</h4>
+                          <p x-html="renderTextWithCitations(selectedGap().what_fails, selectedGap())"></p>
+                        </div>
+                        <div class="detail-section" x-show="hasValue(selectedGap().missing_piece)">
+                          <h4>Missing piece</h4>
+                          <p x-html="renderTextWithCitations(selectedGap().missing_piece, selectedGap())"></p>
+                        </div>
+                        <div class="detail-section" x-show="hasValue(selectedGap().why_it_exists)">
+                          <h4>Why it exists</h4>
+                          <p x-html="renderTextWithCitations(selectedGap().why_it_exists, selectedGap())"></p>
+                        </div>
+                        <div class="detail-section" x-show="hasValue(selectedGap().proposed_direction)">
+                          <h4>Proposed direction</h4>
+                          <p x-html="renderTextWithCitations(selectedGap().proposed_direction, selectedGap())"></p>
+                        </div>
+                        <div class="detail-section">
+                          <h4>Score breakdown</h4>
+                          <div class="score-bars">
+                            <template x-for="item in scoreBreakdown(selectedGap())" :key="item.key">
+                              <div class="score-bar-row">
+                                <span x-text="item.label"></span>
+                                <div><i :style="`width: ${Math.max(0, Math.min(1, item.value)) * 100}%`"></i></div>
+                                <strong x-text="item.formatted"></strong>
                               </div>
                             </template>
                           </div>
                         </div>
-                      </template>
+                        <div class="detail-section">
+                          <h4>Supporting papers</h4>
+                          <div class="panel-list">
+                            <template x-for="(paper, index) in supportingPapers(selectedGap())" :key="paper.paper_id || paper.title || index">
+                              <button type="button" class="panel-list-item" @click="selectPaper(findPaperByReference(paper))">
+                                <strong x-text="paper.title"></strong>
+                                <span x-text="supportingPaperMeta(paper)"></span>
+                              </button>
+                            </template>
+                          </div>
+                        </div>
+                        <div class="detail-section">
+                          <h4>Citation validation</h4>
+                          <p x-text="validationLabel(selectedGap())"></p>
+                        </div>
+                      </div>
+                    </template>
 
+                    <template x-if="$store.app.explorer.panelType === 'paper' && selectedPaper()">
+                      <div class="detail-panel-body">
+                        <p class="detail-lede" x-text="[selectedPaper().venue, selectedPaper().year, sourceLabel(selectedPaper().source)].filter(Boolean).join(' · ')"></p>
+                        <div class="detail-section">
+                          <h4>Cluster</h4>
+                          <button type="button" class="cluster-chip-button" @click="selectCluster(findCluster(selectedPaper().cluster_id))">
+                            <span class="cluster-dot" :style="`--cluster-color: ${clusterColor(selectedPaper().cluster_id)}`"></span>
+                            <span x-text="`Cluster ${selectedPaper().cluster_id ?? 'Unknown'}`"></span>
+                          </button>
+                        </div>
+                        <template x-if="paperLink(selectedPaper())">
+                          <a class="paper-link panel-paper-link" :href="paperLink(selectedPaper())" target="_blank" rel="noopener noreferrer">Open original paper</a>
+                        </template>
+                        <div class="detail-section">
+                          <h4>Supported gaps</h4>
+                          <div class="panel-list">
+                            <template x-for="gap in paperGaps(selectedPaper())" :key="gapKey(gap)">
+                              <button type="button" class="panel-list-item" @click="selectGap(gap)">
+                                <strong x-text="gap.gap_title"></strong>
+                                <span x-text="`Score ${confidence(gap).toFixed(2)} · Cluster ${gap.cluster_id}`"></span>
+                              </button>
+                            </template>
+                            <p class="empty-state-inline" x-show="!paperGaps(selectedPaper()).length">No gap citations reference this paper directly.</p>
+                          </div>
+                        </div>
+                      </div>
+                    </template>
 
-                    </div>
-                  </article>
-                </template>
-              </div>
-            </section>
-
-            <section class="compact-results-section" aria-labelledby="viz-section-title" x-cloak x-show="visualizations()">
-              <div class="compact-section-header">
-                <div>
-                  <h3 id="viz-section-title" class="compact-section-title">Visualizations</h3>
+                    <template x-if="$store.app.explorer.panelType === 'cluster' && selectedCluster()">
+                      <div class="detail-panel-body">
+                        <p class="detail-lede" x-text="`${selectedCluster().paper_count || selectedCluster().papers?.length || 0} papers`"></p>
+                        <div class="detail-section">
+                          <h4>Top terms</h4>
+                          <div class="cluster-terms">
+                            <template x-for="term in selectedCluster().top_terms || []" :key="term">
+                              <span x-text="term"></span>
+                            </template>
+                          </div>
+                        </div>
+                        <div class="detail-section">
+                          <h4>Gaps</h4>
+                          <div class="panel-list">
+                            <template x-for="gap in gaps().filter(item => String(item.cluster_id) === String(selectedCluster().cluster_id))" :key="gapKey(gap)">
+                              <button type="button" class="panel-list-item" @click="selectGap(gap)">
+                                <strong x-text="gap.gap_title"></strong>
+                                <span x-text="`Score ${confidence(gap).toFixed(2)}`"></span>
+                              </button>
+                            </template>
+                          </div>
+                        </div>
+                        <div class="detail-section">
+                          <h4>Papers</h4>
+                          <div class="panel-list">
+                            <template x-for="(paper, index) in selectedCluster().papers || []" :key="paperKey(paper, index)">
+                              <button type="button" class="panel-list-item" @click="selectPaper(findPaperByReference(paper))">
+                                <strong x-text="paper.title"></strong>
+                                <span x-text="[paper.venue, paper.year].filter(Boolean).join(' · ')"></span>
+                              </button>
+                            </template>
+                          </div>
+                        </div>
+                      </div>
+                    </template>
+                  </aside>
                 </div>
-              </div>
-              <div id="viz-list" class="viz-list" style="display: flex; flex-direction: column; gap: 24px; padding-top: 16px;">
-                <template x-if="visualizations()?.confidence_bars">
-                  <div class="viz-card">
-                    <h4>Research Gap Confidence</h4>
-                    <img :src="'data:image/png;base64,' + visualizations().confidence_bars" alt="Research Gap Confidence" style="max-width: 100%; height: auto; border-radius: 8px;" />
-                  </div>
-                </template>
-                <template x-if="visualizations()?.year_distribution">
-                  <div class="viz-card">
-                    <h4>Year Distribution</h4>
-                    <img :src="'data:image/png;base64,' + visualizations().year_distribution" alt="Year Distribution" style="max-width: 100%; height: auto; border-radius: 8px;" />
-                  </div>
-                </template>
-                <template x-if="visualizations()?.method_trends">
-                  <div class="viz-card">
-                    <h4>Method Trends</h4>
-                    <img :src="'data:image/png;base64,' + visualizations().method_trends" alt="Method Trends" style="max-width: 100%; height: auto; border-radius: 8px;" />
-                  </div>
-                </template>
-                <template x-if="visualizations()?.dataset_frequency">
-                  <div class="viz-card">
-                    <h4>Dataset Frequency</h4>
-                    <img :src="'data:image/png;base64,' + visualizations().dataset_frequency" alt="Dataset Frequency" style="max-width: 100%; height: auto; border-radius: 8px;" />
-                  </div>
-                </template>
-                <template x-if="visualizations()?.metric_frequency">
-                  <div class="viz-card">
-                    <h4>Metric Frequency</h4>
-                    <img :src="'data:image/png;base64,' + visualizations().metric_frequency" alt="Metric Frequency" style="max-width: 100%; height: auto; border-radius: 8px;" />
-                  </div>
-                </template>
-                <template x-if="visualizations()?.umap_scatter">
-                  <div class="viz-card">
-                    <h4>UMAP Scatter</h4>
-                    <img :src="'data:image/png;base64,' + visualizations().umap_scatter" alt="UMAP Scatter Plot" style="max-width: 100%; height: auto; border-radius: 8px;" />
-                  </div>
-                </template>
-              </div>
+              </template>
             </section>
 
             <div class="thread-action-bar" x-cloak x-show="!$store.app.isLoading && reportId()" style="position: relative;">
@@ -591,12 +732,16 @@
   </main>
 
   <script src="/js/api.js?v=20260417a"></script>
-  <script src="/js/search.js?v=20260417a"></script>
+  <script src="/js/search.js?v=20260502a"></script>
+  <script src="https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.7/dist/gsap.min.js"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/@alpinejs/collapse@3.14.9/dist/cdn.min.js"></script>
-  <script defer src="/js/alpine/stores/appStore.js?v=20260423b"></script>
+  <script defer src="/js/alpine/stores/appStore.js?v=20260502b"></script>
+  <script defer src="/js/d3/clusterMap.js?v=20260502a"></script>
+  <script defer src="/js/d3/charts.js?v=20260502b"></script>
   <script defer src="/js/alpine/components/searchForm.js?v=20260423a"></script>
-  <script defer src="/js/alpine/components/resultsPage.js?v=20260423b"></script>
+  <script defer src="/js/alpine/components/resultsPage.js?v=20260502b"></script>
+  <script defer src="/js/alpine/components/gapExplorer.js?v=20260502c"></script>
   <script defer src="/js/alpine/components/historySidebar.js?v=20260423a"></script>
   <script defer src="/js/alpine/app.js?v=20260423a"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.9/dist/cdn.min.js"></script>

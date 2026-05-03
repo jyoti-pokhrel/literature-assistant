@@ -174,6 +174,34 @@ window.ResearchAgent.saveSearchHistory = function saveSearchHistory(history) {
     localStorage.setItem(window.ResearchAgent.searchHistoryKey, JSON.stringify(history.slice(0, 8)));
 };
 
+window.ResearchAgent.buildExploreSuggestions = function buildExploreSuggestions(history = []) {
+    const suggestions = [];
+    const seen = new Set();
+    const pushSuggestion = (topic, reason) => {
+        const normalized = window.ResearchAgent.normalizeSearchValues({ topic, maxResults: 10 });
+        if (!normalized.topic || seen.has(normalized.topic.toLowerCase())) {
+            return;
+        }
+        seen.add(normalized.topic.toLowerCase());
+        suggestions.push({ ...normalized, reason });
+    };
+
+    history.slice(0, 5).forEach((item) => {
+        const topic = item.topic || '';
+        if (!topic) return;
+        pushSuggestion(`${topic} evaluation gaps`, 'Based on your recent search');
+        pushSuggestion(`${topic} robustness limitations`, 'Explore recurring limitations');
+    });
+
+    if (!suggestions.length) {
+        pushSuggestion('multi agent reinforcement learning robustness', 'Starter research direction');
+        pushSuggestion('large language model evaluation gaps', 'Starter research direction');
+        pushSuggestion('privacy preserving machine learning limitations', 'Starter research direction');
+    }
+
+    return suggestions.slice(0, 4);
+};
+
 document.addEventListener('alpine:init', () => {
     const storedSidebarState = localStorage.getItem(window.ResearchAgent.sidebarStateKey);
     Alpine.store('app', {
@@ -184,10 +212,25 @@ document.addEventListener('alpine:init', () => {
         sidebarCollapsed: storedSidebarState === null ? window.innerWidth <= 768 : storedSidebarState === 'true',
         isLoading: false,
         error: '',
+        progressEvents: [],
         form: window.ResearchAgent.cloneSearchValues(window.ResearchAgent.defaults),
         history: window.ResearchAgent.loadSearchHistory(),
         result: null,
         activeSearchKey: '',
+        explorer: {
+            selectedGapId: null,
+            selectedPaperId: null,
+            selectedClusterId: null,
+            panelOpen: false,
+            panelType: null,
+            filters: {
+                minConfidence: 0,
+                maxConfidence: 1,
+                clusterId: '',
+                searchText: '',
+                sortBy: 'confidence_desc',
+            },
+        },
 
         init() {
             if (this.initialized) {
@@ -230,6 +273,23 @@ document.addEventListener('alpine:init', () => {
         setMode(mode) {
             this.mode = mode === 'workspace' ? 'workspace' : 'landing';
             document.documentElement.setAttribute('data-route-mode', this.mode);
+        },
+
+        resetExplorer() {
+            this.explorer = {
+                selectedGapId: null,
+                selectedPaperId: null,
+                selectedClusterId: null,
+                panelOpen: false,
+                panelType: null,
+                filters: {
+                    minConfidence: 0,
+                    maxConfidence: 1,
+                    clusterId: '',
+                    searchText: '',
+                    sortBy: 'confidence_desc',
+                },
+            };
         },
 
         focusMainPrompt() {
@@ -287,6 +347,7 @@ document.addEventListener('alpine:init', () => {
 
             this.form = window.ResearchAgent.cloneSearchValues(values);
             this.result = result;
+            this.resetExplorer();
             this.error = '';
             this.isLoading = false;
             this.currentView = 'results';
@@ -320,12 +381,23 @@ document.addEventListener('alpine:init', () => {
             window.ResearchAgent.saveSearchHistory(this.history);
         },
 
+        exploreSuggestions() {
+            return window.ResearchAgent.buildExploreSuggestions(this.history);
+        },
+
+        async runExploreSuggestion(item) {
+            this.form = window.ResearchAgent.cloneSearchValues(item);
+            await this.runSearch(this.form);
+        },
+
         startNewSearch() {
             this.form = window.ResearchAgent.cloneSearchValues(window.ResearchAgent.defaults);
             this.error = '';
             this.isLoading = false;
+            this.progressEvents = [];
             this.result = null;
             this.activeSearchKey = '';
+            this.resetExplorer();
             this.closeSidebar();
             this.openWorkspace({ showForm: true });
         },
@@ -360,6 +432,8 @@ document.addEventListener('alpine:init', () => {
             this.currentView = 'results';
             this.error = '';
             this.isLoading = true;
+            this.progressEvents = [];
+            this.resetExplorer();
             this.closeSidebar();
 
             if (pushRoute) {
@@ -374,10 +448,18 @@ document.addEventListener('alpine:init', () => {
                     top_k_gaps: 5,
                 };
 
-                const synthesisData = await window.searchAPI.analyzeGaps(gapPayload);
+                const onProgress = (event) => {
+                    if (event.type === 'progress') {
+                        this.progressEvents = [...this.progressEvents, event].slice(-10);
+                    }
+                };
+                const synthesisData = window.searchAPI.analyzeGapsStream
+                    ? await window.searchAPI.analyzeGapsStream(gapPayload, onProgress)
+                    : await window.searchAPI.analyzeGaps(gapPayload);
 
                 const result = { searchData: synthesisData, gapData: synthesisData };
                 this.result = result;
+                this.resetExplorer();
                 this.activeSearchKey = window.ResearchAgent.searchKey(normalized);
 
                 if (saveHistory) {
@@ -459,6 +541,7 @@ document.addEventListener('alpine:init', () => {
                 // SynthesisResponse from API
                 const result = { searchData: data, gapData: data };
                 this.result = result;
+                this.resetExplorer();
                 this.form.topic = data.topic || '';
                 
                 return true;

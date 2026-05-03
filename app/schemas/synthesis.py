@@ -69,6 +69,8 @@ class SynthesisGap(BaseModel):
     cluster_id: int = -1
     supporting_papers: List[str] = Field(default_factory=list)
     citations: List[CitationRef] = Field(default_factory=list)
+    score_breakdown: Dict[str, float] = Field(default_factory=dict)
+    citation_validation: Dict[str, Any] = Field(default_factory=dict)
 
     @field_validator("gap_title", "description", "what_fails", "why_it_exists", 
                      "missing_piece", "pattern_detected", "proposed_direction", mode="before")
@@ -104,6 +106,7 @@ class VisualizationData(BaseModel):
     umap_scatter: Optional[str] = None         
     confidence_bars: Optional[str] = None      
     year_distribution: Optional[str] = None     
+    method_trends: Optional[str] = None
     dataset_frequency: Optional[str] = None     
     metric_frequency: Optional[str] = None      
 
