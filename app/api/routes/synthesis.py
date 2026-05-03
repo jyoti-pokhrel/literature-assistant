@@ -2,13 +2,16 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import asyncio
+import json
 import os
 from pathlib import Path
 from typing import List
 
 from bson import ObjectId
 from dotenv import load_dotenv
-from fastapi import APIRouter, Depends, HTTPException, Response, status
+from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.responses import Response, StreamingResponse
 
 from app.api.dependencies import get_current_user
 from app.schemas.synthesis import (
@@ -106,6 +109,16 @@ async def detect_gaps(
 
 
 @router.post(
+<from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.responses import StreamingResponse
+from typing import List
+import asyncio
+import json
+
+router = APIRouter()
+  
+# BATCH GAP DETECTION
+@router.post(
     "/gaps/batch",
     response_model=List[SynthesisResponse],
     status_code=status.HTTP_200_OK,
@@ -120,23 +133,28 @@ async def detect_gaps_batch(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Batch limit is 5 topics per request",
         )
+
     if not payloads:
         return []
 
     from app.services.synthesis.report_pipeline import run_synthesis_pipeline
+
     try:
         results = await asyncio.gather(
             *[run_synthesis_pipeline(p) for p in payloads],
             return_exceptions=True,
         )
+
         output: List[SynthesisResponse] = []
+
         for i, result in enumerate(results):
             if isinstance(result, Exception):
                 logger.warning("Batch item %d failed: %s", i, result)
-                # Skip failed items rather than failing the entire batch
-            else:
-                output.append(result)
+                continue
+            output.append(result)
+
         return output
+
     except Exception as exc:
         logger.exception("Batch synthesis pipeline error: %s", exc)
         raise HTTPException(
@@ -144,6 +162,57 @@ async def detect_gaps_batch(
             detail=f"Batch synthesis failed: {exc}",
         )
 
+# STREAM GAP DETECTION
+@router.post(
+    "/gaps/stream",
+    status_code=status.HTTP_200_OK,
+    summary="Analyze gaps with streamed progress",
+)
+async def stream_detect_gaps(
+    payload: SynthesisRequest,
+    current_user: dict = Depends(get_current_user),
+) -> StreamingResponse:
+    from app.services.synthesis.report_pipeline import run_synthesis_pipeline
+
+    queue: asyncio.Queue[dict] = asyncio.Queue()
+
+    async def progress_callback(event: dict) -> None:
+        await queue.put({"type": "progress", **event})
+
+    async def run_pipeline() -> None:
+        try:
+            result = await run_synthesis_pipeline(
+                payload,
+                progress_callback=progress_callback
+            )
+            await queue.put({"type": "result", "data": result.model_dump()})
+
+        except Exception as exc:
+            logger.exception("Synthesis stream error: %s", exc)
+            await queue.put({"type": "error", "detail": str(exc)})
+
+        finally:
+            await queue.put({"type": "done"})
+
+    async def event_stream():
+        task = asyncio.create_task(run_pipeline())
+
+        try:
+            while True:
+                event = await queue.get()
+                yield json.dumps(event, default=str) + "\n"
+
+                if event.get("type") == "done":
+                    break
+
+        finally:
+            if not task.done():
+                task.cancel()
+
+    return StreamingResponse(
+        event_stream(),
+        media_type="application/x-ndjson"
+    )
 
 @router.get(
     "/history",

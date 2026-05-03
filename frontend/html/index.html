@@ -13,144 +13,121 @@
   </script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/css/style.css?v=20260423b" />
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/style.css?v=20260502d" />
+  <link rel="stylesheet" href="/css/workspace.css?v=1" />
+  <link rel="stylesheet" href="/css/dashboard.css?v=1" />
 </head>
 <body class="landing-state" x-data="appShell()" x-init="init()" :class="$store.app.mode === 'workspace' ? 'workspace-state' : 'landing-state'">
   <div class="bg-grid"></div>
 
   <section id="landing-page" x-show="$store.app.mode === 'landing'">
-    <nav class="navbar">
-      <div class="nav-container">
-        <div class="logo">
-          <span>Research Agent</span>
-        </div>
-        <div class="nav-links">
-          <a href="#features">Features</a>
-          <a href="#workflow">Workflow</a>
-        </div>
-        <div class="nav-actions">
+
+    <!-- Hero -->
+    <header class="lp-hero">
+      <div class="lp-aurora" aria-hidden="true">
+        <div class="aurora-orb aurora-1"></div>
+        <div class="aurora-orb aurora-2"></div>
+        <div class="aurora-orb aurora-3"></div>
+      </div>
+
+      <nav class="lp-nav">
+        <span class="lp-nav-brand">Research Agent</span>
+        <div class="lp-nav-actions">
           <button class="btn btn-outline theme-toggle-btn" type="button" aria-label="Toggle theme" @click="$store.app.toggleTheme()">
             <span class="sun-icon" x-cloak x-show="$store.app.theme === 'dark'">☀</span>
             <span class="moon-icon" x-cloak x-show="$store.app.theme === 'light'">☾</span>
           </button>
-          <button id="get-started-btn" class="btn btn-primary" type="button" @click="$store.app.openWorkspace()">Open workspace</button>
+          <button id="get-started-btn" class="lp-btn-primary" type="button" @click="$store.app.openWorkspace()">Get started</button>
         </div>
-      </div>
-    </nav>
+      </nav>
 
-    <header class="hero">
-      <div class="hero-copy">
-        <div class="badge">Research gap discovery from literature</div>
-        <h1 class="hero-title">Find research gaps, faster.</h1>
-        <p class="hero-subtitle">
-          Enter a topic, optionally filter by year or venue, retrieve papers, and surface clear research directions.
-        </p>
-        <div class="hero-cta">
-          <button id="get-started-btn-hero" class="btn btn-primary" type="button" @click="$store.app.openWorkspace()">Open workspace</button>
-          <a class="btn btn-secondary" href="#features">See details</a>
+      <div class="lp-hero-content">
+        <h1 class="lp-title">Research<br>gaps, found.</h1>
+        <p class="lp-subtitle">An AI agent that retrieves scientific papers and surfaces what's missing in the literature.</p>
+        <div class="lp-hero-actions">
+          <button id="get-started-btn-hero" class="lp-btn-primary lp-btn-lg" type="button" @click="$store.app.openWorkspace()">Get started</button>
+          <a class="lp-btn-ghost" href="#how">How it works →</a>
         </div>
-      </div>
-
-      <div class="hero-panel">
-        <div class="hero-panel-header">
-          <span class="panel-kicker">Pipeline</span>
-          <span class="panel-route">topic → papers → gaps</span>
-        </div>
-
-        <div class="query-preview">
-          <span class="query-label">Topic</span>
-          <div class="query-value">multi agent rl</div>
-        </div>
-
-        <div class="filter-strip">
-          <div class="filter-pill">
-            <span class="filter-pill-label">Year</span>
-            <span class="filter-pill-value">Optional filter</span>
-          </div>
-          <div class="filter-pill">
-            <span class="filter-pill-label">Venue</span>
-            <span class="filter-pill-value">Optional filter</span>
-          </div>
-          <div class="filter-pill">
-            <span class="filter-pill-label">Output</span>
-            <span class="filter-pill-value">Gaps + directions</span>
-          </div>
-        </div>
-
-        <div class="panel-block">
-          <div class="panel-block-head">
-            <span>Retrieval sources</span>
-            <span>3</span>
-          </div>
-          <div class="source-row">
-            <div class="source-chip">Semantic Scholar</div>
-            <div class="source-chip">arXiv</div>
-            <div class="source-chip">Tavily</div>
-          </div>
-        </div>
-
-        <div class="panel-block">
-          <div class="panel-block-head">
-            <span>Agent output</span>
-            <span>Structured synthesis</span>
-          </div>
-          <div class="result-preview-inline">
-            Literature Agent ranks papers, extracts limitations, and surfaces actionable research gaps.
+        <div class="lp-credibility">
+          <span class="lp-cred-label">Trusted data sources</span>
+          <div class="lp-cred-logos">
+            <span>Semantic Scholar</span>
+            <span>arXiv</span>
+            <span>Tavily</span>
           </div>
         </div>
       </div>
 
-      <div class="hero-marquee" aria-hidden="true">
-        <div class="hero-marquee-track">
-          <span class="hero-marquee-item arxiv">arXiv</span>
-          <span class="hero-marquee-item semantic">Semantic Scholar</span>
-          <span class="hero-marquee-item tavily">Tavily</span>
-          <span class="hero-marquee-item arxiv">arXiv</span>
-          <span class="hero-marquee-item semantic">Semantic Scholar</span>
-          <span class="hero-marquee-item tavily">Tavily</span>
-          <span class="hero-marquee-item arxiv">arXiv</span>
-          <span class="hero-marquee-item semantic">Semantic Scholar</span>
-          <span class="hero-marquee-item tavily">Tavily</span>
-        </div>
-      </div>
+      <div class="lp-hero-fade"></div>
     </header>
 
-    <section id="features" class="features-section">
-      <div class="section-heading fade-in visible">
-        <span class="section-kicker">What the system does</span>
-        <h2>From literature retrieval to research directions.</h2>
-      </div>
-      <div class="features-grid">
-        <article class="feature-card fade-in visible">
-          <h3>Priority-based retrieval</h3>
-          <p>Search starts from Semantic Scholar, falls back to arXiv, and uses Tavily only when broader web retrieval is needed.</p>
-        </article>
-        <article class="feature-card fade-in visible delay-1">
-          <h3>Structured extraction</h3>
-          <p>Each selected paper is summarized into methods, findings, and limitations so analysis stays comparable across sources.</p>
-        </article>
-        <article class="feature-card fade-in visible delay-2">
-          <h3>Gap generation</h3>
-          <p>The system synthesizes repeated weaknesses across papers and turns them into concrete research gaps and suggested next directions.</p>
-        </article>
+    <!-- Product -->
+    <section class="lp-showcase">
+      <div class="lp-showcase-frame">
+        <div class="lp-frame-bar"><span></span><span></span><span></span></div>
+        <div class="lp-frame-body">
+          <div class="lp-frame-col">
+            <div class="lp-frame-label">Research Gaps</div>
+            <div class="lp-gap-card">
+              <strong>Limited cross-domain evaluation</strong>
+              <p>Most MARL benchmarks test within single environments. Transfer across heterogeneous domains remains underexplored.</p>
+            </div>
+            <div class="lp-gap-card">
+              <strong>Scalability beyond 10 agents</strong>
+              <p>Current communication protocols degrade when agent populations exceed typical experimental scales.</p>
+            </div>
+          </div>
+          <div class="lp-frame-col lp-frame-col-right">
+            <div class="lp-frame-label">Papers</div>
+            <div class="lp-paper-row">
+              <span class="lp-paper-title">QMIX: Monotonic Value Function Factorisation</span>
+              <span class="lp-paper-meta">Rashid et al. · ICML 2018</span>
+            </div>
+            <div class="lp-paper-row">
+              <span class="lp-paper-title">Multi-Agent Actor-Critic for Mixed Environments</span>
+              <span class="lp-paper-meta">Lowe et al. · NeurIPS 2017</span>
+            </div>
+            <div class="lp-paper-row">
+              <span class="lp-paper-title">Emergent Complexity via Multi-Agent Competition</span>
+              <span class="lp-paper-meta">Bansal et al. · ICLR 2018</span>
+            </div>
+          </div>
+        </div>
       </div>
     </section>
 
-    <section id="workflow" class="workflow-strip fade-in visible">
-      <div class="workflow-step">
-        <span class="workflow-index">01</span>
-        <p>Enter a topic with optional year or venue filters.</p>
-      </div>
-      <div class="workflow-step">
-        <span class="workflow-index">02</span>
-        <p>Retrieve and rank a limited set of relevant English-language papers.</p>
-      </div>
-      <div class="workflow-step">
-        <span class="workflow-index">03</span>
-        <p>Review summaries, research gaps, and suggested research directions.</p>
+    <!-- How -->
+    <section id="how" class="lp-how">
+      <div class="lp-how-grid">
+        <div class="lp-how-card">
+          <span class="lp-how-num">01</span>
+          <h3>Enter a topic</h3>
+          <p>Optionally filter by year or venue.</p>
+        </div>
+        <div class="lp-how-card">
+          <span class="lp-how-num">02</span>
+          <h3>Agent retrieves</h3>
+          <p>Semantic Scholar, arXiv, Tavily — ranked by relevance.</p>
+        </div>
+        <div class="lp-how-card">
+          <span class="lp-how-num">03</span>
+          <h3>Review gaps</h3>
+          <p>Structured output: limitations, gaps, directions.</p>
+        </div>
       </div>
     </section>
+
+    <!-- Footer CTA -->
+    <section class="lp-footer">
+      <div class="lp-footer-aurora" aria-hidden="true">
+        <div class="aurora-orb aurora-1"></div>
+        <div class="aurora-orb aurora-2"></div>
+      </div>
+      <h2>Find what's missing.</h2>
+      <button class="lp-btn-primary lp-btn-lg" type="button" @click="$store.app.openWorkspace()">Get started</button>
+    </section>
+
   </section>
 
   <main id="app-container" class="px-theme" x-show="$store.app.mode === 'workspace'">
@@ -215,375 +192,343 @@
       </header>
 
       <div class="px-content">
-        <section id="initial-view" class="px-initial-view" x-show="$store.app.currentView === 'form'">
-          <h1 class="px-logo-text">What research topic do you want to explore?</h1>
-          <div class="px-input-container">
-            <form class="px-input-box search-form-shell" x-data="searchForm()" @submit.prevent="submit" @keydown.enter.prevent="submit">
-              <label class="sr-only" for="main-prompt">Topic</label>
-              <textarea id="main-prompt" rows="3" placeholder="Try: multi agent rl" x-model="$store.app.form.topic"></textarea>
+        <section id="initial-view" class="dash-v2" x-show="$store.app.currentView === 'form'" x-transition:enter="fade-in visible">
 
-              <div class="filter-grid">
-                <label class="filter-field" for="year-filter">
-                  <span class="filter-label">Year or range</span>
-                  <input id="year-filter" type="text" inputmode="text" placeholder="Optional, e.g. 2025 or 2023-2026" x-model="$store.app.form.year" />
-                </label>
-                <label class="filter-field" for="venue-filter">
-                  <span class="filter-label">Venue</span>
-                  <input id="venue-filter" type="text" placeholder="Optional, e.g. icml" x-model="$store.app.form.venue" />
-                </label>
-                <label class="filter-field" for="max-results-filter">
-                  <span class="filter-label">Max results</span>
-                  <input id="max-results-filter" type="number" min="1" max="20" inputmode="numeric" x-model.number="$store.app.form.maxResults" />
-                </label>
+          <!-- Compact Top Bar -->
+          <header class="dash-topbar">
+            <div class="dash-topbar-left">
+              <h1 class="dash-wordmark">Research Agent</h1>
+            </div>
+            <div class="dash-topbar-right">
+              <button class="dash-icon-btn" type="button" @click="$store.app.toggleTheme()" title="Toggle theme">
+                <span x-cloak x-show="$store.app.theme === 'dark'">☀</span>
+                <span x-cloak x-show="$store.app.theme === 'light'">☾</span>
+              </button>
+              <button class="dash-icon-btn" type="button" @click="$store.app.techPanelOpen = !$store.app.techPanelOpen" title="Technical details">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+              </button>
+            </div>
+          </header>
+
+          <!-- Hero Omnibar Search -->
+          <section class="dash-omnibar-section">
+            <form class="dash-omnibar" x-data="searchForm()" @submit.prevent="submit" @keydown.enter.prevent="submit">
+              <div class="dash-omnibar-main">
+                <svg class="dash-omnibar-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                <label class="sr-only" for="main-prompt">Topic</label>
+                <input id="main-prompt" class="dash-omnibar-input" type="text" placeholder="What would you like to research?" x-model="$store.app.form.topic" autocomplete="off" />
+                <button id="run-px-query" class="dash-omnibar-submit" type="submit" :class="{ 'is-loading': $store.app.isLoading }" :disabled="$store.app.isLoading">
+                  <span x-show="!$store.app.isLoading">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+                  </span>
+                  <span x-show="$store.app.isLoading" class="dash-thinking-dots">
+                    <span></span><span></span><span></span>
+                  </span>
+                </button>
               </div>
-
-              <div class="px-input-actions">
-                <div class="px-action-left">
-                  <span class="input-contract-note">Only topic is required</span>
-                </div>
-                <button id="run-px-query" class="px-submit-btn" type="submit" aria-label="Run search" :class="{ 'is-loading': $store.app.isLoading }" :disabled="$store.app.isLoading" x-text="$store.app.isLoading ? '…' : '➜'"></button>
+              <div class="dash-filters-row">
+                <label class="dash-filter-chip">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                  <input id="year-filter" type="text" inputmode="text" placeholder="Year" x-model="$store.app.form.year" />
+                </label>
+                <label class="dash-filter-chip">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+                  <input id="venue-filter" type="text" placeholder="Venue" x-model="$store.app.form.venue" />
+                </label>
+                <label class="dash-filter-chip">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
+                  <input id="max-results-filter" type="number" min="1" max="20" inputmode="numeric" placeholder="Max papers" x-model.number="$store.app.form.maxResults" />
+                </label>
               </div>
             </form>
-            <p id="search-error" class="search-error" x-cloak x-show="$store.app.error" x-text="$store.app.error"></p>
+            <p id="search-error" class="search-error" x-cloak x-show="$store.app.error" x-text="$store.app.error" style="text-align:center; margin-top:0.75rem;"></p>
+          </section>
+
+          <!-- Main 2-Column Grid -->
+          <div class="dash-main-grid">
+
+            <!-- Left Column: Recent Projects -->
+            <div class="dash-col-main">
+              <div class="dash-section-head">
+                <h2 class="dash-section-title">Recent Projects</h2>
+                <span class="dash-section-count" x-text="$store.app.history.length + ' total'"></span>
+              </div>
+
+              <div class="dash-project-grid">
+                <template x-if="!$store.app.history.length">
+                  <div class="dash-empty-state">
+                    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                    <p class="dash-empty-title">No projects yet</p>
+                    <p class="dash-empty-sub">Use the search bar above to start your first research task.</p>
+                  </div>
+                </template>
+                <template x-for="(item, index) in $store.app.history.slice(0, 6)" :key="item.id">
+                  <button class="dash-project-card" type="button" @click="$store.app.useHistoryItem(item)">
+                    <div class="dash-card-top">
+                      <span class="dash-card-label" x-text="index === 0 ? 'Latest' : 'Recent'"></span>
+                      <span class="dash-card-dot" :class="{ 'is-active': index === 0 }"></span>
+                    </div>
+                    <strong class="dash-card-title" x-text="item.topic"></strong>
+                    <span class="dash-card-meta" x-text="item.summary"></span>
+                    <div class="dash-card-action">
+                      <span>Resume</span>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+                    </div>
+                  </button>
+                </template>
+              </div>
+            </div>
+
+            <!-- Right Column: Activity + Tech -->
+            <div class="dash-col-side">
+
+              <!-- Activity Timeline Removed -->
+
+              <!-- Technical Details (Collapsible) -->
+              <div class="dash-side-card" x-show="$store.app.techPanelOpen" x-transition x-cloak>
+                <h3 class="dash-side-title">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 18l6-6-6-6"></path><path d="M8 6l-6 6 6 6"></path></svg>
+                  Technical Details
+                </h3>
+                <div class="dash-tech-grid">
+                  <div class="dash-tech-row">
+                    <span class="dash-tech-label">Environment</span>
+                    <span class="dash-tech-val">development</span>
+                  </div>
+                  <div class="dash-tech-row">
+                    <span class="dash-tech-label">API Status</span>
+                    <span class="dash-tech-val dash-tech-val--ok">
+                      <span class="dash-tech-dot-ok"></span>
+                      Connected
+                    </span>
+                  </div>
+                  <div class="dash-tech-row">
+                    <span class="dash-tech-label">Storage</span>
+                    <span class="dash-tech-val" x-text="$store.app.history.length + ' records'"></span>
+                  </div>
+                  <div class="dash-tech-row">
+                    <span class="dash-tech-label">Active Key</span>
+                    <span class="dash-tech-val dash-tech-val--mono" x-text="$store.app.activeSearchKey || 'none'" style="max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"></span>
+                  </div>
+                </div>
+              </div>
+
+            </div>
           </div>
+
         </section>
 
-        <section id="thread-view" class="px-thread-view" x-data="resultsPage()" x-cloak x-show="$store.app.currentView === 'results'">
-          <div class="px-thread-top">
-            <div class="px-user-query">
-              <div class="thread-query-kicker" x-text="$store.app.isLoading ? 'Searching' : 'Current query'"></div>
-              <h2 id="thread-query-title" x-text="title()">Search results</h2>
-              <p id="thread-query-meta" class="thread-query-meta" x-text="meta()"></p>
-              <div class="thread-query-tags" x-cloak x-show="activeFilters().length || sourceBadges().length">
-                <template x-for="filter in activeFilters()" :key="`filter-${filter}`">
-                  <span class="thread-query-tag" x-text="filter"></span>
-                </template>
-                <template x-for="source in sourceBadges()" :key="`source-${source}`">
-                  <span class="thread-query-tag is-source" x-text="source"></span>
-                </template>
+        <section id="thread-view" class="px-thread-view" x-data="resultsPage()" x-cloak x-show="$store.app.currentView === 'results'" style="max-width: none; margin: 0; display: flex; flex-direction: column;">
+          <!-- Zone 1: The Context Header -->
+          <header class="results-header" :class="{ 'is-scrolled': scrollY > 20 }" @scroll.window="scrollY = window.scrollY">
+            <div>
+              <div class="thread-query-kicker" x-text="$store.app.isLoading ? 'Searching' : 'Research query'"></div>
+              <h2 class="results-query-title" x-text="title()">Search results</h2>
+              <p class="results-query-meta">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                <span x-text="meta()"></span>
+              </p>
+            </div>
+            
+            <div class="header-actions" x-show="!$store.app.isLoading">
+              <button class="btn-glass" @click="copyToClipboard()" :class="{ 'is-success': isCopied }" title="Copy summary">
+                  <svg x-show="!isCopied" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                  <svg x-show="isCopied" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="color: var(--success-color);"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                  <span x-text="isCopied ? 'Copied' : 'Copy'"></span>
+              </button>
+              <a class="btn-glass" :href="pdfUrl()" title="Download PDF" download>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                Export
+              </a>
+              <button class="btn-primary-glow" @click="$store.app.currentView = 'form'; setTimeout(() => document.getElementById('main-prompt').focus(), 50)">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block; vertical-align:text-bottom; margin-right:4px;"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                New Search
+              </button>
+            </div>
+          </header>
+
+          <section class="premium-loading-state" x-cloak x-show="$store.app.isLoading">
+            <div class="ambient-glow"></div>
+            
+            <div class="loading-content-wrapper">
+              <div class="elegant-spinner">
+                 <svg viewBox="0 0 100 100">
+                    <circle cx="50" cy="50" r="40" fill="none" stroke="currentColor" stroke-width="3"></circle>
+                 </svg>
               </div>
 
+              <h2 class="loading-hero-text" x-text="currentProgressEvent().label || 'Synthesizing knowledge...'"></h2>
+              <p class="loading-sub-text" x-text="searchStatusSummary()"></p>
 
-            </div>
-
-            <div class="thread-search-shell">
-              <form class="px-input-box search-form-shell compact thread-search-form" x-data="searchForm()" @submit.prevent="submit" @keydown.enter.prevent="submit">
-                <label class="sr-only" for="thread-prompt">Topic</label>
-                <textarea id="thread-prompt" rows="2" placeholder="Refine the topic" x-model="$store.app.form.topic"></textarea>
-
-                <div class="filter-grid compact-grid">
-                  <label class="filter-field" for="thread-year-filter">
-                    <span class="filter-label">Year or range</span>
-                    <input id="thread-year-filter" type="text" inputmode="text" placeholder="Optional, e.g. 2025 or 2023-2026" x-model="$store.app.form.year" />
-                  </label>
-                  <label class="filter-field" for="thread-venue-filter">
-                    <span class="filter-label">Venue</span>
-                    <input id="thread-venue-filter" type="text" placeholder="Optional, e.g. icml" x-model="$store.app.form.venue" />
-                  </label>
-                  <label class="filter-field" for="thread-max-results-filter">
-                    <span class="filter-label">Max results</span>
-                    <input id="thread-max-results-filter" type="number" min="1" max="20" inputmode="numeric" x-model.number="$store.app.form.maxResults" />
-                  </label>
-                </div>
-
-                <div class="px-input-actions">
-                  <div class="px-action-left">
-                    <span class="input-contract-note">Refine and rerun this search</span>
-                  </div>
-                  <button class="px-submit-btn" type="submit" aria-label="Run search" :class="{ 'is-loading': $store.app.isLoading }" :disabled="$store.app.isLoading" x-text="$store.app.isLoading ? '…' : '➜'"></button>
-                </div>
-              </form>
-            </div>
-          </div>
-
-          <section class="search-status-strip" x-cloak x-show="$store.app.isLoading">
-            <div class="search-status-main">
-              <div class="search-status-spinner" aria-hidden="true"></div>
-              <div class="search-status-copy">
-                <div class="search-status-title">Searching literature</div>
-                <p class="search-status-summary" x-text="searchStatusSummary()"></p>
+              <div class="loading-log-stream">
+                 <template x-for="(event, index) in $store.app.progressEvents" :key="index">
+                    <div class="log-item" :class="{'log-active': index === $store.app.progressEvents.length - 1}">
+                       <span class="log-indicator">
+                         <template x-if="index < $store.app.progressEvents.length - 1">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                         </template>
+                         <template x-if="index === $store.app.progressEvents.length - 1">
+                            <span class="log-dot"></span>
+                         </template>
+                       </span>
+                       <span class="log-message" x-text="event.label"></span>
+                    </div>
+                 </template>
               </div>
-            </div>
-            <div class="search-status-sources">
-              <template x-for="source in loadingSources()" :key="source">
-                <span class="search-status-chip" x-text="source"></span>
-              </template>
             </div>
           </section>
 
-          <div class="px-answer compact-results-shell">
-            <section class="compact-results-section" aria-labelledby="papers-section-title" x-show="!$store.app.isLoading">
-              <div class="compact-section-header">
-                <div>
-                  <h3 id="papers-section-title" class="compact-section-title">Papers</h3>
-                </div>
-              </div>
-              <div id="results-list" class="results-list compact-results-list">
-                <template x-if="$store.app.isLoading">
-                  <div class="empty-results-card compact-empty-card loading-placeholder-card">
-                    <h3>Collecting papers</h3>
-                    <p>Results will appear here as the search sources finish ranking candidate papers.</p>
-                  </div>
-                </template>
-                <template x-if="!$store.app.isLoading && !papers().length">
-                  <div class="empty-results-card compact-empty-card">
-                    <h3>No papers found</h3>
-                    <p>Try broadening the topic or removing one of the optional filters.</p>
-                  </div>
-                </template>
-                <template x-for="(paper, index) in papers()" :key="paper.external_id || paper.url || paper.title">
-                  <article class="paper-card compact-paper-card">
-                    <div class="compact-paper-index" x-text="index + 1"></div>
-                    <div class="compact-paper-body">
-                      <h3 x-text="paper.title"></h3>
-                      <p class="compact-paper-meta">
-                        <span x-text="paper.venue || 'Unknown venue'"></span>
-                        <span> · </span>
-                        <span x-text="paper.year || 'Unknown year'"></span>
-                      </p>
-                    </div>
-                    <div class="compact-paper-side">
-                      <span class="compact-paper-source" x-text="sourceLabel(paper.source)"></span>
-                      <template x-if="paperLink(paper)">
-                        <a class="paper-link compact-paper-link" :href="paperLink(paper)" target="_blank" rel="noopener noreferrer">Open</a>
-                      </template>
-                    </div>
-                  </article>
-                </template>
-              </div>
+          <div x-data="gapExplorer()" @paper:select.window="handlePaperSelect($event)" @cluster:select.window="handleClusterSelect($event)" @map:clear.window="handleMapClear()" x-show="!$store.app.isLoading">
+            
+            <!-- Zone 2: The Executive Summary (BLUF) -->
+            <section class="results-summary">
+                <p class="synthesis-bluf" x-html="renderTextWithCitations($store.app.result?.gapData?.synthesis?.summary_text) || '<strong>Synthesized ' + papers().length + ' papers</strong> and identified <strong>' + gaps().length + ' core research gaps</strong> across ' + clusters().length + ' thematic clusters.'"></p>
             </section>
 
-            <section class="compact-results-section" aria-labelledby="gaps-section-title" x-show="!$store.app.isLoading">
-              <div class="compact-section-header">
-                <div>
-                  <h3 id="gaps-section-title" class="compact-section-title">Research gaps</h3>
-                </div>
-              </div>
-              <div id="gaps-list" class="gaps-list">
-                <template x-if="$store.app.isLoading">
-                  <div class="empty-results-card compact-empty-card loading-placeholder-card">
-                    <h3>Drafting the brief</h3>
-                    <p>Recurring limitations and evidence patterns will appear here once the ranking pass completes.</p>
-                  </div>
-                </template>
-                <template x-if="!$store.app.isLoading && !gaps().length">
-                  <div class="empty-results-card compact-empty-card">
-                    <h3>No gaps found</h3>
-                    <p>The current evidence did not surface a strong recurring gap for this query.</p>
-                  </div>
-                </template>
-                <template x-for="(gap, index) in gaps()" :key="gap.gap_id || `${gap.gap_title}-${index}`">
-                  <article class="gap-card" x-data="{ open: false }">
-                    <div class="gap-card-head">
-                      <span class="gap-rank" x-text="index + 1"></span>
-                      <div class="gap-card-title-block">
-                        <h3 x-text="gap.gap_title || 'Untitled Research Gap'"></h3>
-                      </div>
-                    </div>
+            <!-- Zone 3: The Deep-Dive Workspace (Tabbed Navigation) -->
+            <nav class="results-tab-bar">
+              <button class="results-tab" :class="{'active': activeTab === 'gaps'}" @click="activeTab = 'gaps'">Research Gaps</button>
+              <button class="results-tab" :class="{'active': activeTab === 'map'}" @click="activeTab = 'map'; setTimeout(() => handleMapClear(), 50)">Literature Map</button>
+              <button class="results-tab" :class="{'active': activeTab === 'papers'}" @click="activeTab = 'papers'">Source Papers</button>
+            </nav>
 
-                    <p class="gap-statement" x-show="hasValue(gap.description)" x-html="renderTextWithCitations(gap.description, gap)"></p>
-                    <p class="gap-why" x-show="hasValue(gap.what_fails)" x-html="'What fails: ' + renderTextWithCitations(gap.what_fails, gap)"></p>
-                    <p class="gap-why" x-show="hasValue(gap.missing_piece)" x-html="'Missing piece: ' + renderTextWithCitations(gap.missing_piece, gap)"></p>
-                    <p class="gap-why" x-show="hasValue(gap.why_it_exists)" x-html="'Why it exists: ' + renderTextWithCitations(gap.why_it_exists, gap)"></p>
-
-                    <div class="gap-action-box" x-show="hasValue(gap.proposed_direction)">
-                      <div class="gap-action-label">Suggested direction</div>
-                      <p x-html="renderTextWithCitations(gap.proposed_direction, gap)"></p>
-                    </div>
-
-                    <div class="gap-action-box" x-show="hasValue(gap.pattern_detected)">
-                      <div class="gap-action-label">Pattern detected</div>
-                      <p x-html="renderTextWithCitations(gap.pattern_detected, gap)"></p>
-                    </div>
-
-                    <button class="gap-evidence-toggle" type="button" @click="open = !open" style="display: inline-flex; align-items: center; gap: 0.8rem;">
-                      <div style="display: flex; align-items: center; gap: 0.5rem;">
-                        <span x-text="open ? 'Hide details' : supportCountLabel(gap)"></span>
-                        <template x-if="!open && gap.confidence_score">
-                          <span style="font-size: 0.75rem; color: var(--text-muted); padding-left: 0.5rem; border-left: 1px solid var(--border-color);" x-text="'Score ' + Number(gap.confidence_score).toFixed(2)"></span>
+            <div class="results-workspace-content">
+                <!-- Tab A: Gaps Masonry Grid -->
+                <div x-show="activeTab === 'gaps'" x-transition.opacity.duration.300ms>
+                    <div class="gaps-masonry-grid">
+                        <template x-for="(gap, index) in filteredGaps()" :key="gapKey(gap, index)">
+                          <article class="gap-card-premium" :class="{ 'is-selected': $store.app.explorer.selectedGapId === gapKey(gap, index) }" @click="selectGap(gap)">
+                            <div class="gap-card-head-premium">
+                              <h3 class="gap-card-title" x-text="gap.gap_title || 'Untitled Research Gap'"></h3>
+                              <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.75rem;">
+                                <span class="gap-meta-pill">
+                                  <span class="cluster-dot" :style="`--cluster-color: ${clusterColor(gap.cluster_id)}; margin: 0; width: 6px; height: 6px;`"></span>
+                                  <span x-text="`Cluster ${gap.cluster_id}`"></span>
+                                </span>
+                                <span class="gap-meta-pill">
+                                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
+                                  <span x-text="supportCountLabel(gap)"></span>
+                                </span>
+                              </div>
+                            </div>
+                            <p class="gap-statement-clamp" x-show="hasValue(gap.description)" x-html="renderTextWithCitations(gap.description, gap)"></p>
+                          </article>
                         </template>
-                      </div>
-                      <svg x-show="!open" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
-                      <svg x-show="open" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"></polyline></svg>
-                    </button>
+                    </div>
+                </div>
 
-                    <div class="gap-evidence" x-cloak x-show="open" x-collapse>
-                      <template x-if="supportingPapers(gap).length">
-                        <div class="gap-support-block" style="margin-top: 0; border-top: none; padding-top: 0; margin-bottom: 1.5rem;">
-                          <div class="gap-support-title">Supporting papers</div>
-                          <div class="gap-support-list">
-                            <template x-for="(paper, index) in supportingPapers(gap)" :key="paper.paper_id || paper.title">
-                              <div class="gap-support-item">
-                                <div class="gap-support-heading">
-                                  <template x-if="getCitationLink(paper)">
-                                    <a :href="getCitationLink(paper)" target="_blank" rel="noopener noreferrer" class="source-link-hover" style="color: inherit;">
-                                      <span class="gap-support-paper" x-text="'[' + (index + 1) + '] ' + paper.title"></span>
-                                    </a>
-                                  </template>
-                                  <template x-if="!getCitationLink(paper)">
-                                    <span class="gap-support-paper" x-text="'[' + (index + 1) + '] ' + paper.title"></span>
-                                  </template>
-                                  <span class="gap-support-meta" x-text="supportingPaperMeta(paper)"></span>
+                <!-- Tab B: Map Pane -->
+                <div x-show="activeTab === 'map'" x-transition.opacity.duration.300ms style="padding: 0 2.5rem; display: flex; gap: 2rem;">
+                    <div class="cluster-map-container" x-ref="clusterMap" style="flex: 1; height: 650px; background: var(--surface-strong); border: 1px solid var(--border-color); border-radius: 16px;"></div>
+                    <div style="width: 340px; display: flex; flex-direction: column; gap: 1.5rem;">
+                        <div class="d3-chart-card" x-show="clusters().length" style="background: var(--surface-strong); border: 1px solid var(--border-color); border-radius: 16px; padding: 1.5rem;">
+                          <h4 style="font-size: 0.95rem; font-weight: 700; color: var(--text-main); margin-bottom: 1.5rem;">Cluster Size</h4>
+                          <div class="d3-chart-container" x-ref="chartClusters"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab C: Source Papers List -->
+                <div x-show="activeTab === 'papers'" x-transition.opacity.duration.300ms style="padding: 0 2.5rem;">
+                    <div class="results-list" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(450px, 1fr)); gap: 1.5rem;">
+                        <template x-for="(paper, index) in papers()" :key="paperKey(paper, index)">
+                          <article class="gap-card-premium" style="display: flex; flex-direction: row; gap: 1rem; padding: 1.25rem 1.5rem; align-items: center;" @click="selectPaper(paper)">
+                            <div style="flex: 1; min-width: 0;">
+                              <h3 x-text="paper.title" style="font-size: 1.05rem; font-weight: 700; color: var(--text-main); margin-bottom: 0.4rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"></h3>
+                              <p style="font-size: 0.85rem; color: var(--text-muted); display: flex; gap: 0.5rem; align-items: center;">
+                                <span class="cluster-dot" :style="`--cluster-color: ${clusterColor(paper.cluster_id)}; margin: 0; width: 6px; height: 6px;`"></span>
+                                <span x-text="paper.venue || 'Unknown venue'"></span>
+                                <span>·</span>
+                                <span x-text="paper.year || 'Unknown year'"></span>
+                              </p>
+                            </div>
+                            <div style="flex-shrink: 0;">
+                              <template x-if="paperLink(paper)">
+                                <a :href="paperLink(paper)" target="_blank" rel="noopener noreferrer" @click.stop class="btn-glass" style="padding: 0.4rem 0.8rem;">Open ↗</a>
+                              </template>
+                            </div>
+                          </article>
+                        </template>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Global Detail Panel Drawer -->
+            <template x-teleport="body">
+                <div class="detail-panel-shell" x-cloak x-show="$store.app.explorer.panelOpen">
+                  <button type="button" class="detail-panel-backdrop" aria-label="Close detail panel" @click="closePanel()"></button>
+                  <aside class="detail-panel" role="dialog" aria-modal="true" aria-labelledby="detail-panel-title" style="padding: 2.5rem; overflow-y: auto;">
+                    <div class="detail-panel-head" style="display: flex; justify-content: space-between; align-items: flex-start; padding-bottom: 1.5rem; margin-bottom: 1.5rem;">
+                      <div>
+                        <span class="detail-panel-kicker" x-text="$store.app.explorer.panelType" style="font-size: 0.75rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; display: block; margin-bottom: 0.5rem;"></span>
+                        <h3 id="detail-panel-title" x-text="panelTitle()" style="font-size: 1.75rem; font-weight: 800; color: var(--text-main); line-height: 1.2;"></h3>
+                      </div>
+                      <button class="btn-glass" type="button" aria-label="Close detail panel" @click="closePanel()" style="padding: 0.5rem; border: none; background: transparent;">✕</button>
+                    </div>
+
+                    <!-- Gap Detail -->
+                    <template x-if="$store.app.explorer.panelType === 'gap' && selectedGap()">
+                      <div class="detail-panel-body">
+                        <p class="detail-lede" x-html="renderTextWithCitations(selectedGap().description, selectedGap())"></p>
+                        
+                        <div class="detail-section" x-show="hasValue(selectedGap().what_fails)" style="margin-bottom: 2.5rem;">
+                          <h4 style="font-size: 0.85rem; font-weight: 800; color: var(--text-main); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.75rem;">What fails</h4>
+                          <p style="font-size: 1rem; color: var(--text-muted); line-height: 1.6;" x-html="renderTextWithCitations(selectedGap().what_fails, selectedGap())"></p>
+                        </div>
+                        
+                        <div class="detail-section" style="margin-bottom: 2.5rem;">
+                          <h4 style="font-size: 0.85rem; font-weight: 800; color: var(--text-main); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.75rem;">Supporting papers</h4>
+                          <div class="panel-list" style="display: flex; flex-direction: column; gap: 0.75rem;">
+                            <template x-for="(paper, index) in supportingPapers(selectedGap())" :key="paper.paper_id || paper.title || index">
+                              <button type="button" class="panel-list-item gap-card-premium" @click="selectPaper(findPaperByReference(paper))" style="text-align: left; padding: 1.25rem;">
+                                <strong x-text="paper.title" style="display: block; font-size: 1rem; font-weight: 600; color: var(--text-main); margin-bottom: 0.4rem; line-height: 1.4;"></strong>
+                                <span x-text="supportingPaperMeta(paper)" style="font-size: 0.85rem; color: var(--text-muted);"></span>
+                              </button>
+                            </template>
+                          </div>
+                        </div>
+                        
+                        <div class="detail-section" style="margin-bottom: 2.5rem;">
+                          <h4 style="font-size: 0.85rem; font-weight: 800; color: var(--text-main); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 1rem;">Score breakdown</h4>
+                          <div class="score-bars" style="display: flex; flex-direction: column; gap: 1rem;">
+                            <template x-for="item in scoreBreakdown(selectedGap())" :key="item.key">
+                              <div class="score-bar-row" style="display: flex; align-items: center; gap: 1rem; font-size: 0.9rem;">
+                                <span x-text="item.label" style="width: 100px; color: var(--text-muted); font-weight: 600;"></span>
+                                <div style="flex: 1; height: 8px; background: var(--glass-bg); border-radius: 4px; overflow: hidden;">
+                                    <i :style="`width: ${Math.max(0, Math.min(1, item.value)) * 100}%; display: block; height: 100%; background: linear-gradient(90deg, #3b82f6, #60a5fa);`"></i>
                                 </div>
-                                
-                                <template x-if="paper.extracted_evidence && paper.extracted_evidence.length">
-                                  <ul class="evidence-list-mini" style="margin-top: 0.65rem; padding-left: 0; list-style: none;">
-                                    <template x-for="snippet in paper.extracted_evidence" :key="snippet">
-                                      <li class="evidence-item-mini" style="margin-bottom: 0.4rem;">
-                                        <span class="evidence-bullet-mini" style="opacity: 0.4; margin-right: 0.5rem;">•</span>
-                                        <span style="font-size: 0.85rem; color: var(--text-muted); line-height: 1.5;" x-text="snippet"></span>
-                                      </li>
-                                    </template>
-                                  </ul>
-                                </template>
+                                <strong x-text="item.formatted" style="width: 45px; text-align: right; color: var(--text-main); font-weight: 700; font-family: monospace;"></strong>
                               </div>
                             </template>
                           </div>
                         </div>
-                      </template>
-
-
-                    </div>
-                  </article>
-                </template>
-              </div>
-            </section>
-
-            <section class="compact-results-section" aria-labelledby="viz-section-title" x-cloak x-show="visualizations()">
-              <div class="compact-section-header">
-                <div>
-                  <h3 id="viz-section-title" class="compact-section-title">Visualizations</h3>
-                </div>
-              </div>
-              <div id="viz-list" class="viz-list" style="display: flex; flex-direction: column; gap: 24px; padding-top: 16px;">
-                <template x-if="visualizations()?.confidence_bars">
-                  <div class="viz-card">
-                    <h4>Research Gap Confidence</h4>
-                    <img :src="'data:image/png;base64,' + visualizations().confidence_bars" alt="Research Gap Confidence" style="max-width: 100%; height: auto; border-radius: 8px;" />
-                  </div>
-                </template>
-                <template x-if="visualizations()?.year_distribution">
-                  <div class="viz-card">
-                    <h4>Year Distribution</h4>
-                    <img :src="'data:image/png;base64,' + visualizations().year_distribution" alt="Year Distribution" style="max-width: 100%; height: auto; border-radius: 8px;" />
-                  </div>
-                </template>
-                <template x-if="visualizations()?.method_trends">
-                  <div class="viz-card">
-                    <h4>Method Trends</h4>
-                    <img :src="'data:image/png;base64,' + visualizations().method_trends" alt="Method Trends" style="max-width: 100%; height: auto; border-radius: 8px;" />
-                  </div>
-                </template>
-                <template x-if="visualizations()?.dataset_frequency">
-                  <div class="viz-card">
-                    <h4>Dataset Frequency</h4>
-                    <img :src="'data:image/png;base64,' + visualizations().dataset_frequency" alt="Dataset Frequency" style="max-width: 100%; height: auto; border-radius: 8px;" />
-                  </div>
-                </template>
-                <template x-if="visualizations()?.metric_frequency">
-                  <div class="viz-card">
-                    <h4>Metric Frequency</h4>
-                    <img :src="'data:image/png;base64,' + visualizations().metric_frequency" alt="Metric Frequency" style="max-width: 100%; height: auto; border-radius: 8px;" />
-                  </div>
-                </template>
-                <template x-if="visualizations()?.umap_scatter">
-                  <div class="viz-card">
-                    <h4>UMAP Scatter</h4>
-                    <img :src="'data:image/png;base64,' + visualizations().umap_scatter" alt="UMAP Scatter Plot" style="max-width: 100%; height: auto; border-radius: 8px;" />
-                  </div>
-                </template>
-              </div>
-            </section>
-
-            <div class="thread-action-bar" x-cloak x-show="!$store.app.isLoading && reportId()" style="position: relative;">
-              <div class="action-bar-left">
-                <!-- Copy -->
-                <button class="action-icon-btn" type="button" @click="copyToClipboard()" title="Copy Report" :class="{ 'is-success': isCopied }">
-                  <svg x-show="!isCopied" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
-                  <svg x-show="isCopied" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke="currentColor" style="color: var(--success-color);"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                </button>
-
-                   <div style="position: relative;" x-data="{ showShareOptions: false, isLinkCopied: false }" @click.away="showShareOptions = false">
-                  <button class="action-icon-btn" type="button" @click="showShareOptions = !showShareOptions" title="Share Options">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
-                  </button>
-                  <div x-cloak x-show="showShareOptions" class="share-options-dropdown" style="position: absolute; bottom: 100%; left: 0; margin-bottom: 12px; width: 180px; background: var(--glass-bg); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid var(--border-color); border-radius: 12px; padding: 6px; box-shadow: var(--shadow-soft); z-index: 100;">
-                    <button @click="copyShareLink().then(success => { if(success) { isLinkCopied = true; setTimeout(() => { isLinkCopied = false; showShareOptions = false; }, 1000); } })" class="share-option-item" style="width: 100%; display: flex; align-items: center; gap: 10px; padding: 10px; background: transparent; border: none; color: var(--text-main); font-size: 0.9rem; cursor: pointer; border-radius: 8px; transition: background 0.2s;">
-                      <template x-if="!isLinkCopied">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
-                      </template>
-                      <template x-if="isLinkCopied">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke="currentColor" style="color: var(--success-color);"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                      </template>
-                      <span x-text="isLinkCopied ? 'Copied!' : 'Copy Link'"></span>
-                    </button>
-                    <button @click="shareOnGmail(); showShareOptions = false;" class="share-option-item" style="width: 100%; display: flex; align-items: center; gap: 10px; padding: 10px; background: transparent; border: none; color: var(--text-main); font-size: 0.9rem; cursor: pointer; border-radius: 8px; transition: background 0.2s;">
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
-                      <span>Gmail</span>
-                    </button>
-                    <button @click="shareOnWhatsApp(); showShareOptions = false;" class="share-option-item" style="width: 100%; display: flex; align-items: center; gap: 10px; padding: 10px; background: transparent; border: none; color: var(--text-main); font-size: 0.9rem; cursor: pointer; border-radius: 8px; transition: background 0.2s;">
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.414 0 .004 5.411.001 12.047c0 2.12.554 4.188 1.597 6.048L0 24l6.135-1.61a11.77 11.77 0 005.911 1.586h.005c6.634 0 12.043-5.411 12.047-12.047a11.8 11.8 0 00-3.488-8.482z"/></svg>
-                      <span>WhatsApp</span>
-                    </button>
-                    <template x-if="navigator.share">
-                      <button @click="nativeShare(); showShareOptions = false;" class="share-option-item" style="width: 100%; border-top: 1px solid var(--border-color); margin-top: 4px; display: flex; align-items: center; gap: 10px; padding: 10px; background: transparent; border: none; color: var(--text-main); font-size: 0.9rem; cursor: pointer; border-radius: 8px; transition: background 0.2s;">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>
-                        <span>More Options...</span>
-                      </button>
-                    </template>
-                  </div>
-                </div>
-
-                <!-- Download -->
-                <a class="action-icon-btn" :href="pdfUrl()" title="Download PDF" download>
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-                </a>
-                <!-- Refresh -->
-                <button class="action-icon-btn" type="button" @click="regenerateSynthesis()" title="Refresh Report" :disabled="isRefreshing" :class="{ 'is-loading': isRefreshing }">
-                  <svg :class="{ 'spin': isRefreshing }" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"></path><path d="M1 20v-6h6"></path><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
-                </button>
-              </div>
-
-              <div class="action-bar-right">
-                <!-- Like -->
-                <button class="action-icon-btn" type="button" @click="toggleLike()" :class="{ 'active': isLiked }" title="Helpful">
-                  <svg width="18" height="18" viewBox="0 0 24 24" :fill="isLiked ? 'currentColor' : 'none'" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"></path></svg>
-                </button>
-                <!-- Unlike -->
-                <button class="action-icon-btn" type="button" @click="toggleDislike()" :class="{ 'active': isDisliked }" title="Not Helpful">
-                  <svg width="18" height="18" viewBox="0 0 24 24" :fill="isDisliked ? 'currentColor' : 'none'" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3zm7-13h2.67A2.31 2.31 0 0 1 22 4v7a2.31 2.31 0 0 1-2.33 2H17"></path></svg>
-                </button>
-                <!-- Sources -->
-                <div style="position: relative;" x-data="{ showSources: false }" @click.away="showSources = false">
-                  <button class="action-icon-btn" type="button" title="Sources" @click="showSources = !showSources" style="padding: 4px 10px; font-size: 0.85rem; font-weight: 600; gap: 6px;">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
-                    <span>Sources</span>
-                  </button>
-                  <div x-cloak x-show="showSources" class="sources-dropdown" style="position: absolute; bottom: 100%; right: 0; margin-bottom: 12px; width: 320px; max-height: 280px; overflow-y: auto; background: var(--glass-bg); backdrop-filter: blur(12px); border: 1px solid var(--border-color); border-radius: 12px; padding: 8px; box-shadow: var(--shadow-soft); z-index: 100;">
-                    <div style="font-size: 0.8rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; padding: 4px 8px 8px; border-bottom: 1px solid var(--border-color); margin-bottom: 4px;">Sources</div>
-                    <template x-for="paper in papers()" :key="paper.title">
-                      <div class="source-item" style="padding: 10px 8px; border-bottom: 1px solid rgba(255, 255, 255, 0.05);">
-                        <template x-if="paperLink(paper)">
-                          <a :href="paperLink(paper)" target="_blank" rel="noopener noreferrer" class="source-link-hover">
-                            <div class="source-title" style="font-size: 0.88rem; font-weight: 500; color: var(--text-main); margin-bottom: 6px; line-height: 1.3;" x-text="paper.title"></div>
-                            <div style="font-size: 0.75rem; color: var(--text-muted);" x-text="paper.venue || 'Unknown Venue'"></div>
-                          </a>
-                        </template>
-                        <template x-if="!paperLink(paper)">
-                          <div>
-                            <div style="font-size: 0.88rem; font-weight: 500; color: var(--text-main); margin-bottom: 6px; line-height: 1.3;" x-text="paper.title"></div>
-                            <div style="font-size: 0.75rem; color: var(--text-muted);" x-text="paper.venue || 'Unknown Venue'"></div>
-                          </div>
-                        </template>
                       </div>
                     </template>
-                    <template x-if="!papers().length">
-                      <div style="padding: 12px 8px; font-size: 0.85rem; color: var(--text-muted); text-align: center;">No sources available</div>
+                    
+                    <!-- Paper Detail -->
+                    <template x-if="$store.app.explorer.panelType === 'paper' && selectedPaper()">
+                      <div class="detail-panel-body">
+                        <p class="detail-lede" x-text="[selectedPaper().venue, selectedPaper().year, sourceLabel(selectedPaper().source)].filter(Boolean).join(' · ')" style="font-size: 0.95rem; color: #a1a1aa; margin-bottom: 2rem;"></p>
+                        
+                        <template x-if="paperLink(selectedPaper())">
+                          <a class="btn-glass" :href="paperLink(selectedPaper())" target="_blank" rel="noopener noreferrer" style="margin-bottom: 2.5rem;">Open original paper ↗</a>
+                        </template>
+                        
+                        <div class="detail-section">
+                          <h4 style="font-size: 0.85rem; font-weight: 800; color: var(--text-main); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 1rem;">Supported gaps</h4>
+                          <div class="panel-list" style="display: flex; flex-direction: column; gap: 0.75rem;">
+                            <template x-for="gap in paperGaps(selectedPaper())" :key="gapKey(gap)">
+                              <button type="button" class="panel-list-item gap-card-premium" @click="selectGap(gap)" style="text-align: left; padding: 1.25rem;">
+                                <strong x-text="gap.gap_title" style="font-size: 1rem; font-weight: 600; color: var(--text-main); line-height: 1.4;"></strong>
+                              </button>
+                            </template>
+                          </div>
+                        </div>
+                      </div>
                     </template>
-                  </div>
+                  </aside>
                 </div>
-              </div>
-            </div>
+            </template>
           </div>
         </section>
       </div>
@@ -591,12 +536,16 @@
   </main>
 
   <script src="/js/api.js?v=20260417a"></script>
-  <script src="/js/search.js?v=20260417a"></script>
+  <script src="/js/search.js?v=20260502a"></script>
+  <script src="https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.7/dist/gsap.min.js"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/@alpinejs/collapse@3.14.9/dist/cdn.min.js"></script>
-  <script defer src="/js/alpine/stores/appStore.js?v=20260423b"></script>
+  <script defer src="/js/alpine/stores/appStore.js?v=20260503x"></script>
+  <script defer src="/js/d3/clusterMap.js?v=20260503a"></script>
+  <script defer src="/js/d3/charts.js?v=20260502b"></script>
   <script defer src="/js/alpine/components/searchForm.js?v=20260423a"></script>
-  <script defer src="/js/alpine/components/resultsPage.js?v=20260423b"></script>
+  <script defer src="/js/alpine/components/resultsPage.js?v=20260502b"></script>
+  <script defer src="/js/alpine/components/gapExplorer.js?v=20260502c"></script>
   <script defer src="/js/alpine/components/historySidebar.js?v=20260423a"></script>
   <script defer src="/js/alpine/app.js?v=20260423a"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.9/dist/cdn.min.js"></script>

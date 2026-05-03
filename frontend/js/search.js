@@ -31,6 +31,64 @@ async function analyzeGaps(payload) {
     return await parseResponse(response, "Synthesis failed");
 }
 
+async function analyzeGapsStream(payload, onEvent) {
+    const response = await fetch(`${BASE_URL}/synthesis/gaps/stream`, {
+        method: "POST",
+        headers: getHeaders({ hasBody: true, includeAuth: false }),
+        body: JSON.stringify(payload),
+    });
+
+    if (!response.ok || !response.body) {
+        return await parseResponse(response, "Synthesis failed");
+    }
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = "";
+    let finalResult = null;
+
+    while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        buffer = lines.pop() || "";
+
+        for (const line of lines) {
+            if (!line.trim()) continue;
+            const event = JSON.parse(line);
+            if (event.type === "error") {
+                throw new Error(event.detail || "Synthesis failed");
+            }
+            if (event.type === "result") {
+                finalResult = event.data;
+            }
+            if (typeof onEvent === "function") {
+                onEvent(event);
+            }
+        }
+    }
+
+    if (buffer.trim()) {
+        const event = JSON.parse(buffer);
+        if (event.type === "error") {
+            throw new Error(event.detail || "Synthesis failed");
+        }
+        if (event.type === "result") {
+            finalResult = event.data;
+        }
+        if (typeof onEvent === "function") {
+            onEvent(event);
+        }
+    }
+
+    if (!finalResult) {
+        throw new Error("Synthesis finished without a result");
+    }
+    return finalResult;
+}
+
 async function fetchPublicReport(report_id) {
     const response = await fetch(`${BASE_URL}/synthesis/public/report/${report_id}`, {
         method: "GET",
@@ -83,6 +141,7 @@ function sourceLabel(source) {
 window.searchAPI = {
     searchPapers,
     analyzeGaps,
+    analyzeGapsStream,
     fetchPublicReport,
     buildSearchPayload,
     formatFilters,

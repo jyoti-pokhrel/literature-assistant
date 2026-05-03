@@ -121,7 +121,71 @@ def make_year_distribution(papers: list[dict]) -> Optional[str]:
         return None
 
 
-def make_frequency_bar_static(freq_data: Dict[str, int], title: str) -> Optional[str]:
+def make_method_trends(method_trend_by_year: Dict[str, List[str]]) -> Optional[str]:
+    if not method_trend_by_year:
+        return None
+
+    try:
+        plt = _safe_import_matplotlib()
+
+        years = sorted(method_trend_by_year.keys())
+        counts = [len(method_trend_by_year.get(year, [])) for year in years]
+
+        if not any(counts):
+            return None
+
+        fig, ax = plt.subplots(figsize=(8, 4))
+
+        ax.plot(years, counts, marker="o", linewidth=2.5, color="#14b8a6")
+        ax.fill_between(years, counts, alpha=0.16, color="#14b8a6")
+
+        ax.set_title("Method Mentions by Year", fontsize=13, fontweight="bold")
+        ax.set_xlabel("Year")
+        ax.set_ylabel("Method mentions")
+        ax.grid(True, alpha=0.3)
+
+        fig.tight_layout()
+
+        result = _fig_to_b64(fig)
+        plt.close(fig)
+        return result
+
+    except Exception as exc:
+        logger.warning("method_trends failed: %s", exc)
+        return None
+
+
+def make_frequency_bar(freq_data: Dict[str, int], title: str) -> Optional[str]:
+    if not freq_data:
+        return None
+
+    try:
+        plt = _safe_import_matplotlib()
+
+        labels = list(freq_data.keys())
+        values = list(freq_data.values())
+
+        if not any(values):
+            return None
+
+        fig, ax = plt.subplots(figsize=(8, 4))
+
+        ax.bar(labels, values, color="#3b82f6")
+        ax.set_title(title)
+        ax.set_xlabel("Category")
+        ax.set_ylabel("Frequency")
+        ax.tick_params(axis='x', rotation=45)
+        ax.grid(axis='y', alpha=0.3)
+
+        fig.tight_layout()
+
+        result = _fig_to_b64(fig)
+        plt.close(fig)
+        return result
+
+    except Exception as exc:
+        logger.warning("frequency_bar failed: %s", exc)
+        return None
     if not freq_data:
         return None
     try:
@@ -429,14 +493,26 @@ def generate_all_visualizations(
         "umap_scatter": make_umap_scatter(reduced_2d, labels, titles),
         "confidence_bars": make_confidence_bars(gaps),
         "year_distribution": make_year_distribution(papers),
-        "dataset_frequency": make_frequency_bar_static(pattern.dataset_frequency, "Dataset Frequency"),
-        "metric_frequency": make_frequency_bar_static(pattern.metric_frequency, "Metric Frequency"),
 
-        "plotly_research_intensity": make_plotly_research_intensity(papers),
-        "plotly_umap": make_plotly_umap(reduced_2d, labels, titles),
-        "plotly_dataset_freq": make_plotly_frequency_bar(pattern.dataset_frequency, "Dataset Frequency"),
-        "plotly_metric_freq": make_plotly_frequency_bar(pattern.metric_frequency, "Metric Frequency"),
 
-        "plotly_cluster_distribution": make_plotly_cluster_distribution(labels, _themes),
-        "plotly_gap_frequency": make_plotly_gap_frequency(gaps),
+"method_trends": make_method_trends(pattern.method_trend_by_year),
+"dataset_frequency": make_frequency_bar(pattern.dataset_frequency, "Dataset Frequency"),
+"metric_frequency": make_frequency_bar(pattern.metric_frequency, "Metric Frequency"),
+
+
+"plotly_research_intensity": make_plotly_research_intensity(papers),
+"plotly_umap": make_plotly_umap(reduced_2d, labels, titles),
+
+"plotly_dataset_freq": make_plotly_frequency_bar(
+    pattern.dataset_frequency,
+    "Dataset Frequency"
+),
+
+"plotly_metric_freq": make_plotly_frequency_bar(
+    pattern.metric_frequency,
+    "Metric Frequency"
+),
+
+"plotly_cluster_distribution": make_plotly_cluster_distribution(labels, _themes),
+"plotly_gap_frequency": make_plotly_gap_frequency(gaps),
     }

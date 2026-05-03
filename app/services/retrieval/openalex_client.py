@@ -14,10 +14,16 @@ load_dotenv()
 OPENALEX_URL = "https://api.openalex.org/works"
 
 
-def _build_filter(year: int | None = None) -> str | None:
+def _build_filter(year: int | str | None = None) -> str | None:
     filters: list[str] = []
     if year is not None:
-        filters.append(f"publication_year:{year}")
+        year_value = str(year)
+        if "-" in year_value:
+            start, end = year_value.split("-", 1)
+            filters.append(f"from_publication_date:{start}-01-01")
+            filters.append(f"to_publication_date:{end}-12-31")
+        else:
+            filters.append(f"publication_year:{year_value}")
     return ",".join(filters) or None
 
 

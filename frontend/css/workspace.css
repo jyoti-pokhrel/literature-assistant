@@ -1,0 +1,274 @@
+/* Professional Workspace Overrides */
+
+/* --- Typography & Layout --- */
+.results-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.5rem 2.5rem;
+    border-bottom: 1px solid var(--border-color);
+    background: var(--nav-bg);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    transition: box-shadow 0.3s ease;
+}
+
+.results-header.is-scrolled {
+    box-shadow: var(--shadow-soft);
+}
+
+.results-query-title {
+    font-size: 2rem;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    color: var(--text-main);
+    margin: 0.25rem 0;
+    line-height: 1.2;
+}
+
+.results-query-meta {
+    font-size: 0.9rem;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-weight: 500;
+}
+
+/* Header Actions */
+.header-actions {
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+}
+
+.btn-glass {
+    background: var(--glass-bg);
+    border: 1px solid var(--border-color);
+    color: var(--text-main);
+    padding: 0.6rem 1.2rem;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.btn-glass:hover {
+    background: var(--hover-bg);
+    border-color: var(--border-color);
+    transform: translateY(-1px);
+}
+
+.btn-primary-glow {
+    background: var(--text-main);
+    color: var(--bg-color);
+    border: none;
+    padding: 0.6rem 1.4rem;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+}
+
+:root[data-theme='dark'] .btn-primary-glow {
+    box-shadow: 0 0 15px rgba(255, 255, 255, 0.1);
+}
+
+.btn-primary-glow:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+}
+
+:root[data-theme='dark'] .btn-primary-glow:hover {
+    box-shadow: 0 4px 20px rgba(255, 255, 255, 0.2);
+}
+
+/* --- Executive Summary --- */
+.results-summary {
+    max-width: 900px;
+    margin: 2.5rem 0 2rem;
+    padding: 0 2.5rem;
+    text-align: left;
+}
+
+.synthesis-bluf {
+    font-size: 1.15rem;
+    line-height: 1.6;
+    color: var(--text-main);
+    font-weight: 400;
+    letter-spacing: -0.01em;
+}
+
+.synthesis-bluf strong {
+    font-weight: 700;
+    color: var(--text-main);
+}
+
+.source-chip {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 22px;
+    height: 22px;
+    border-radius: 6px;
+    background: rgba(16, 185, 129, 0.15);
+    color: var(--success-color);
+    font-size: 0.75rem;
+    font-weight: 700;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    border: 1px solid rgba(16, 185, 129, 0.3);
+    margin: 0 0.25rem 0.5rem 0;
+    cursor: help;
+    transition: all 0.2s;
+}
+
+.source-chip:hover {
+    background: rgba(16, 185, 129, 0.25);
+    transform: translateY(-1px);
+}
+
+/* --- Tab Navigation --- */
+.results-tab-bar {
+    display: flex;
+    gap: 0.5rem;
+    border-bottom: 1px solid var(--border-color);
+    margin-bottom: 2.5rem;
+    padding: 0 2.5rem;
+}
+
+.results-tab {
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    font-weight: 600;
+    padding: 0.8rem 1.2rem;
+    cursor: pointer;
+    font-size: 0.95rem;
+    position: relative;
+    transition: color 0.2s, background 0.2s;
+    border-radius: 8px 8px 0 0;
+}
+
+.results-tab:hover {
+    color: var(--text-main);
+    background: var(--glass-bg);
+}
+
+.results-tab.active {
+    color: var(--text-main);
+}
+
+.results-tab.active::after {
+    content: '';
+    position: absolute;
+    bottom: -1px;
+    left: 0;
+    width: 100%;
+    height: 2px;
+    background: var(--text-main);
+    border-radius: 2px 2px 0 0;
+}
+
+/* --- Grid & Cards --- */
+.gaps-masonry-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+    gap: 1.5rem;
+    padding: 0 2.5rem 4rem;
+}
+
+.gap-card-premium {
+    background: var(--surface-strong);
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    padding: 1.75rem;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    display: flex;
+    flex-direction: column;
+}
+
+.gap-card-premium:hover {
+    transform: translateY(-4px);
+    background: var(--card-bg);
+    border-color: var(--text-muted);
+    box-shadow: var(--shadow-soft);
+}
+
+.gap-card-head-premium {
+    margin-bottom: 1.2rem;
+}
+
+.gap-card-title {
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: var(--text-main);
+    line-height: 1.4;
+    margin-bottom: 0.5rem;
+}
+
+.gap-meta-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    background: var(--glass-bg);
+    border: 1px solid var(--border-color);
+    padding: 0.25rem 0.6rem;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--text-muted);
+}
+
+.gap-statement-clamp {
+    font-size: 0.95rem;
+    color: var(--text-muted);
+    line-height: 1.6;
+    display: -webkit-box;
+    -webkit-line-clamp: 4;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    flex-grow: 1;
+}
+
+/* --- Detail Drawer Polish --- */
+.detail-panel {
+    background: var(--nav-bg);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border-left: 1px solid var(--border-color);
+    box-shadow: -8px 0 32px rgba(0,0,0,0.1);
+}
+
+:root[data-theme='dark'] .detail-panel {
+    box-shadow: -8px 0 32px rgba(0,0,0,0.4);
+}
+
+.detail-panel-head {
+    border-bottom: 1px solid var(--border-color) !important;
+}
+
+.detail-lede {
+    font-size: 1.1rem !important;
+    line-height: 1.7 !important;
+    color: var(--text-main) !important;
+}
+
+.score-bar-row i {
+    border-radius: 3px;
+    box-shadow: 0 0 8px rgba(0, 0, 0, 0.1);
+}
+
+:root[data-theme='dark'] .score-bar-row i {
+    box-shadow: 0 0 8px rgba(255, 255, 255, 0.2);
+}

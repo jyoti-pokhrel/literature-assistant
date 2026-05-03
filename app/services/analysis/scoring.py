@@ -98,3 +98,33 @@ def compute_overall_score(
         + (citation_confidence_score * 0.15),
         4,
     )
+
+
+def build_gap_score_breakdown(
+    candidate_papers: list[dict],
+    evidence: dict,
+    category: str = "methodology",
+    current_year: int | None = None,
+) -> dict[str, float]:
+    """Return explainable scoring components normalized for UI/reporting."""
+    support = score_support(candidate_papers, current_year)
+    severity = score_severity(category, evidence)
+    actionability = score_actionability(category, evidence)
+    novelty = score_novelty(candidate_papers, current_year)
+    citation_confidence = score_citation_confidence(candidate_papers, current_year)
+    overall = compute_overall_score(
+        support,
+        severity,
+        actionability,
+        novelty,
+        citation_confidence,
+    )
+
+    return {
+        "support": round(support, 4),
+        "severity": round(severity, 4),
+        "actionability": round(actionability, 4),
+        "novelty": round(novelty, 4),
+        "citation_confidence": round(citation_confidence, 4),
+        "overall": round(overall, 4),
+    }
