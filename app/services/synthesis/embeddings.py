@@ -4,14 +4,19 @@ import os
 import re
 import logging
 from pathlib import Path
-from typing import List
 
 import numpy as np
 from dotenv import load_dotenv
 
 load_dotenv(dotenv_path=Path(__file__).resolve().parent.parent.parent.parent / ".env")
 
-EMBEDDING_MODEL_NAME: str = os.getenv("EMBEDDING_MODEL", "all-mpnet-base-v2")
+PRIMARY_MODEL: str = os.getenv("EMBEDDING_MODEL")
+if not PRIMARY_MODEL:
+    raise RuntimeError("EMBEDDING_MODEL is not set in .env")
+
+FALLBACK_MODEL: str = os.getenv("EMBEDDING_FALLBACK_MODEL")
+if not FALLBACK_MODEL:
+    raise RuntimeError("EMBEDDING_FALLBACK_MODEL is not set in .env")
 
 logger = logging.getLogger(__name__)
 
@@ -20,35 +25,37 @@ def _normalize(text: str) -> str:
     if not text:
         return ""
     text = re.sub(r'\s+', ' ', text).strip().lower()
-    seen = set()
-    return " ".join(w for w in text.split() if not (w in seen or seen.add(w)))
+    seen: set[str] = set()
+    return " ".join(w for w in text.split() if not (w in seen or seen.add(w)))  # type: ignore[func-returns-value]
+
 
 def _build_texts(papers: list[dict]) -> list[str]:
+
     texts: list[str] = []
     for paper in papers:
-        parts = [
-            _normalize(paper.get("title", "")),
-            _normalize(paper.get("abstract", "") or ""),
-            _normalize(paper.get("limitations", "") or ""),
-            _normalize(paper.get("future_work", "") or ""),
-        ]
-        texts.append(" ".join(p for p in parts if p).strip() or "unknown")
+        lims = paper.get("normalized_limitations") or []
+        fw = paper.get("normalized_future_work") or []
+
+        # Join limitation and future-work
+        lim_text = " ".join(_normalize(t) for t in lims if t)
+        fw_text = " ".join(_normalize(t) for t in fw if t)
+        combined = f"{lim_text} {fw_text}".strip()
+
+        # Fallback
+        if not combined:
+            combined = _normalize(paper.get("title", "")) or "unknown research gap"
+
+        texts.append(combined)
     return texts
 
 
-def _tfidf_fallback(texts: list[str]) -> np.ndarray:
-    #Use sklearn TF-IDF + TruncatedSVD (LSA) as embedding fallback
-    from sklearn.decomposition import TruncatedSVD
-    from sklearn.feature_extraction.text import TfidfVectorizer
+_model_cache = {}
 
-    n_components = min(64, len(texts) - 1) if len(texts) > 1 else 1
-    tfidf = TfidfVectorizer(max_features=5000, stop_words="english")
-    matrix = tfidf.fit_transform(texts)
-    if n_components >= 1 and matrix.shape[1] > n_components:
-        svd = TruncatedSVD(n_components=n_components, random_state=42)
-        return svd.fit_transform(matrix)
-    return matrix.toarray()
-
+def get_model(model_name: str):
+    from sentence_transformers import SentenceTransformer
+    if model_name not in _model_cache:
+        _model_cache[model_name] = SentenceTransformer(model_name)
+    return _model_cache[model_name]
 
 def generate_embeddings(papers: list[dict]) -> np.ndarray:
 
@@ -56,12 +63,16 @@ def generate_embeddings(papers: list[dict]) -> np.ndarray:
     if not texts:
         return np.empty((0, 1), dtype=np.float32)
 
-    try:
-        from sentence_transformers import SentenceTransformer
-        model = SentenceTransformer(EMBEDDING_MODEL_NAME)
-        embeddings = model.encode(texts, show_progress_bar=False, convert_to_numpy=True)
-        logger.info("Embeddings generated via SentenceTransformer (%s).", EMBEDDING_MODEL_NAME)
-        return embeddings.astype(np.float32)
-    except Exception as exc:
-        logger.warning("SentenceTransformer failed (%s); using TF-IDF fallback.", exc)
-        return _tfidf_fallback(texts).astype(np.float32)
+    for model_name in [PRIMARY_MODEL, FALLBACK_MODEL]:
+        try:
+            model = get_model(model_name)
+            embeddings = model.encode(texts, show_progress_bar=False, convert_to_numpy=True)
+            logger.info("Embeddings generated via SentenceTransformer (%s).", model_name)
+            return embeddings.astype(np.float32)
+        except Exception as exc:
+            logger.warning("SentenceTransformer model '%s' failed: %s", model_name, exc)
+
+    raise RuntimeError(
+        f"Both embedding models failed ({PRIMARY_MODEL}, {FALLBACK_MODEL}). "
+        "Ensure sentence-transformers is installed and at least one model is downloadable."
+    )

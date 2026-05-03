@@ -1,3 +1,5 @@
+import asyncio
+
 from app.schemas.paper import PaperSearchResponse, RetrievedPaper
 from app.services.extraction.normalizer import clean_text, deduplicate_papers
 from app.services.retrieval.openalex_client import search_openalex
@@ -32,24 +34,30 @@ async def retrieve_papers(
     sources_used: list[str] = []
     merged: list[RetrievedPaper] = []
 
-    for source_name, fetcher in (
+    # Run primary sources concurrently
+    fetchers = [
         ("semantic_scholar", search_semantic_scholar),
         ("openalex", search_openalex),
-        ("arxiv", search_arxiv),
-    ):
-        results = await fetcher(
-            topic,
-            year=year,
-            venue=venue,
-            limit=max_results,
-        )
+tasks = [
+    fetcher(topic, year=year, venue=venue, limit=max_results)
+    for _, fetcher in fetchers
+]
+
+results_list = await asyncio.gather(*tasks, return_exceptions=True)
+
+results_by_source = {}
+
+for (source_name, _), results in zip(fetchers, results_list):
+    if isinstance(results, Exception):
+        logger.warning("Fetcher failed for %s: %s", source_name, results)
+        results_by_source[source_name] = []
+        continue
+
+    results_by_source[source_name] = results
         if not results:
             continue
-
         sources_used.append(source_name)
         merged = deduplicate_papers([*merged, *results])
-        if len(merged) >= max_results:
-            break
 
     if not merged:
         tavily_results = await search_tavily(
