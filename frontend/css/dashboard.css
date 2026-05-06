@@ -1358,3 +1358,214 @@
     transform: translate3d(0, -1px, 0);
     transition-duration: var(--t-instant);
 }
+
+/* =========================================================================
+   Flat button pass — less rounded, no gloss/gradient, theme friendly
+   ========================================================================= */
+.btn,
+.btn-primary,
+.btn-secondary,
+.btn-outline,
+.btn-glass,
+.btn-primary-glow,
+.btn-new-thread,
+.lp-btn-primary,
+.lp-nav-actions .lp-btn-primary,
+.lp-search-btn,
+.lp-cta-btn,
+.dash-omnibar-submit,
+.dash-icon-btn,
+.btn-icon,
+.theme-toggle-btn,
+.results-tab {
+    border-radius: 7px;
+    background-image: none;
+    letter-spacing: 0;
+}
+
+.lp-btn-primary,
+.lp-nav-actions .lp-btn-primary,
+.lp-search-btn,
+.lp-cta-btn,
+.btn-primary,
+.btn-primary-glow,
+.dash-omnibar-submit {
+    background: var(--ink, var(--text-main));
+    color: var(--bg, var(--bg-color));
+    border: 1px solid var(--ink, var(--text-main));
+    box-shadow: none;
+}
+
+:root[data-theme='dark'] .lp-btn-primary,
+:root[data-theme='dark'] .lp-nav-actions .lp-btn-primary,
+:root[data-theme='dark'] .lp-search-btn,
+:root[data-theme='dark'] .lp-cta-btn,
+:root[data-theme='dark'] .btn-primary,
+:root[data-theme='dark'] .btn-primary-glow,
+:root[data-theme='dark'] .dash-omnibar-submit {
+    background: var(--ink);
+    color: var(--bg);
+    border-color: var(--ink);
+    box-shadow: none;
+}
+
+.btn-secondary,
+.btn-outline,
+.btn-glass,
+.btn-new-thread,
+.theme-toggle-btn,
+.dash-icon-btn,
+.btn-icon,
+.results-tab {
+    background: color-mix(in srgb, var(--bg, var(--bg-color)) 72%, transparent);
+    color: var(--ink, var(--text-main));
+    border: 1px solid var(--rule, var(--border-color));
+    box-shadow: none;
+}
+
+:root[data-theme='dark'] .btn-secondary,
+:root[data-theme='dark'] .btn-outline,
+:root[data-theme='dark'] .btn-glass,
+:root[data-theme='dark'] .btn-new-thread,
+:root[data-theme='dark'] .theme-toggle-btn,
+:root[data-theme='dark'] .dash-icon-btn,
+:root[data-theme='dark'] .btn-icon,
+:root[data-theme='dark'] .results-tab {
+    background: rgba(255, 255, 255, 0.06);
+    color: var(--ink);
+    border-color: var(--rule-strong);
+    box-shadow: none;
+}
+
+.lp-btn-primary:hover,
+.lp-nav-actions .lp-btn-primary:hover,
+.lp-search-btn:hover,
+.lp-cta-btn:hover,
+.btn-primary:hover,
+.btn-primary-glow:hover,
+.dash-omnibar-submit:hover:not(:disabled) {
+    background: var(--ink-2, var(--text-muted));
+    border-color: var(--ink-2, var(--text-muted));
+    box-shadow: none;
+}
+
+.btn-secondary:hover,
+.btn-outline:hover,
+.btn-glass:hover,
+.btn-new-thread:hover,
+.theme-toggle-btn:hover,
+.dash-icon-btn:hover,
+.btn-icon:hover,
+.results-tab:hover {
+    background: var(--accent-soft, var(--hover-bg));
+    border-color: var(--rule-strong, var(--border-color));
+    box-shadow: none;
+}
+
+.lp-btn-primary::before,
+.lp-btn-primary::after,
+.lp-nav-actions .lp-btn-primary::before,
+.lp-nav-actions .lp-btn-primary::after,
+.lp-search-btn::after,
+.lp-cta-btn::after,
+.btn-new-thread::after,
+.dash-omnibar-submit::after,
+.btn-primary-glow::after {
+    display: none;
+    content: none;
+}
+
+.dash-omnibar-submit {
+    width: 42px;
+    height: 42px;
+    padding: 0;
+}
+
+.theme-toggle-btn,
+.dash-icon-btn,
+.btn-icon {
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* =========================================================================
+   Workspace surfaces — flatter boxes, omnibar matches recent rows
+   ========================================================================= */
+:root {
+    --workspace-box-radius: 9px;
+}
+
+.dash-omnibar-section,
+.dash-recent {
+    max-width: 980px;
+    width: 100%;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.dash-omnibar-section {
+    margin-bottom: var(--s-7);
+}
+
+.dash-omnibar {
+    background: var(--glass);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--workspace-box-radius);
+    box-shadow: 0 8px 28px rgba(5, 6, 8, 0.045);
+    padding: 0;
+}
+
+.dash-omnibar:focus-within {
+    border-color: var(--rule-strong);
+    box-shadow: 0 8px 28px rgba(5, 6, 8, 0.045), 0 0 0 2px var(--accent-soft);
+    transform: none;
+}
+
+.dash-omnibar-main {
+    padding: 0.85rem var(--s-2);
+}
+
+.dash-omnibar-submit {
+    width: 48px;
+    height: 48px;
+    border-radius: 7px;
+}
+
+.dash-recent-empty,
+.dash-recent-row {
+    border-radius: var(--workspace-box-radius);
+}
+
+.dash-recent-row {
+    background: var(--glass);
+    border: 1px solid var(--glass-border);
+    box-shadow: 0 8px 28px rgba(5, 6, 8, 0.045);
+}
+
+.dash-recent-row:hover {
+    background: var(--glass-strong);
+    border-color: var(--rule-strong);
+    box-shadow: 0 8px 28px rgba(5, 6, 8, 0.045);
+}
+
+.dash-filter-chip {
+    border-radius: 7px;
+}
+
+.gap-entry,
+.paper-entry,
+.lp-bento-tile,
+.lp-scene-frame,
+.lp-faq-item,
+.cluster-map-container,
+.map-side,
+.gap-rail,
+.results-tab,
+.btn-glass,
+.btn-primary-glow {
+    border-radius: 9px;
+}
