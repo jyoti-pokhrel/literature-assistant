@@ -203,6 +203,7 @@ async def run_synthesis_pipeline(
         request.topic,
         year=request.year,
         venue=request.venue,
+        strict_venue=request.strict_venue,
         max_results=request.max_results,
     )
     raw_papers = build_analysis_papers(retrieval.papers)

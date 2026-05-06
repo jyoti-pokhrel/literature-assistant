@@ -134,6 +134,7 @@ async def run_gap_analysis(
     topic: str,
     year: str | None = None,
     venue: str | None = None,
+    strict_venue: bool = False,
     max_results: int = 10,
     top_k_gaps: int = 5,
 ) -> GapAnalysisResponse:
@@ -141,6 +142,7 @@ async def run_gap_analysis(
         topic,
         year=year,
         venue=venue,
+        strict_venue=strict_venue,
         max_results=max_results,
     )
     analysis_papers = build_analysis_papers(retrieval.papers)

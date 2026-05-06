@@ -25,8 +25,9 @@ def _extract_year(*values: str | None) -> int | None:
 async def search_tavily(
     topic: str,
     *,
-    year: int | None = None,
+    year: int | str | None = None,
     venue: str | None = None,
+    strict_venue: bool = False,
     limit: int = 10,
     timeout: int = 20,
 ) -> List[RetrievedPaper]:
@@ -80,4 +81,4 @@ async def search_tavily(
             )
         )
 
-    return filter_papers(papers, year=year, venue=venue)[:limit]
+    return filter_papers(papers, year=year, venue=venue, strict_venue=strict_venue)[:limit]

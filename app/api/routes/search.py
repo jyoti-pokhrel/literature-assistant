@@ -19,6 +19,7 @@ async def search_papers(
         payload.topic,
         year=payload.year,
         venue=payload.venue,
+        strict_venue=payload.strict_venue,
         max_results=payload.max_results,
     )
 
@@ -32,6 +33,7 @@ async def analyze_gaps_for_topic(
         topic=payload.topic,
         year=payload.year,
         venue=payload.venue,
+        strict_venue=payload.strict_venue,
         max_results=payload.max_results,
         top_k_gaps=payload.top_k_gaps,
     )

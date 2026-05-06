@@ -98,7 +98,7 @@ async function fetchPublicReport(report_id) {
     return await parseResponse(response, "Failed to load shared report");
 }
 
-function buildSearchPayload({ topic, year, venue, maxResults }) {
+function buildSearchPayload({ topic, year, venue, strictVenue, maxResults }) {
     const payload = {
         topic: topic.trim(),
         max_results: maxResults,
@@ -111,6 +111,7 @@ function buildSearchPayload({ topic, year, venue, maxResults }) {
 
     if (venue && venue.trim()) {
         payload.venue = venue.trim();
+        payload.strict_venue = strictVenue === true;
     }
 
     return payload;
@@ -125,7 +126,8 @@ function formatFilters(filters) {
     }
 
     if (filters.venue) {
-        chips.push(`Venue: ${filters.venue}`);
+        const label = filters.strict_venue ? 'Venue (strict)' : 'Venue';
+        chips.push(`${label}: ${filters.venue}`);
     }
 
     return chips;

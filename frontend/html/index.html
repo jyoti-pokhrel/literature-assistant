@@ -9,12 +9,14 @@
     (function () {
       var mode = window.location.pathname.indexOf('/workspace') === 0 ? 'workspace' : 'landing';
       document.documentElement.setAttribute('data-route-mode', mode);
+      var storedTheme = localStorage.getItem('theme');
+      document.documentElement.setAttribute('data-theme', storedTheme === 'light' ? 'light' : 'dark');
     })();
   </script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/css/style.css?v=20260502d" />
+  <link rel="stylesheet" href="/css/style.css?v=20260506g" />
   <link rel="stylesheet" href="/css/workspace.css?v=1" />
   <link rel="stylesheet" href="/css/dashboard.css?v=1" />
 </head>
@@ -25,139 +27,303 @@
 
     <!-- Nav -->
     <nav class="lp-nav" id="lp-nav">
-      <span class="lp-nav-brand">Research Agent</span>
+      <a class="lp-nav-brand" href="#" @click.prevent="window.scrollTo({ top: 0, behavior: 'smooth' })">
+        Research Agent
+      </a>
+      <div class="lp-nav-mid">
+        <a href="#how-it-works">How it works</a>
+        <a href="#features">Features</a>
+        <a href="#faq">FAQ</a>
+      </div>
       <div class="lp-nav-actions">
         <a href="#" class="lp-nav-login">GitHub</a>
-        <button class="btn-primary lp-btn-primary" type="button" @click="$store.app.openWorkspace()">Start searching →</button>
+        <button class="btn-primary lp-btn-primary" type="button" @click="$store.app.openWorkspace()">Start free →</button>
       </div>
     </nav>
 
     <!-- Hero -->
-    <section class="lp-hero" style="position: relative;">
-      <h1 class="lp-hero-title">
-        Find what research is missing
-      </h1>
-      <p class="lp-hero-subtitle">
-        Find gaps, limitations, and underexplored directions in your literature — in minutes, not weeks.
-      </p>
-      
-      <!-- Search Bar -->
-      <div class="lp-search-container" x-data="{ query: '' }">
-        <form class="lp-search-form" @submit.prevent="if(query.trim()) { $store.app.form.topic = query; $store.app.openWorkspace(); setTimeout(() => document.getElementById('main-prompt')?.focus(), 100); }">
-          <svg class="lp-search-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="11" cy="11" r="8"></circle>
-            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-          </svg>
-          <input 
-            type="text" 
-            class="lp-search-input" 
-            placeholder="What would you like to research?" 
-            x-model="query"
-          >
-          <button type="submit" class="lp-search-btn">Search →</button>
-        </form>
-        <div class="lp-search-sources">
-          <span>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-            Semantic Scholar
-          </span>
-          <span>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-            arXiv
-          </span>
-          <span>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
-            OpenAlex
-          </span>
-        </div>
-      </div>
-      
-      <!-- Scroll indicator -->
-      <div class="lp-scroll-indicator">
-        <span>See how it works</span>
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
-      </div>
-    </section>
+    <section class="lp-hero">
+      <div class="lp-hero-inner">
+        <h1 class="lp-hero-title">
+          Find what research is <span class="lp-hero-accent">missing.</span>
+        </h1>
+        <p class="lp-hero-subtitle">
+          Surface gaps, limitations, and underexplored directions across your literature — in minutes, not weeks.
+        </p>
 
-    <!-- Social Proof -->
-    <section class="lp-social-proof">
-      <div class="lp-social-proof-label">Trusted by researchers</div>
-      <div class="lp-social-proof-logos">
-        <span>University labs</span>
-        <span>Research institutions</span>
-        <span>Independent researchers</span>
-      </div>
-    </section>
-
-    <!-- Stats -->
-    <section class="lp-showcase">
-      <div class="lp-stats">
-        <div class="lp-stat">
-          <div class="lp-stat-value">8K+</div>
-          <div class="lp-stat-label">Papers analyzed</div>
-        </div>
-        <div class="lp-stat">
-          <div class="lp-stat-value">12</div>
-          <div class="lp-stat-label">Avg gaps found</div>
-        </div>
-        <div class="lp-stat">
-          <div class="lp-stat-value">3s</div>
-          <div class="lp-stat-label">Avg search time</div>
-        </div>
-        <div class="lp-stat">
-          <div class="lp-stat-value">85%</div>
-          <div class="lp-stat-label">Citation accuracy</div>
-        </div>
-      </div>
-    </section>
-
-    <!-- Features -->
-    <section class="lp-features">
-      <div class="lp-section-label">How it works</div>
-      <h2 class="lp-section-title">Everything you need to find research gaps</h2>
-      <div class="lp-features-grid">
-        <div class="lp-feature">
-          <div class="lp-feature-icon">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <!-- Search Bar -->
+        <div class="lp-search-container" x-data="{ query: '' }">
+          <form class="lp-search-form" @submit.prevent="if(query.trim()) { $store.app.form.topic = query; $store.app.openWorkspace(); setTimeout(() => document.getElementById('main-prompt')?.focus(), 100); }">
+            <svg class="lp-search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <circle cx="11" cy="11" r="8"></circle>
               <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
             </svg>
+            <input
+              type="text"
+              class="lp-search-input"
+              placeholder="What would you like to research?"
+              x-model="query"
+            >
+            <button type="submit" class="lp-search-btn">Search →</button>
+          </form>
+          <div class="lp-search-sources">
+            <span>Semantic Scholar</span>
+            <span class="lp-search-sources-sep" aria-hidden="true">·</span>
+            <span>arXiv</span>
+            <span class="lp-search-sources-sep" aria-hidden="true">·</span>
+            <span>OpenAlex</span>
           </div>
-          <h3 class="lp-feature-title">Multi-source search</h3>
-          <p class="lp-feature-desc">
-            One query searches Semantic Scholar, arXiv, and OpenAlex simultaneously. 
-            Papers are deduplicated and ranked by relevance. No manual searching required.
-          </p>
         </div>
-        <div class="lp-feature">
-          <div class="lp-feature-icon">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path>
-              <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>
+      </div>
+
+      <!-- Browser-frame product mockup -->
+      <div class="lp-mockup" aria-hidden="true">
+        <div class="lp-mockup-frame">
+          <div class="lp-mockup-chrome">
+            <div class="lp-mockup-url">researchagent.app / workspace</div>
+          </div>
+          <div class="lp-mockup-body">
+            <div class="lp-mockup-header">
+              <div class="lp-mockup-kicker">Research query</div>
+              <div class="lp-mockup-h1">Sample efficiency in low-data RL regimes</div>
+              <div class="lp-mockup-meta">42 papers · 8 clusters · 12 gaps identified</div>
+            </div>
+            <div class="lp-mockup-tabs">
+              <span class="lp-mockup-tab is-active">Research Gaps</span>
+              <span class="lp-mockup-tab">Literature Map</span>
+              <span class="lp-mockup-tab">Source Papers</span>
+            </div>
+            <div class="lp-mockup-grid">
+              <div class="lp-mockup-card">
+                <div class="lp-mockup-card-title">Limited evaluation on real-world tasks</div>
+                <div class="lp-mockup-chips">
+                  <span class="lp-mockup-chip"><i></i> Cluster 02</span>
+                  <span class="lp-mockup-chip">4 papers</span>
+                </div>
+                <div class="lp-mockup-line"></div>
+                <div class="lp-mockup-line lp-mockup-line-sm"></div>
+              </div>
+              <div class="lp-mockup-card">
+                <div class="lp-mockup-card-title">No standard benchmarks for transfer</div>
+                <div class="lp-mockup-chips">
+                  <span class="lp-mockup-chip"><i></i> Cluster 04</span>
+                  <span class="lp-mockup-chip">7 papers</span>
+                </div>
+                <div class="lp-mockup-line"></div>
+                <div class="lp-mockup-line lp-mockup-line-sm"></div>
+              </div>
+              <div class="lp-mockup-card">
+                <div class="lp-mockup-card-title">Reward shaping under-explored</div>
+                <div class="lp-mockup-chips">
+                  <span class="lp-mockup-chip"><i></i> Cluster 01</span>
+                  <span class="lp-mockup-chip">3 papers</span>
+                </div>
+                <div class="lp-mockup-line"></div>
+                <div class="lp-mockup-line lp-mockup-line-sm"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Logo strip -->
+    <section class="lp-logos">
+      <div class="lp-logos-label">Powered by open research infrastructure</div>
+      <div class="lp-logos-row">
+        <span class="lp-logo">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+          Semantic Scholar
+        </span>
+        <span class="lp-logo">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          arXiv
+        </span>
+        <span class="lp-logo">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+          OpenAlex
+        </span>
+        <span class="lp-logo">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+          CrossRef
+        </span>
+        <span class="lp-logo">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22s-8-4.5-8-11.8A8 8 0 0 1 12 2a8 8 0 0 1 8 8.2c0 7.3-8 11.8-8 11.8z"/><circle cx="12" cy="10" r="3"/></svg>
+          DOI
+        </span>
+      </div>
+    </section>
+
+    <!-- How it works (scroll scenes) -->
+    <section class="lp-scenes" id="how-it-works">
+      <div class="lp-section-head">
+        <div class="lp-section-label">How it works</div>
+        <h2 class="lp-section-title">Three steps from query to insight.</h2>
+      </div>
+
+      <div class="lp-scene">
+        <div class="lp-scene-media">
+          <div class="lp-scene-frame">
+            <div class="lp-scene-chrome"></div>
+            <div class="lp-scene-search">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+              <span>sample efficiency in RL</span>
+            </div>
+            <div class="lp-scene-results">
+              <div class="lp-scene-result"><span class="lp-scene-source">Semantic Scholar</span><span>1,243 results</span></div>
+              <div class="lp-scene-result"><span class="lp-scene-source">arXiv</span><span>867 results</span></div>
+              <div class="lp-scene-result"><span class="lp-scene-source">OpenAlex</span><span>2,108 results</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="lp-scene-copy">
+          <span class="lp-scene-num">01</span>
+          <h3 class="lp-scene-title">Search across sources in one query</h3>
+          <p class="lp-scene-desc">One prompt searches Semantic Scholar, arXiv, and OpenAlex simultaneously. Papers are deduplicated and ranked — no manual cross-checking.</p>
+        </div>
+      </div>
+
+      <div class="lp-scene lp-scene-flip">
+        <div class="lp-scene-media">
+          <div class="lp-scene-frame">
+            <div class="lp-scene-chrome"></div>
+            <div class="lp-scene-stack">
+              <div class="lp-bento-mock-card">
+                <div class="lp-bento-mock-title">Reward shaping under-explored</div>
+                <div class="lp-bento-mock-chips">
+                  <span><i></i> Cluster 01</span>
+                  <span>3 papers</span>
+                </div>
+                <div class="lp-bento-mock-score"><span>Novelty</span><div class="lp-bento-mock-bar"><i style="--w: 84%;"></i></div></div>
+              </div>
+              <div class="lp-bento-mock-card">
+                <div class="lp-bento-mock-title">No standard transfer benchmarks</div>
+                <div class="lp-bento-mock-chips">
+                  <span><i></i> Cluster 04</span>
+                  <span>7 papers</span>
+                </div>
+                <div class="lp-bento-mock-score"><span>Support</span><div class="lp-bento-mock-bar"><i style="--w: 71%;"></i></div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="lp-scene-copy">
+          <span class="lp-scene-num">02</span>
+          <h3 class="lp-scene-title">Detect gaps the agent reads for you</h3>
+          <p class="lp-scene-desc">The agent reads abstracts and surfaces what's missing. Each gap is scored on novelty, support, and actionability — with citations attached.</p>
+        </div>
+      </div>
+
+      <div class="lp-scene">
+        <div class="lp-scene-media">
+          <div class="lp-scene-frame">
+            <div class="lp-scene-chrome"></div>
+            <div class="lp-scene-map">
+              <svg viewBox="0 0 320 200" preserveAspectRatio="none" aria-hidden="true">
+                <line x1="80" y1="60" x2="160" y2="100" stroke="currentColor" stroke-opacity="0.15"/>
+                <line x1="160" y1="100" x2="240" y2="70" stroke="currentColor" stroke-opacity="0.15"/>
+                <line x1="160" y1="100" x2="220" y2="150" stroke="currentColor" stroke-opacity="0.15"/>
+                <line x1="80" y1="60" x2="100" y2="140" stroke="currentColor" stroke-opacity="0.15"/>
+              </svg>
+              <span class="lp-bento-node" style="left: 48%; top: 50%; --size: 38px; --o: 1;"></span>
+              <span class="lp-bento-node" style="left: 22%; top: 28%; --size: 26px; --o: 0.5;"></span>
+              <span class="lp-bento-node" style="left: 72%; top: 32%; --size: 20px; --o: 0.3;"></span>
+              <span class="lp-bento-node" style="left: 30%; top: 68%; --size: 18px; --o: 0.2;"></span>
+              <span class="lp-bento-node" style="left: 66%; top: 72%; --size: 24px; --o: 0.35;"></span>
+            </div>
+          </div>
+        </div>
+        <div class="lp-scene-copy">
+          <span class="lp-scene-num">03</span>
+          <h3 class="lp-scene-title">Map the field, then explore</h3>
+          <p class="lp-scene-desc">Cluster your literature visually. Click a node to drill into its papers and gaps. Find the dense regions — and the silent ones.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Features (Bento) -->
+    <section class="lp-features" id="features">
+      <div class="lp-section-head">
+        <div class="lp-section-label">Features</div>
+        <h2 class="lp-section-title">Built for finding what's not there.</h2>
+      </div>
+      <div class="lp-bento">
+        <article class="lp-bento-tile lp-bento-tile-lg">
+          <div class="lp-bento-media lp-bento-media-map">
+            <svg class="lp-bento-map-svg" viewBox="0 0 320 200" preserveAspectRatio="none" aria-hidden="true">
+              <line x1="80" y1="60" x2="160" y2="100" stroke="currentColor" stroke-opacity="0.15" stroke-width="1"/>
+              <line x1="160" y1="100" x2="240" y2="70" stroke="currentColor" stroke-opacity="0.15" stroke-width="1"/>
+              <line x1="160" y1="100" x2="220" y2="150" stroke="currentColor" stroke-opacity="0.15" stroke-width="1"/>
+              <line x1="80" y1="60" x2="100" y2="140" stroke="currentColor" stroke-opacity="0.15" stroke-width="1"/>
+              <line x1="100" y1="140" x2="220" y2="150" stroke="currentColor" stroke-opacity="0.15" stroke-width="1"/>
             </svg>
+            <span class="lp-bento-node" style="left: 47%; top: 48%; --size: 44px; --o: 1;"></span>
+            <span class="lp-bento-node" style="left: 22%; top: 28%; --size: 30px; --o: 0.55;"></span>
+            <span class="lp-bento-node" style="left: 72%; top: 32%; --size: 24px; --o: 0.35;"></span>
+            <span class="lp-bento-node" style="left: 30%; top: 68%; --size: 20px; --o: 0.22;"></span>
+            <span class="lp-bento-node" style="left: 66%; top: 72%; --size: 28px; --o: 0.4;"></span>
           </div>
-          <h3 class="lp-feature-title">Gap detection</h3>
-          <p class="lp-feature-desc">
-            The agent reads abstracts and identifies what's missing. 
-            Each gap is scored by novelty, support, and actionability so you know where to focus.
-          </p>
-        </div>
-        <div class="lp-feature">
-          <div class="lp-feature-icon">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="18" cy="5" r="3"></circle>
-              <circle cx="6" cy="12" r="3"></circle>
-              <circle cx="18" cy="19" r="3"></circle>
-              <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
-              <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
-            </svg>
+          <div class="lp-bento-copy">
+            <h3 class="lp-bento-title">Visual literature map</h3>
+            <p class="lp-bento-desc">See your corpus clustered by topic. Spot dense areas, find empty ones. The map updates as you refine your query.</p>
           </div>
-          <h3 class="lp-feature-title">Visual research maps</h3>
-          <p class="lp-feature-desc">
-            See your literature clustered by topic. 
-            Spot the dense areas. Find the empty ones. Interactive visualization makes exploration easy.
-          </p>
-        </div>
+        </article>
+
+        <article class="lp-bento-tile">
+          <div class="lp-bento-media lp-bento-media-card">
+            <div class="lp-bento-mock-card">
+              <div class="lp-bento-mock-title">Limited evaluation on real-world tasks</div>
+              <div class="lp-bento-mock-chips">
+                <span><i></i> Cluster 02</span>
+                <span>4 papers</span>
+              </div>
+              <div class="lp-bento-mock-line"></div>
+              <div class="lp-bento-mock-line lp-bento-mock-line-sm"></div>
+              <div class="lp-bento-mock-score">
+                <span>Novelty</span>
+                <div class="lp-bento-mock-bar"><i style="--w: 78%;"></i></div>
+              </div>
+              <div class="lp-bento-mock-score">
+                <span>Support</span>
+                <div class="lp-bento-mock-bar"><i style="--w: 62%;"></i></div>
+              </div>
+            </div>
+          </div>
+          <div class="lp-bento-copy">
+            <h3 class="lp-bento-title">Scored gap cards</h3>
+            <p class="lp-bento-desc">Each gap is rated on novelty, support, and actionability — and links back to the papers that suggest it.</p>
+          </div>
+        </article>
+
+        <article class="lp-bento-tile">
+          <div class="lp-bento-media lp-bento-media-list">
+            <div class="lp-bento-mock-row">
+              <span class="lp-bento-mock-num">01</span>
+              <div>
+                <div class="lp-bento-mock-row-title">Self-supervised pretraining for low-resource RL</div>
+                <div class="lp-bento-mock-row-meta">NeurIPS &nbsp;·&nbsp; 2024</div>
+              </div>
+            </div>
+            <div class="lp-bento-mock-row">
+              <span class="lp-bento-mock-num">02</span>
+              <div>
+                <div class="lp-bento-mock-row-title">Sample-efficient model-based control</div>
+                <div class="lp-bento-mock-row-meta">ICML &nbsp;·&nbsp; 2024</div>
+              </div>
+            </div>
+            <div class="lp-bento-mock-row">
+              <span class="lp-bento-mock-num">03</span>
+              <div>
+                <div class="lp-bento-mock-row-title">Transfer benchmarks for offline RL</div>
+                <div class="lp-bento-mock-row-meta">arXiv &nbsp;·&nbsp; 2025</div>
+              </div>
+            </div>
+          </div>
+          <div class="lp-bento-copy">
+            <h3 class="lp-bento-title">Source papers, deduplicated</h3>
+            <p class="lp-bento-desc">One query, three sources, ranked by relevance. Every claim traces back to its citation.</p>
+          </div>
+        </article>
       </div>
     </section>
 
@@ -177,9 +343,11 @@
     </section>
 
     <!-- FAQ -->
-    <section class="lp-faq">
-      <div class="lp-section-label">FAQ</div>
-      <h2 class="lp-section-title">Questions? We have answers.</h2>
+    <section class="lp-faq" id="faq">
+      <div class="lp-section-head">
+        <div class="lp-section-label">FAQ</div>
+        <h2 class="lp-section-title">Questions? We have answers.</h2>
+      </div>
       
       <div class="lp-faq-item" x-data="{ open: false }">
         <button type="button" class="lp-faq-question" @click="open = !open">
@@ -245,14 +413,36 @@
 
     <!-- Footer -->
     <footer class="lp-footer">
-      <div class="lp-footer-inner">
-        <span class="lp-footer-brand">Research Agent</span>
-        <div class="lp-footer-links">
+      <div class="lp-footer-grid">
+        <div class="lp-footer-col lp-footer-col-brand">
+          <span class="lp-footer-brand">Research Agent</span>
+          <p class="lp-footer-tag">Find what research is missing — across Semantic Scholar, arXiv, and OpenAlex.</p>
+        </div>
+        <div class="lp-footer-col">
+          <span class="lp-footer-col-title">Product</span>
+          <a href="#how-it-works">How it works</a>
+          <a href="#features">Features</a>
+          <a href="#faq">FAQ</a>
+          <a href="#" @click.prevent="$store.app.openWorkspace()">Try it</a>
+        </div>
+        <div class="lp-footer-col">
+          <span class="lp-footer-col-title">Sources</span>
+          <a href="https://www.semanticscholar.org" target="_blank" rel="noopener noreferrer">Semantic Scholar</a>
+          <a href="https://arxiv.org" target="_blank" rel="noopener noreferrer">arXiv</a>
+          <a href="https://openalex.org" target="_blank" rel="noopener noreferrer">OpenAlex</a>
+          <a href="https://www.crossref.org" target="_blank" rel="noopener noreferrer">CrossRef</a>
+        </div>
+        <div class="lp-footer-col">
+          <span class="lp-footer-col-title">Company</span>
           <a href="#">About</a>
           <a href="#">GitHub</a>
           <a href="#">Contact</a>
+          <a href="#">Privacy</a>
         </div>
-        <span class="lp-footer-copy">Built with care for researchers</span>
+      </div>
+      <div class="lp-footer-bottom">
+        <span class="lp-footer-copy">© 2026 Research Agent</span>
+        <span class="lp-footer-status"><span class="lp-footer-status-dot"></span> All systems operational</span>
       </div>
     </footer>
 
@@ -313,8 +503,8 @@
         </div>
         <div class="header-actions">
           <button class="btn-icon theme-toggle-btn" type="button" aria-label="Toggle theme" @click="$store.app.toggleTheme()">
-            <span class="sun-icon" x-cloak x-show="$store.app.theme === 'dark'">☀</span>
-            <span class="moon-icon" x-cloak x-show="$store.app.theme === 'light'">☾</span>
+            <span class="sun-icon" x-cloak x-show="$store.app.theme === 'light'">☀</span>
+            <span class="moon-icon" x-cloak x-show="$store.app.theme === 'dark'">☾</span>
           </button>
         </div>
       </header>
@@ -329,8 +519,8 @@
             </div>
             <div class="dash-topbar-right">
               <button class="dash-icon-btn" type="button" @click="$store.app.toggleTheme()" title="Toggle theme">
-                <span x-cloak x-show="$store.app.theme === 'dark'">☀</span>
-                <span x-cloak x-show="$store.app.theme === 'light'">☾</span>
+                <span x-cloak x-show="$store.app.theme === 'light'">☀</span>
+                <span x-cloak x-show="$store.app.theme === 'dark'">☾</span>
               </button>
               <button class="dash-icon-btn" type="button" @click="$store.app.techPanelOpen = !$store.app.techPanelOpen" title="Technical details">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
@@ -363,9 +553,13 @@
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
                   <input id="venue-filter" type="text" placeholder="Venue" x-model="$store.app.form.venue" />
                 </label>
+                <label class="dash-filter-chip" x-show="$store.app.form.venue.trim().length > 0" title="Strict venue match: drop papers whose venue is not a canonical alias (e.g., 'NeurIPS', 'NIPS').">
+                  <input id="strict-venue-filter" type="checkbox" x-model="$store.app.form.strictVenue" />
+                  <span>Strict</span>
+                </label>
                 <label class="dash-filter-chip">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
-                  <input id="max-results-filter" type="number" min="1" max="20" inputmode="numeric" placeholder="Max papers" x-model.number="$store.app.form.maxResults" />
+                  <input id="max-results-filter" type="number" min="1" max="50" inputmode="numeric" placeholder="Max papers" x-model.number="$store.app.form.maxResults" />
                 </label>
               </div>
             </form>
