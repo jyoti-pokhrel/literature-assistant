@@ -93,3 +93,66 @@ class PaperSearchResponse(BaseModel):
     sources_used: List[str]
     count: int
     papers: List[RetrievedPaper]
+
+
+class ArxivExploreRequest(BaseModel):
+    topic: Optional[str] = Field(default=None, examples=["multi agent rl"])
+    year: Optional[str] = Field(default=None, examples=["2025", "2023-2026"])
+    venue: Optional[str] = Field(default=None, examples=["NeurIPS", "ICLR"])
+    strict_venue: bool = Field(default=False, examples=[False])
+    cursor: int = Field(default=0, ge=0, le=10000, examples=[0])
+    page_size: int = Field(default=20, ge=1, le=50, examples=[20])
+
+    @field_validator("topic")
+    @classmethod
+    def validate_topic(cls, value: Optional[str]) -> Optional[str]:
+        if value is None:
+            return None
+        value = value.strip()
+        if not value:
+            return None
+        if len(value) < 3:
+            raise ValueError("Topic must be at least 3 characters")
+        return value
+
+    @field_validator("year")
+    @classmethod
+    def validate_year(cls, value: Optional[str]) -> Optional[str]:
+        if value is None:
+            return None
+        value = value.strip()
+        if not value or value.lower() in {"string", "none", "null", "undefined", "all", "any"}:
+            return None
+        exact_match = re.fullmatch(r"\d{4}", value)
+        range_match = re.fullmatch(r"(\d{4})\s*-\s*(\d{4})", value)
+        if exact_match:
+            if int(value) < 1:
+                raise ValueError("year must be a positive integer")
+            return value
+        if range_match:
+            start_year = int(range_match.group(1))
+            end_year = int(range_match.group(2))
+            if start_year < 1 or end_year < 1:
+                raise ValueError("year range must contain positive integers")
+            if start_year > end_year:
+                raise ValueError("year range start must be less than or equal to end")
+            return f"{start_year}-{end_year}"
+        raise ValueError("year must be a 4 digit year or a range like 2023-2026")
+
+    @field_validator("venue")
+    @classmethod
+    def validate_venue(cls, value: Optional[str]) -> Optional[str]:
+        if value is None:
+            return None
+        value = value.strip()
+        if not value or value.lower() in {"string", "none", "null", "undefined", "all", "any"}:
+            return None
+        return value
+
+
+class ArxivExploreResponse(BaseModel):
+    topic: Optional[str] = None
+    filters: dict
+    papers: List[RetrievedPaper]
+    next_cursor: int
+    has_more: bool

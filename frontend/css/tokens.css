@@ -1,0 +1,299 @@
+/* =========================================================================
+   tokens.css — Apple-clean + glassmorphism.
+   Subtle blue accent. Strong frosted glass. Loaded BEFORE style.css.
+   ========================================================================= */
+
+:root {
+    /* Surfaces — near-white, with the faintest cool tint */
+    --bg:           #f5f7fa;
+    --bg-2:         #eceff5;
+    --ink:          #050608;
+    --ink-2:        #4a5564;
+    --ink-3:        #8b95a4;
+    --rule:         rgba(5, 6, 8, 0.07);
+    --rule-strong:  rgba(5, 6, 8, 0.14);
+
+    /* Glass — vision-OS / macOS-Sequoia inspired translucent panels */
+    --glass:         rgba(255, 255, 255, 0.55);
+    --glass-2:       rgba(255, 255, 255, 0.72);
+    --glass-strong:  rgba(255, 255, 255, 0.85);
+    --glass-border:  rgba(255, 255, 255, 0.72);
+    --glass-edge:    rgba(5, 6, 8, 0.06);
+    --glass-blur:    saturate(1.6) blur(28px);
+    --glass-blur-strong: saturate(1.8) blur(40px);
+
+    /* Accent — pure ink, no chroma. Glass + monochrome. */
+    --accent:       #050608;
+    --accent-2:     #4a5564;
+    --accent-soft:  rgba(5, 6, 8, 0.06);
+    --accent-line:  rgba(5, 6, 8, 0.22);
+
+    /* Background mesh — subtle neutral light, the only "color"
+       is a slightly cooler shade behind the glass. */
+    --mesh-1: rgba(120, 130, 150, 0.18);
+    --mesh-2: rgba(180, 185, 195, 0.18);
+    --mesh-3: rgba(140, 150, 165, 0.16);
+
+    /* Cluster palette — monochrome with a single warm accent for differentiation */
+    --c-1: var(--ink);
+    --c-2: #4a5564;
+    --c-3: #8b95a4;
+    --c-4: #c0c7d3;
+
+    /* Type */
+    --font-sans:  'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Helvetica, sans-serif;
+    --font-mono:  ui-monospace, 'SF Mono', SFMono-Regular, Menlo, Monaco, monospace;
+
+    /* 8pt scale */
+    --s-0: 0.25rem;  --s-1: 0.5rem;  --s-2: 1rem;   --s-3: 1.5rem;
+    --s-4: 2rem;     --s-5: 3rem;    --s-6: 4rem;   --s-7: 6rem;   --s-8: 8rem;
+
+    /* Type scale */
+    --t-display: clamp(2.4rem, 5.4vw, 4.25rem);
+    --t-h1:      clamp(1.625rem, 2.8vw, 2.25rem);
+    --t-h2:      clamp(1.15rem, 1.8vw, 1.4rem);
+    --t-body:    1rem;
+    --t-small:   0.875rem;
+    --t-xs:      0.78rem;
+    --t-mono-xs: 0.72rem;
+
+    /* Radius — Apple-coded, generous */
+    --radius-sm: 10px;
+    --radius-md: 14px;
+    --radius-lg: 20px;
+    --radius-xl: 28px;
+    --radius-pill: 999px;
+
+    /* Motion — tiered easings (Apple-coded) + a spring for delight */
+    --t-instant: 80ms;
+    --t-fast:    180ms;
+    --t-base:    320ms;
+    --t-slow:    520ms;
+    --t-glide:   720ms;
+
+    /* Apple's standard curve — used by macOS / iOS for most transitions */
+    --ease:        cubic-bezier(0.32, 0.72, 0, 1);
+    --ease-out:    cubic-bezier(0.22, 1, 0.36, 1);
+    --ease-in:     cubic-bezier(0.5, 0, 0.75, 0);
+    --ease-in-out: cubic-bezier(0.83, 0, 0.17, 1);
+    /* Slight overshoot — for entrances + delight micro-moments */
+    --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+    /* Smooth float — for ambient/idle motion (mesh drift) */
+    --ease-float: cubic-bezier(0.45, 0, 0.55, 1);
+
+    /* Shadows — soft, layered, glass-friendly */
+    --shadow-1: 0 1px 2px rgba(5, 6, 8, 0.04),
+                0 8px 24px rgba(5, 6, 8, 0.06);
+    --shadow-2: 0 1px 2px rgba(5, 6, 8, 0.04),
+                0 24px 60px rgba(5, 6, 8, 0.10);
+    --shadow-glass: inset 0 1px 0 var(--glass-border),
+                    inset 0 -1px 0 var(--glass-edge),
+                    0 12px 36px rgba(5, 6, 8, 0.08);
+    --shadow-glass-strong: inset 0 1px 0 var(--glass-border),
+                           inset 0 -1px 0 var(--glass-edge),
+                           0 24px 64px rgba(5, 6, 8, 0.12);
+}
+
+:root[data-theme='dark'] {
+    --bg:          #07090e;
+    --bg-2:        #0e1118;
+    --ink:         #f6f8fc;
+    --ink-2:       #aeb6c4;
+    --ink-3:       #67707f;
+    --rule:        rgba(255, 255, 255, 0.08);
+    --rule-strong: rgba(255, 255, 255, 0.16);
+
+    --glass:        rgba(20, 24, 33, 0.45);
+    --glass-2:      rgba(20, 24, 33, 0.65);
+    --glass-strong: rgba(20, 24, 33, 0.82);
+    --glass-border: rgba(255, 255, 255, 0.10);
+    --glass-edge:   rgba(0, 0, 0, 0.5);
+
+    --accent:       #f6f8fc;
+    --accent-2:     #b1b8c4;
+    --accent-soft:  rgba(255, 255, 255, 0.08);
+    --accent-line:  rgba(255, 255, 255, 0.28);
+
+    --mesh-1: rgba(120, 130, 160, 0.18);
+    --mesh-2: rgba(80, 90, 110, 0.20);
+    --mesh-3: rgba(160, 170, 190, 0.10);
+
+    --c-1: var(--ink);
+    --c-2: #b1b8c4;
+    --c-3: #67707f;
+    --c-4: #2c333f;
+
+    --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.4),
+                0 8px 24px rgba(0, 0, 0, 0.45);
+    --shadow-2: 0 1px 2px rgba(0, 0, 0, 0.4),
+                0 24px 60px rgba(0, 0, 0, 0.65);
+    --shadow-glass: inset 0 1px 0 var(--glass-border),
+                    inset 0 -1px 0 var(--glass-edge),
+                    0 12px 36px rgba(0, 0, 0, 0.55);
+    --shadow-glass-strong: inset 0 1px 0 var(--glass-border),
+                           inset 0 -1px 0 var(--glass-edge),
+                           0 24px 64px rgba(0, 0, 0, 0.7);
+}
+
+/* Legacy aliases — keep existing selectors working */
+:root,
+:root[data-theme='dark'] {
+    --bg-color:       var(--bg);
+    --text-main:      var(--ink);
+    --text-muted:     var(--ink-2);
+    --card-bg:        var(--glass-2);
+    --input-bg:       var(--glass-2);
+    --hover-bg:       var(--accent-soft);
+    --surface-strong: var(--bg-2);
+    --surface-bg:     var(--bg);
+    --border-color:   var(--rule);
+    --glass-bg:       var(--glass);
+    --sidebar-bg:     var(--glass-2);
+    --shadow-soft:    var(--shadow-1);
+    --success-color:  var(--accent);
+    --paper:          var(--bg);
+    --paper-2:        var(--bg-2);
+}
+
+:root { --nav-bg: rgba(245, 247, 250, 0.66); }
+:root[data-theme='dark'] { --nav-bg: rgba(7, 9, 14, 0.66); }
+
+/* ----- Globals ----------------------------------------------------------- */
+
+html {
+    scroll-behavior: smooth;
+    background: var(--bg);
+}
+
+/* Animated mesh — subtle drift gives the page life without distraction.
+   Three blobs cross-fade slowly via a fixed-position element behind everything. */
+html::before {
+    content: '';
+    position: fixed;
+    inset: -20vh -20vw;
+    z-index: -1;
+    pointer-events: none;
+    background:
+        radial-gradient(60vmax 55vmax at var(--mesh-x1, 12%) var(--mesh-y1, 18%), var(--mesh-1) 0%, transparent 60%),
+        radial-gradient(55vmax 55vmax at var(--mesh-x2, 88%) var(--mesh-y2, 8%),  var(--mesh-2) 0%, transparent 62%),
+        radial-gradient(65vmax 55vmax at var(--mesh-x3, 50%) var(--mesh-y3, 100%), var(--mesh-3) 0%, transparent 60%);
+    animation: mesh-drift 32s var(--ease-float) infinite;
+    will-change: transform;
+}
+@keyframes mesh-drift {
+    0%   { transform: translate3d( 0, 0, 0) scale(1);    }
+    33%  { transform: translate3d(-2vw, 1vh, 0) scale(1.03); }
+    66%  { transform: translate3d(2vw, -1vh, 0) scale(1.02); }
+    100% { transform: translate3d( 0, 0, 0) scale(1);    }
+}
+* { font-family: var(--font-sans); }
+
+body {
+    font-family: var(--font-sans);
+    background: transparent;
+    color: var(--ink);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+}
+
+/* ----- Reveal animation — soft, expensive, multi-axis ------------------- */
+@keyframes reveal-up {
+    0% {
+        opacity: 0;
+        transform: translate3d(0, 22px, 0) scale(0.975);
+        filter: blur(10px);
+    }
+    60% {
+        filter: blur(2px);
+    }
+    100% {
+        opacity: 1;
+        transform: translate3d(0, 0, 0) scale(1);
+        filter: blur(0);
+    }
+}
+
+/* Hero on-load — runs immediately */
+.reveal {
+    opacity: 0;
+    animation: reveal-up 1100ms var(--ease-out) forwards;
+    will-change: opacity, transform, filter;
+}
+.reveal-d1 { animation-delay:  80ms; }
+.reveal-d2 { animation-delay: 220ms; }
+.reveal-d3 { animation-delay: 380ms; }
+.reveal-d4 { animation-delay: 560ms; }
+.reveal-d5 { animation-delay: 760ms; }
+
+/* Scroll-reveal — IntersectionObserver in app.js adds .is-in-view.
+   Slower + softer than before; uses the same multi-axis treatment so the
+   landing reads as one cohesive entry experience. */
+.fade-in {
+    opacity: 0;
+    transform: translate3d(0, 28px, 0) scale(0.985);
+    filter: blur(6px);
+    transition:
+        opacity 1100ms var(--ease-out),
+        transform 1100ms var(--ease-out),
+        filter 1100ms var(--ease-out);
+    will-change: opacity, transform, filter;
+}
+.fade-in.is-in-view,
+.fade-in.visible {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+    filter: blur(0);
+}
+.fade-in[data-stagger="1"] { transition-delay:  80ms; }
+.fade-in[data-stagger="2"] { transition-delay: 220ms; }
+.fade-in[data-stagger="3"] { transition-delay: 360ms; }
+.fade-in[data-stagger="4"] { transition-delay: 500ms; }
+.fade-in[data-stagger="5"] { transition-delay: 640ms; }
+
+/* Reduced motion — disable all the things */
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+    html::before { animation: none !important; }
+    .fade-in {
+        opacity: 1 !important;
+        transform: none !important;
+    }
+}
+
+/* Selection */
+::selection { background: var(--accent-soft); color: var(--ink); }
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+    background: var(--rule-strong);
+    border: 2px solid transparent;
+    background-clip: padding-box;
+    border-radius: 999px;
+}
+::-webkit-scrollbar-thumb:hover { background: var(--ink-3); background-clip: padding-box; }
+
+/* ----- Glass utility primitives ------------------------------------------ */
+.glass {
+    background: var(--glass);
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--shadow-glass);
+    border-radius: var(--radius-lg);
+}
+.glass-strong {
+    background: var(--glass-strong);
+    backdrop-filter: var(--glass-blur-strong);
+    -webkit-backdrop-filter: var(--glass-blur-strong);
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--shadow-glass-strong);
+    border-radius: var(--radius-lg);
+}

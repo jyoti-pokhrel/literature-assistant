@@ -89,6 +89,16 @@ async function analyzeGapsStream(payload, onEvent) {
     return finalResult;
 }
 
+async function exploreArxiv(payload) {
+    const response = await fetch(`${BASE_URL}/explore/arxiv`, {
+        method: "POST",
+        headers: getHeaders({ hasBody: true, includeAuth: false }),
+        body: JSON.stringify(payload),
+    });
+
+    return await parseResponse(response, "Explore failed");
+}
+
 async function fetchPublicReport(report_id) {
     const response = await fetch(`${BASE_URL}/synthesis/public/report/${report_id}`, {
         method: "GET",
@@ -103,6 +113,29 @@ function buildSearchPayload({ topic, year, venue, strictVenue, maxResults }) {
         topic: topic.trim(),
         max_results: maxResults,
     };
+
+    const normalizedYear = typeof year === 'string' ? year.trim() : '';
+    if (normalizedYear) {
+        payload.year = normalizedYear.replace(/\s*-\s*/g, '-');
+    }
+
+    if (venue && venue.trim()) {
+        payload.venue = venue.trim();
+        payload.strict_venue = strictVenue === true;
+    }
+
+    return payload;
+}
+
+function buildExplorePayload({ topic, year, venue, strictVenue, cursor = 0, pageSize = 20 }) {
+    const trimmedTopic = (topic || '').trim();
+    const payload = {
+        cursor: Math.max(0, Number.parseInt(cursor, 10) || 0),
+        page_size: Math.min(50, Math.max(1, Number.parseInt(pageSize, 10) || 20)),
+    };
+    if (trimmedTopic) {
+        payload.topic = trimmedTopic;
+    }
 
     const normalizedYear = typeof year === 'string' ? year.trim() : '';
     if (normalizedYear) {
@@ -144,8 +177,10 @@ window.searchAPI = {
     searchPapers,
     analyzeGaps,
     analyzeGapsStream,
+    exploreArxiv,
     fetchPublicReport,
     buildSearchPayload,
+    buildExplorePayload,
     formatFilters,
     sourceLabel,
 };

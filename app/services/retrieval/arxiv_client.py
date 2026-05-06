@@ -90,13 +90,24 @@ async def _fetch_page(
     start: int,
     page_size: int,
 ) -> List[RetrievedPaper]:
-    params = {
-        "search_query": f"all:{topic}",
-        "start": start,
-        "max_results": page_size,
-        "sortBy": "relevance",
-        "sortOrder": "descending",
-    }
+    cleaned_topic = (topic or "").strip()
+    if cleaned_topic:
+        params = {
+            "search_query": f"all:{cleaned_topic}",
+            "start": start,
+            "max_results": page_size,
+            "sortBy": "relevance",
+            "sortOrder": "descending",
+        }
+    else:
+        # No topic: feed-style browse over all of arXiv, newest first.
+        params = {
+            "search_query": "all:*",
+            "start": start,
+            "max_results": page_size,
+            "sortBy": "submittedDate",
+            "sortOrder": "descending",
+        }
     try:
         response = await client.get(ARXIV_URL, params=params)
         response.raise_for_status()
@@ -147,3 +158,66 @@ async def search_arxiv(
     return filter_papers(
         candidates, year=year, venue=cleaned_venue, strict_venue=strict_venue
     )[:limit]
+
+
+async def fetch_arxiv_page(
+    topic: str | None = None,
+    *,
+    year: int | str | None = None,
+    venue: str | None = None,
+    strict_venue: bool = False,
+    cursor: int = 0,
+    page_size: int = 20,
+    timeout: int = 20,
+) -> tuple[List[RetrievedPaper], int, bool]:
+    """Return one page of arXiv results for the Explore view.
+
+    Walks arXiv starting at `cursor` in chunks of PAGE_SIZE, applies year/venue
+    filtering, dedups by external_id, and stops once page_size filtered papers
+    are collected or arXiv returns an empty chunk. The returned cursor is the
+    raw arXiv `start` to use for the next call; has_more is False only when an
+    arXiv response came back empty (i.e. end of the index for this query).
+    """
+    cleaned_venue = clean_text(venue)
+    cursor = max(0, int(cursor))
+    page_size = max(1, min(int(page_size), 50))
+
+    collected: List[RetrievedPaper] = []
+    seen_ids: set[str] = set()
+    next_cursor = cursor
+    has_more = True
+    walked = 0
+
+    topic_value = topic or ""
+
+    async with httpx.AsyncClient(timeout=timeout) as client:
+        while len(collected) < page_size and walked < MAX_CANDIDATES:
+            chunk_size = min(PAGE_SIZE, MAX_CANDIDATES - walked)
+            results = await _fetch_page(
+                client, topic=topic_value, start=next_cursor, page_size=chunk_size
+            )
+            if not results:
+                has_more = False
+                break
+
+            walked += len(results)
+            next_cursor += len(results)
+
+            filtered = filter_papers(
+                results, year=year, venue=cleaned_venue, strict_venue=strict_venue
+            )
+            for paper in filtered:
+                pid = paper.external_id or paper.url or paper.title
+                if pid in seen_ids:
+                    continue
+                seen_ids.add(pid)
+                collected.append(paper)
+                if len(collected) >= page_size:
+                    break
+
+            # If arXiv returned fewer than we asked for, the index is exhausted.
+            if len(results) < chunk_size:
+                has_more = False
+                break
+
+    return collected[:page_size], next_cursor, has_more

@@ -19,32 +19,48 @@
     /*  Palette                                                           */
     /* ------------------------------------------------------------------ */
 
-    const PALETTE = {
-        primary: '#4e79a7',
-        primaryDark: '#3f638c',
-        primaryLight: '#76b7b2',
-        teal: '#76b7b2',
-        tealDark: '#4f9a94',
-        amber: '#edc949',
-        rose: '#e15759',
-        slate: '#9ca3af',
-        green: '#59a14f',
-        barGradient: ['#4e79a7', '#76b7b2', '#59a14f'],
-        multiBar: ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#06b6d4', '#ef4444', '#84cc16', '#14b8a6', '#f43f5e'],
-    };
+    function readVar(name, fallback = '') {
+        return getComputedStyle(document.documentElement).getPropertyValue(name).trim() || fallback;
+    }
+
+    function getPalette() {
+        const c1 = readVar('--c-1', '#8b1e1e');
+        const c2 = readVar('--c-2', '#b86b3c');
+        const c3 = readVar('--c-3', '#c9a75e');
+        const c4 = readVar('--c-4', '#1a1816');
+        const ink = readVar('--ink', '#1a1816');
+        const inkMuted = readVar('--ink-2', '#6b665e');
+        return {
+            primary: c1,
+            primaryDark: c1,
+            primaryLight: c2,
+            teal: c2,
+            tealDark: c2,
+            amber: c3,
+            rose: c1,
+            slate: inkMuted,
+            green: c4,
+            barGradient: [c1, c2, c3],
+            multiBar: [c1, c2, c3, c4, inkMuted, ink],
+        };
+    }
+
+    const PALETTE_PROXY = new Proxy({}, {
+        get(_, key) { return getPalette()[key]; },
+    });
+    const PALETTE = PALETTE_PROXY;
 
     function getThemeColors() {
-        const isDark = !document.documentElement.hasAttribute('data-theme') ||
-            document.documentElement.getAttribute('data-theme') !== 'light';
+        const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
         return {
             isDark,
-            text: isDark ? '#e2e8f0' : '#1e293b',
-            textMuted: isDark ? '#94a3b8' : '#64748b',
-            grid: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)',
-            bg: isDark ? '#121214' : '#fffdf9',
-            tooltipBg: isDark ? 'rgba(15,15,20,0.92)' : 'rgba(255,255,255,0.95)',
-            tooltipBorder: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)',
-            tooltipText: isDark ? '#f1f5f9' : '#0f172a',
+            text:        readVar('--ink', isDark ? '#e8e4d8' : '#1a1816'),
+            textMuted:   readVar('--ink-2', isDark ? '#8a8378' : '#6b665e'),
+            grid:        readVar('--rule', isDark ? 'rgba(232,228,216,0.08)' : 'rgba(26,24,22,0.10)'),
+            bg:          readVar('--paper', isDark ? '#0e0d0b' : '#f5f1e8'),
+            tooltipBg:   readVar('--paper-2', isDark ? '#16140f' : '#efeadc'),
+            tooltipBorder: readVar('--rule-strong', isDark ? 'rgba(232,228,216,0.18)' : 'rgba(26,24,22,0.18)'),
+            tooltipText:  readVar('--ink', isDark ? '#e8e4d8' : '#1a1816'),
         };
     }
 
