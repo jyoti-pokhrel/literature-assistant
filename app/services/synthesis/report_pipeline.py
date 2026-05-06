@@ -343,6 +343,11 @@ async def run_synthesis_pipeline(
     })
     cluster_dashboard = _build_cluster_dashboard(normalized_papers, labels, reduced_2d, gaps)
 
+    # Attach paper coordinates to cluster summaries so the literature map can render
+    dashboard_by_id = {d["cluster_id"]: d for d in cluster_dashboard}
+    for summary in cluster_summaries:
+        summary.papers = dashboard_by_id.get(summary.cluster_id, {}).get("papers", [])
+
     report_id = str(uuid.uuid4())
     share_url = f"/synthesis/share/{report_id}"
     pdf_url = f"/synthesis/report/{report_id}/download"

@@ -88,6 +88,7 @@ class ClusterSummary(BaseModel):
     top_limitations: List[str] = Field(default_factory=list)
     top_future_work: List[str] = Field(default_factory=list)
     gap_id: Optional[str] = None  # linked SynthesisGap.gap_id
+    papers: List[Dict[str, Any]] = Field(default_factory=list)  # papers with x/y for the literature map
 
     @field_validator("theme_label", mode="before")
     @classmethod

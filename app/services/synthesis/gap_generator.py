@@ -320,16 +320,41 @@ def _extract_and_verify_citations(text: str, papers: list[dict]) -> set[int]:
         except ValueError:
             continue
 
-        if 0 <= idx < len(papers):
-            paper = papers[idx]
-
-            title = paper.get("title", "").lower()
-
-            # fuzzy validation between quote and paper title
-            similarity = SequenceMatcher(None, quote, title).ratio()
-
-            if similarity > 0.35:
+        if len(quote) < 10:
+            if 0 <= idx < len(papers):
                 valid_indices.add(idx)
+            continue
+
+        def _get_paper_text(p: dict) -> str:
+            return (
+                str(p.get("title", "")) + " " +
+                str(p.get("abstract", "")) + " " +
+                " ".join(p.get("normalized_limitations", [])) + " " +
+                " ".join(p.get("normalized_future_work", []))
+            ).lower()
+
+        if 0 <= idx < len(papers):
+            paper_text = _get_paper_text(papers[idx])
+            if quote in paper_text or SequenceMatcher(None, quote, paper_text).find_longest_match(0, len(quote), 0, len(paper_text)).size > len(quote) * 0.8:
+                valid_indices.add(idx)
+                continue
+
+        for alt_idx, alt_paper in enumerate(papers):
+            if alt_idx == idx:
+                continue
+            alt_text = _get_paper_text(alt_paper)
+            if quote in alt_text or SequenceMatcher(None, quote, alt_text).find_longest_match(0, len(quote), 0, len(alt_text)).size > len(quote) * 0.8:
+                valid_indices.add(alt_idx)
+                break
+
+    if not found_strict:
+        for match in re.finditer(r"\[(\d+)\]", text):
+            try:
+                idx = int(match.group(1)) - 1
+                if 0 <= idx < len(papers):
+                    valid_indices.add(idx)
+            except ValueError:
+                continue
 
     return valid_indices
 
@@ -386,46 +411,6 @@ def _score_from_evidence(cluster_papers: list[dict], cluster_id: int = -1, text:
 
     confidence = 1 / (1 + math.exp(-0.5 * (raw_score - 2.5)))
     return round(min(0.99, max(0.1, confidence)), 2)
-        if len(quote) < 10: 
-            if 0 <= idx < len(papers):
-                valid_indices.add(idx)
-            continue
-
-        def _get_paper_text(p: dict) -> str:
-            return (
-                str(p.get("title", "")) + " " +
-                str(p.get("abstract", "")) + " " +
-                " ".join(p.get("normalized_limitations", [])) + " " +
-                " ".join(p.get("normalized_future_work", []))
-            ).lower()
-
-        if 0 <= idx < len(papers):
-            paper_text = _get_paper_text(papers[idx])
-            # Check exact match or highly similar substring
-            if quote in paper_text or SequenceMatcher(None, quote, paper_text).find_longest_match(0, len(quote), 0, len(paper_text)).size > len(quote) * 0.8:
-                valid_indices.add(idx)
-                continue
-
-        # If it wasn't in the cited paper, check if the LLM just hallucinated the number
-        for alt_idx, alt_paper in enumerate(papers):
-            if alt_idx == idx:
-                continue
-            alt_text = _get_paper_text(alt_paper)
-            if quote in alt_text or SequenceMatcher(None, quote, alt_text).find_longest_match(0, len(quote), 0, len(alt_text)).size > len(quote) * 0.8:
-                valid_indices.add(alt_idx)
-                break
-
-    # 2. Fallback: If no strict format was found at all, grab loose [idx]
-    if not found_strict:
-        for match in re.finditer(r"\[(\d+)\]", text):
-            try:
-                idx = int(match.group(1)) - 1
-                if 0 <= idx < len(papers):
-                    valid_indices.add(idx)
-            except ValueError:
-                continue
-
-    return valid_indices
 
 
 #Public API
@@ -453,98 +438,97 @@ def generate_gaps_for_cluster(
         else (pattern.model_dump() if hasattr(pattern, "model_dump") else {})
     )
 
-<<try:
-    prompt = _gap_prompt(cluster_id, cluster_papers, topic, pattern_data)
+    try:
+        prompt = _gap_prompt(cluster_id, cluster_papers, topic, pattern_data, themes)
 
 
-    raw = None
-    last_exc = None
+        raw = None
+        last_exc = None
 
-    for model_name in [PRIMARY_MODEL, FALLBACK_MODEL]:
-        try:
-            raw = _call_openrouter(prompt, model_name)
-            break
-        except Exception as exc:
-            last_exc = exc
-            logger.warning("Model %s failed: %s", model_name, exc)
+        for model_name in [PRIMARY_MODEL, FALLBACK_MODEL]:
+            try:
+                raw = _call_openrouter(prompt, model_name)
+                break
+            except Exception as exc:
+                last_exc = exc
+                logger.warning("Model %s failed: %s", model_name, exc)
 
-    if raw is None:
-        raise RuntimeError(f"All LLM models failed: {last_exc}")
+        if raw is None:
+            raise RuntimeError(f"All LLM models failed: {last_exc}")
 
-    data = _extract_json(raw)
-
-
-    text_content = f"{data.get('description','')} {data.get('what_fails','')} {data.get('missing_piece','')}"
-
-    cited_indices = _extract_and_verify_citations(text_content, cluster_papers)
-
-    # fallback: ensure minimum support
-    if len(cited_indices) < 2:
-        cited_indices = set(range(min(2, len(cluster_papers))))
-
-    citations = _make_citations(cluster_papers)
-
-    cited_paper_ids = [
-        cluster_papers[i].get("paper_id") or cluster_papers[i].get("title", "")
-        for i in sorted(cited_indices)
-    ]
+        data = _extract_json(raw)
 
 
-    def clean(key, default=""):
-        return _clean_val(data.get(key)) or default
+        text_content = f"{data.get('description','')} {data.get('what_fails','')} {data.get('missing_piece','')}"
 
-    gap_fields = {
-        "gap_title": clean("gap_title", f"Research gap in cluster {cluster_id}"),
-        "description": clean("description"),
-        "what_fails": clean("what_fails"),
-        "why_it_exists": clean("why_it_exists"),
-        "missing_piece": clean("missing_piece"),
-        "pattern_detected": clean("pattern_detected"),
-        "proposed_direction": clean("proposed_direction"),
-    }
+        cited_indices = _extract_and_verify_citations(text_content, cluster_papers)
 
+        if len(cited_indices) < 2:
+            cited_indices = set(range(min(2, len(cluster_papers))))
 
-    final_score = _score_from_evidence(cluster_papers, cluster_id)
+        citations = _make_citations(cluster_papers)
 
-    evidence = _build_evidence(cluster_papers)
-    score_breakdown = build_gap_score_breakdown(
-        cluster_papers,
-        evidence,
-        _gap_category(evidence)
-    )
-
-    citation_validation = validate_gap_citations(gap_fields, citations)
+        cited_paper_ids = [
+            cluster_papers[i].get("paper_id") or cluster_papers[i].get("title", "")
+            for i in sorted(cited_indices)
+        ]
 
 
-    return SynthesisGap(
-        gap_id=gap_serial,
-        gap_title=gap_fields["gap_title"],
-        description=gap_fields["description"],
-        what_fails=gap_fields["what_fails"],
-        why_it_exists=gap_fields["why_it_exists"],
-        missing_piece=gap_fields["missing_piece"],
-        pattern_detected=gap_fields["pattern_detected"],
-        proposed_direction=gap_fields["proposed_direction"],
-        confidence_score=final_score,
-        cluster_id=cluster_id,
-        supporting_papers=cited_paper_ids,
-        citations=citations,
-        score_breakdown=score_breakdown,
-        citation_validation=citation_validation,
-    )
+        def clean(key, default=""):
+            return _clean_val(data.get(key)) or default
 
-except Exception as exc:
-    logger.warning("LLM gap generation failed for cluster %d: %s", cluster_id, exc)
+        gap_fields = {
+            "gap_title": clean("gap_title", f"Research gap in cluster {cluster_id}"),
+            "description": clean("description"),
+            "what_fails": clean("what_fails"),
+            "why_it_exists": clean("why_it_exists"),
+            "missing_piece": clean("missing_piece"),
+            "pattern_detected": clean("pattern_detected"),
+            "proposed_direction": clean("proposed_direction"),
+        }
 
-    return _heuristic_gap(
-        cluster_id,
-        cluster_papers,
-        topic,
-        gap_serial,
-        confidence_score,
-        _make_citations(cluster_papers),
-        paper_ids,
-    )
+
+        final_score = _score_from_evidence(cluster_papers, cluster_id)
+
+        evidence = _build_evidence(cluster_papers)
+        score_breakdown = build_gap_score_breakdown(
+            cluster_papers,
+            evidence,
+            _gap_category(evidence)
+        )
+
+        citation_validation = validate_gap_citations(gap_fields, citations)
+
+
+        return SynthesisGap(
+            gap_id=gap_serial,
+            gap_title=gap_fields["gap_title"],
+            description=gap_fields["description"],
+            what_fails=gap_fields["what_fails"],
+            why_it_exists=gap_fields["why_it_exists"],
+            missing_piece=gap_fields["missing_piece"],
+            pattern_detected=gap_fields["pattern_detected"],
+            proposed_direction=gap_fields["proposed_direction"],
+            confidence_score=final_score,
+            cluster_id=cluster_id,
+            supporting_papers=cited_paper_ids,
+            citations=citations,
+            score_breakdown=score_breakdown,
+            citation_validation=citation_validation,
+        )
+
+    except Exception as exc:
+        logger.warning("LLM gap generation failed for cluster %d: %s", cluster_id, exc)
+
+        return _heuristic_gap(
+            cluster_id,
+            cluster_papers,
+            topic,
+            gap_serial,
+            confidence_score,
+            _make_citations(cluster_papers),
+            paper_ids,
+        )
 
 
 def _heuristic_gap(
