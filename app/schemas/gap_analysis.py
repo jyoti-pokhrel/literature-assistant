@@ -55,6 +55,7 @@ class GapAnalysisRequest(BaseModel):
     topic: str = Field(..., examples=["multi agent rl"])
     year: Optional[str] = Field(default=None, examples=["2025", "2023-2026"])
     venue: Optional[str] = Field(default=None, examples=["NeurIPS", "ICLR"])
+    strict_venue: bool = Field(default=False, examples=[False])
     max_results: int = Field(default=10, examples=[10])
     top_k_gaps: int = Field(default=5, examples=[5])
 
@@ -108,8 +109,8 @@ class GapAnalysisRequest(BaseModel):
     @field_validator("max_results")
     @classmethod
     def validate_max_results(cls, value: int) -> int:
-        if value < 1 or value > 20:
-            raise ValueError("max_results must be between 1 and 20")
+        if value < 1 or value > 50:
+            raise ValueError("max_results must be between 1 and 50")
         return value
 
     @field_validator("top_k_gaps")

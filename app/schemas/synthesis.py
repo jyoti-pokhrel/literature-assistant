@@ -164,7 +164,8 @@ class SynthesisRequest(BaseModel):
     topic: str = Field(..., min_length=3, examples=["multi agent rl"])
     year: Optional[str] = Field(default=None, examples=["2025", "2023-2026"])
     venue: Optional[str] = Field(default=None, examples=["NeurIPS", "ICLR"])
-    max_results: int = Field(default=10, ge=1, le=20)
+    strict_venue: bool = Field(default=False, examples=[False])
+    max_results: int = Field(default=10, ge=1, le=50)
     top_k_gaps: int = Field(default=5, ge=1, le=10)
 
     @field_validator("topic")

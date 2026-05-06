@@ -36,7 +36,52 @@ def _venue_terms(value: str | None) -> tuple[str, ...]:
     if not normalized:
         return ()
     lowered = normalized.lower()
-    return VENUE_ALIASES.get(lowered, (lowered,))
+    aliases = VENUE_ALIASES.get(lowered)
+    if aliases:
+        return aliases
+    return (lowered,)
+
+
+_VENUE_PREFIX_RE = re.compile(
+    r"^(proceedings of (the )?|the proceedings of (the )?|workshop at |workshops at |"
+    r"\d+(st|nd|rd|th) |\d+(st|nd|rd|th) annual |annual )"
+)
+_VENUE_PARENS_RE = re.compile(r"\([^)]*\)")
+_VENUE_TRAILING_YEAR_RE = re.compile(r"\b(19|20)\d{2}\b")
+_VENUE_NON_ALNUM_RE = re.compile(r"[^a-z0-9 ]+")
+_VENUE_WS_RE = re.compile(r"\s+")
+
+
+def _normalize_venue(value: str | None) -> str:
+    cleaned = clean_text(value)
+    if not cleaned:
+        return ""
+    text = cleaned.lower()
+    text = _VENUE_PARENS_RE.sub(" ", text)
+    text = _VENUE_TRAILING_YEAR_RE.sub(" ", text)
+    # Iteratively peel off prefixes like "Proceedings of the 40th Annual"
+    while True:
+        new_text = _VENUE_PREFIX_RE.sub("", text, count=1)
+        if new_text == text:
+            break
+        text = new_text
+    text = _VENUE_NON_ALNUM_RE.sub(" ", text)
+    text = _VENUE_WS_RE.sub(" ", text).strip()
+    return text
+
+
+def _matches_venue(paper_venue: str | None, target: str | None, *, strict: bool) -> bool:
+    if not target:
+        return True
+    aliases = _venue_terms(target)
+    if not aliases:
+        return True
+    normalized = _normalize_venue(paper_venue)
+    if not normalized:
+        return False
+    if strict:
+        return normalized in aliases
+    return any(alias in normalized for alias in aliases)
 
 
 def parse_year_filter(value: str | int | None) -> tuple[int | None, int | None]:
@@ -70,14 +115,18 @@ def filter_papers(
     *,
     year: str | int | None = None,
     venue: str | None = None,
+    strict_venue: bool = False,
 ) -> List[RetrievedPaper]:
     start_year, end_year = parse_year_filter(year)
+    venue_filter_active = bool(clean_text(venue))
     results: List[RetrievedPaper] = []
 
     for paper in papers:
         if start_year is not None:
             if paper.year is None or paper.year < start_year or paper.year > (end_year or start_year):
                 continue
+        if venue_filter_active and not _matches_venue(paper.venue, venue, strict=strict_venue):
+            continue
         results.append(paper)
 
     return results

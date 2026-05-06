@@ -12,9 +12,11 @@ from app.services.extraction.normalizer import clean_text, filter_papers
 load_dotenv()
 
 OPENALEX_URL = "https://api.openalex.org/works"
+PAGE_SIZE = 100  # OpenAlex allows up to 200 per page
+MAX_CANDIDATES = 200
 
 
-def _build_filter(year: int | str | None = None) -> str | None:
+def _build_filter(year: int | str | None, venue: str | None) -> str | None:
     filters: list[str] = []
     if year is not None:
         year_value = str(year)
@@ -24,47 +26,16 @@ def _build_filter(year: int | str | None = None) -> str | None:
             filters.append(f"to_publication_date:{end}-12-31")
         else:
             filters.append(f"publication_year:{year_value}")
+    if venue:
+        # Push venue match down to OpenAlex; use the search-on-display-name filter.
+        # Commas/colons in the value would break the filter syntax, so strip them.
+        safe_venue = venue.replace(",", " ").replace(":", " ").strip()
+        if safe_venue:
+            filters.append(f"primary_location.source.display_name.search:{safe_venue}")
     return ",".join(filters) or None
 
 
-def _query_with_venue(topic: str, venue: str | None) -> str:
-    cleaned_topic = clean_text(topic) or topic
-    cleaned_venue = clean_text(venue)
-    if not cleaned_venue:
-        return cleaned_topic
-    return f"{cleaned_topic} {cleaned_venue}"
-
-
-async def search_openalex(
-    topic: str,
-    *,
-    year: int | None = None,
-    venue: str | None = None,
-    limit: int = 10,
-    timeout: int = 20,
-) -> List[RetrievedPaper]:
-    api_key = os.getenv("OPENALEX_API_KEY")
-
-    params = {
-        "search": _query_with_venue(topic, venue),
-        "per-page": min(max(limit * 5, limit), 50),
-    }
-    filter_value = _build_filter(year=year)
-    if filter_value:
-        params["filter"] = filter_value
-
-    headers = {}
-    if api_key:
-        headers["Authorization"] = f"Bearer {api_key}"
-
-    try:
-        async with httpx.AsyncClient(timeout=timeout) as client:
-            response = await client.get(OPENALEX_URL, params=params, headers=headers)
-            response.raise_for_status()
-            payload = response.json()
-    except (HTTPStatusError, httpx.RequestError):
-        return []
-
+def _parse_items(payload: dict) -> List[RetrievedPaper]:
     papers: List[RetrievedPaper] = []
     for item in payload.get("results", []):
         title = clean_text(item.get("display_name"))
@@ -87,7 +58,10 @@ async def search_openalex(
                 source="openalex",
                 external_id=item.get("id"),
                 title=title,
-                abstract=clean_text(item.get("abstract_inverted_index") and _invert_abstract(item.get("abstract_inverted_index"))),
+                abstract=clean_text(
+                    item.get("abstract_inverted_index")
+                    and _invert_abstract(item.get("abstract_inverted_index"))
+                ),
                 authors=authors,
                 year=item.get("publication_year"),
                 venue=clean_text(source.get("display_name")),
@@ -96,8 +70,88 @@ async def search_openalex(
                 citation_count=item.get("cited_by_count"),
             )
         )
+    return papers
 
-    return filter_papers(papers, year=year, venue=venue)[:limit]
+
+async def _fetch_page(
+    client: httpx.AsyncClient,
+    *,
+    topic: str,
+    venue: str | None,
+    year: int | str | None,
+    page: int,
+    per_page: int,
+    headers: dict,
+) -> List[RetrievedPaper]:
+    params: dict = {
+        "search": topic,
+        "per-page": per_page,
+        "page": page,
+    }
+    filter_value = _build_filter(year=year, venue=venue)
+    if filter_value:
+        params["filter"] = filter_value
+    try:
+        response = await client.get(OPENALEX_URL, params=params, headers=headers)
+        response.raise_for_status()
+        return _parse_items(response.json())
+    except (HTTPStatusError, httpx.RequestError):
+        return []
+
+
+async def search_openalex(
+    topic: str,
+    *,
+    year: int | str | None = None,
+    venue: str | None = None,
+    strict_venue: bool = False,
+    limit: int = 10,
+    timeout: int = 20,
+) -> List[RetrievedPaper]:
+    api_key = os.getenv("OPENALEX_API_KEY")
+    headers: dict = {}
+    if api_key:
+        headers["Authorization"] = f"Bearer {api_key}"
+
+    cleaned_topic = clean_text(topic) or topic
+    cleaned_venue = clean_text(venue)
+    filters_active = cleaned_venue is not None or year is not None
+
+    per_page = min(max(limit * 5, limit), 50) if not filters_active else PAGE_SIZE
+    candidates: List[RetrievedPaper] = []
+    seen_ids: set[str] = set()
+    page = 1
+
+    async with httpx.AsyncClient(timeout=timeout) as client:
+        while len(candidates) < MAX_CANDIDATES:
+            results = await _fetch_page(
+                client,
+                topic=cleaned_topic,
+                venue=cleaned_venue,
+                year=year,
+                page=page,
+                per_page=per_page,
+                headers=headers,
+            )
+            if not results:
+                break
+            for paper in results:
+                pid = paper.external_id or paper.url or paper.title
+                if pid in seen_ids:
+                    continue
+                seen_ids.add(pid)
+                candidates.append(paper)
+
+            filtered_so_far = filter_papers(
+                candidates, year=year, venue=cleaned_venue, strict_venue=strict_venue
+            )
+            if len(filtered_so_far) >= limit or not filters_active:
+                break
+            page += 1
+
+    return filter_papers(
+        candidates, year=year, venue=cleaned_venue, strict_venue=strict_venue
+    )[:limit]
 
 
 def _invert_abstract(inverted_index: dict | None) -> str | None:

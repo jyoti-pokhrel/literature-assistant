@@ -29,6 +29,7 @@ async def retrieve_papers(
     *,
     year: str | None = None,
     venue: str | None = None,
+    strict_venue: bool = False,
     max_results: int = 10,
 ) -> PaperSearchResponse:
     year = _normalize_optional_filter(year)
@@ -45,7 +46,13 @@ async def retrieve_papers(
     ]
 
     tasks = [
-        fetcher(topic, year=year, venue=venue, limit=max_results)
+        fetcher(
+            topic,
+            year=year,
+            venue=venue,
+            strict_venue=strict_venue,
+            limit=max_results,
+        )
         for _, fetcher in fetchers
     ]
 
@@ -72,6 +79,7 @@ async def retrieve_papers(
             topic,
             year=year,
             venue=venue,
+            strict_venue=strict_venue,
             limit=max_results,
         )
         if tavily_results:
@@ -90,6 +98,7 @@ async def retrieve_papers(
         filters["year"] = year
     if venue:
         filters["venue"] = venue
+        filters["strict_venue"] = strict_venue
 
     return PaperSearchResponse(
         topic=topic,

@@ -11,6 +11,7 @@ window.ResearchAgent.defaults = Object.freeze({
     topic: '',
     year: '',
     venue: '',
+    strictVenue: false,
     maxResults: 10,
 });
 
@@ -23,6 +24,7 @@ window.ResearchAgent.cloneSearchValues = function cloneSearchValues(values = {})
         topic: typeof values.topic === 'string' ? values.topic : '',
         year: typeof values.year === 'string' ? values.year : '',
         venue: typeof values.venue === 'string' ? values.venue : '',
+        strictVenue: values.strictVenue === true || values.strictVenue === 'true',
         maxResults: Number.isFinite(maxResults) ? maxResults : window.ResearchAgent.defaults.maxResults,
     };
 };
@@ -32,11 +34,14 @@ window.ResearchAgent.normalizeSearchValues = function normalizeSearchValues(valu
     normalized.topic = normalized.topic.trim();
     normalized.year = normalized.year.trim().replace(/\s*-\s*/g, '-');
     normalized.venue = normalized.venue.trim();
+    if (!normalized.venue) {
+        normalized.strictVenue = false;
+    }
 
     if (!Number.isFinite(normalized.maxResults)) {
         normalized.maxResults = window.ResearchAgent.defaults.maxResults;
     }
-    normalized.maxResults = Math.min(Math.max(normalized.maxResults, 1), 20);
+    normalized.maxResults = Math.min(Math.max(normalized.maxResults, 1), 50);
 
     return normalized;
 };
@@ -51,6 +56,7 @@ window.ResearchAgent.valuesFromSearchParams = function valuesFromSearchParams(se
         topic: searchParams.get('topic') || searchParams.get('q') || '',
         year: searchParams.get('year') || '',
         venue: searchParams.get('venue') || '',
+        strictVenue: searchParams.get('strictVenue') === 'true',
         maxResults: searchParams.get('maxResults') || window.ResearchAgent.defaults.maxResults,
     });
 };
@@ -62,6 +68,7 @@ window.ResearchAgent.searchParamsFromValues = function searchParamsFromValues(va
     if (normalized.topic) params.set('topic', normalized.topic);
     if (normalized.year) params.set('year', normalized.year);
     if (normalized.venue) params.set('venue', normalized.venue);
+    if (normalized.venue && normalized.strictVenue) params.set('strictVenue', 'true');
     params.set('maxResults', String(normalized.maxResults));
 
     return params;
@@ -99,8 +106,8 @@ window.ResearchAgent.validateSearchValues = function validateSearchValues(values
         }
     }
 
-    if (normalized.maxResults < 1 || normalized.maxResults > 20) {
-        throw new Error('Max results must be between 1 and 20');
+    if (normalized.maxResults < 1 || normalized.maxResults > 50) {
+        throw new Error('Max results must be between 1 and 50');
     }
 
     return normalized;
@@ -150,6 +157,7 @@ window.ResearchAgent.loadSearchHistory = function loadSearchHistory() {
                     topic: item.topic,
                     year: item.year,
                     venue: item.venue,
+                    strictVenue: item.strictVenue,
                     maxResults: item.maxResults,
                 });
 
@@ -158,6 +166,7 @@ window.ResearchAgent.loadSearchHistory = function loadSearchHistory() {
                     topic: values.topic,
                     year: values.year,
                     venue: values.venue,
+                    strictVenue: values.strictVenue,
                     maxResults: values.maxResults,
                     summary: item.summary || window.ResearchAgent.buildHistorySummary(values, result),
                     result,
@@ -367,6 +376,7 @@ document.addEventListener('alpine:init', () => {
                 topic: normalized.topic,
                 year: normalized.year,
                 venue: normalized.venue,
+                strictVenue: normalized.strictVenue,
                 maxResults: normalized.maxResults,
                 summary: window.ResearchAgent.buildHistorySummary(normalized, result),
                 result,
