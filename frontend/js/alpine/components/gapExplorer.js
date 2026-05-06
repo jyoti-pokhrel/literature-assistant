@@ -5,12 +5,14 @@ document.addEventListener('alpine:init', () => {
             this.$nextTick(() => {
                 this.renderClusterMap();
                 this.renderCharts();
+                this.autoSelectFirstGap();
             });
             this.$watch('$store.app.result', () => {
                 this.resetSelection();
                 this.$nextTick(() => {
                     this.renderClusterMap();
                     this.renderCharts();
+                    this.autoSelectFirstGap();
                 });
             });
             this.$watch('$store.app.theme', () => this.$nextTick(() => this.renderCharts()));
@@ -18,6 +20,12 @@ document.addEventListener('alpine:init', () => {
             this.$watch('$store.app.explorer.filters.maxConfidence', () => this.syncMapFilterHighlight());
             this.$watch('$store.app.explorer.filters.clusterId', () => this.syncMapFilterHighlight());
             this.$watch('$store.app.explorer.filters.searchText', () => this.syncMapFilterHighlight());
+        },
+
+        autoSelectFirstGap() {
+            if (this.$store.app.explorer.panelOpen) return;
+            const first = this.gaps()[0];
+            if (first) this.selectGap(first);
         },
 
         ensureStore() {

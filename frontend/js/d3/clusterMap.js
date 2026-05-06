@@ -1,17 +1,12 @@
 (function () {
-    // Modern Google-tier vibrant color palette
-    const VIBRANT_PALETTE = [
-        "#3b82f6", // Blue
-        "#10b981", // Emerald
-        "#f59e0b", // Amber
-        "#8b5cf6", // Violet
-        "#ec4899", // Pink
-        "#06b6d4", // Cyan
-        "#ef4444", // Red
-        "#84cc16", // Lime
-        "#14b8a6", // Teal
-        "#f43f5e"  // Rose
-    ];
+    // Cluster palette is sourced from CSS custom properties (--c-1..4 in tokens.css).
+    // Re-read on demand so theme switches re-paint correctly.
+    function readPalette() {
+        const root = getComputedStyle(document.documentElement);
+        return ['--c-1', '--c-2', '--c-3', '--c-4']
+            .map((v) => root.getPropertyValue(v).trim())
+            .filter(Boolean);
+    }
 
     let state = null;
 
@@ -24,8 +19,10 @@
     }
 
     function colorForCluster(clusterId) {
-        const index = Math.abs(Number(clusterId) || 0) % VIBRANT_PALETTE.length;
-        return VIBRANT_PALETTE[index];
+        const palette = readPalette();
+        if (!palette.length) return '#1a1816';
+        const index = Math.abs(Number(clusterId) || 0) % palette.length;
+        return palette[index];
     }
 
     function escapeHtml(value) {
@@ -402,12 +399,21 @@
         highlightPapers([]);
     }
 
+    function repaintFromTokens() {
+        if (!state || !state.container) return;
+        const clusters = state.clusters || [];
+        if (!clusters.length) return;
+        render(state.container, clusters);
+    }
+
+    window.addEventListener('theme:change', repaintFromTokens);
+
     window.ClusterMap = {
         render,
         highlightPapers,
         clearHighlight,
         destroy,
-        colors: VIBRANT_PALETTE,
+        colors: readPalette,
         paperId,
     };
 })();

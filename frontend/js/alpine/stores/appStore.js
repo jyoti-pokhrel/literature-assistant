@@ -4,7 +4,40 @@ window.ResearchAgent.routes = {
     landing: '/',
     workspace: '/workspace',
     search: '/workspace/search',
+    explore: '/workspace/explore',
     share: '/synthesis/share',
+};
+
+window.ResearchAgent.exploreDefaults = Object.freeze({
+    pageSize: 20,
+});
+
+window.ResearchAgent.buildExploreSeed = function buildExploreSeed(values = {}) {
+    const normalized = window.ResearchAgent.normalizeSearchValues(values);
+    return {
+        topic: normalized.topic,
+        year: normalized.year,
+        venue: normalized.venue,
+        strictVenue: normalized.strictVenue,
+    };
+};
+
+window.ResearchAgent.exploreParamsFromSeed = function exploreParamsFromSeed(seed = {}) {
+    const params = new URLSearchParams();
+    if (seed.topic) params.set('topic', seed.topic);
+    if (seed.year) params.set('year', seed.year);
+    if (seed.venue) params.set('venue', seed.venue);
+    if (seed.venue && seed.strictVenue) params.set('strictVenue', 'true');
+    return params;
+};
+
+window.ResearchAgent.exploreSeedFromParams = function exploreSeedFromParams(searchParams) {
+    return window.ResearchAgent.buildExploreSeed({
+        topic: searchParams.get('topic') || '',
+        year: searchParams.get('year') || '',
+        venue: searchParams.get('venue') || '',
+        strictVenue: searchParams.get('strictVenue') === 'true',
+    });
 };
 
 window.ResearchAgent.defaults = Object.freeze({
@@ -217,7 +250,7 @@ document.addEventListener('alpine:init', () => {
         initialized: false,
         mode: 'landing',
         currentView: 'form',
-        theme: localStorage.getItem('theme') || 'dark',
+        theme: localStorage.getItem('theme') || 'light',
         sidebarCollapsed: storedSidebarState === null ? window.innerWidth <= 768 : storedSidebarState === 'true',
         techPanelOpen: false,
         isLoading: false,
@@ -241,6 +274,16 @@ document.addEventListener('alpine:init', () => {
                 sortBy: 'confidence_desc',
             },
         },
+        explore: {
+            seed: { topic: '', year: '', venue: '', strictVenue: false },
+            papers: [],
+            seenIds: {},
+            nextCursor: 0,
+            hasMore: true,
+            isLoadingPage: false,
+            error: '',
+            pageRequestId: 0,
+        },
 
         init() {
             if (this.initialized) {
@@ -256,9 +299,10 @@ document.addEventListener('alpine:init', () => {
         },
 
         applyTheme(theme) {
-            this.theme = theme === 'light' ? 'light' : 'dark';
+            this.theme = theme === 'dark' ? 'dark' : 'light';
             document.documentElement.setAttribute('data-theme', this.theme);
             localStorage.setItem('theme', this.theme);
+            window.dispatchEvent(new CustomEvent('theme:change', { detail: { theme: this.theme } }));
         },
 
         toggleTheme() {
@@ -300,6 +344,102 @@ document.addEventListener('alpine:init', () => {
                     sortBy: 'confidence_desc',
                 },
             };
+        },
+
+        resetExplore() {
+            this.explore = {
+                seed: { topic: '', year: '', venue: '', strictVenue: false },
+                papers: [],
+                seenIds: {},
+                nextCursor: 0,
+                hasMore: true,
+                isLoadingPage: false,
+                error: '',
+                pageRequestId: 0,
+            };
+        },
+
+        buildExploreRoute(seed) {
+            const params = window.ResearchAgent.exploreParamsFromSeed(seed);
+            const search = params.toString();
+            return {
+                pathname: window.ResearchAgent.routes.explore,
+                search: search ? `?${search}` : '',
+            };
+        },
+
+        async openExplore({ replace = false, fromForm = false } = {}) {
+            const sourceValues = fromForm
+                ? this.form
+                : (this.activeSearchKey
+                    ? this.form
+                    : this.form);
+            const seed = window.ResearchAgent.buildExploreSeed(sourceValues);
+
+            this.resetExplore();
+            this.explore.seed = seed;
+
+            this.setMode('workspace');
+            this.currentView = 'explore';
+            this.error = '';
+            this.closeSidebar();
+
+            const route = this.buildExploreRoute(seed);
+            this.goToPath(route.pathname, { search: route.search, replace });
+
+            return await this.loadMoreExplore();
+        },
+
+        async loadMoreExplore() {
+            if (this.explore.isLoadingPage || !this.explore.hasMore) {
+                return false;
+            }
+            const seed = this.explore.seed || {};
+
+            const requestId = ++this.explore.pageRequestId;
+            this.explore.isLoadingPage = true;
+            this.explore.error = '';
+
+            try {
+                const payload = window.searchAPI.buildExplorePayload({
+                    topic: seed.topic,
+                    year: seed.year,
+                    venue: seed.venue,
+                    strictVenue: seed.strictVenue,
+                    cursor: this.explore.nextCursor,
+                    pageSize: window.ResearchAgent.exploreDefaults.pageSize,
+                });
+                const data = await window.searchAPI.exploreArxiv(payload);
+                if (requestId !== this.explore.pageRequestId) {
+                    return false;
+                }
+
+                const incoming = Array.isArray(data?.papers) ? data.papers : [];
+                const seen = this.explore.seenIds;
+                const newPapers = [];
+                for (const paper of incoming) {
+                    const key = paper.external_id || paper.url || paper.title;
+                    if (!key || seen[key]) continue;
+                    seen[key] = true;
+                    newPapers.push(paper);
+                }
+
+                this.explore.papers = [...this.explore.papers, ...newPapers];
+                this.explore.nextCursor = Number.isFinite(data?.next_cursor)
+                    ? data.next_cursor
+                    : this.explore.nextCursor;
+                this.explore.hasMore = data?.has_more === true;
+                return true;
+            } catch (error) {
+                if (requestId === this.explore.pageRequestId) {
+                    this.explore.error = error?.message || 'Could not load more papers';
+                }
+                return false;
+            } finally {
+                if (requestId === this.explore.pageRequestId) {
+                    this.explore.isLoadingPage = false;
+                }
+            }
         },
 
         focusMainPrompt() {
@@ -409,6 +549,7 @@ document.addEventListener('alpine:init', () => {
             this.result = null;
             this.activeSearchKey = '';
             this.resetExplorer();
+            this.resetExplore();
             this.closeSidebar();
             this.openWorkspace({ showForm: true });
         },
@@ -503,6 +644,27 @@ document.addEventListener('alpine:init', () => {
                 this.setMode('workspace');
                 this.currentView = 'form';
                 this.error = '';
+                return;
+            }
+
+            if (pathname === window.ResearchAgent.routes.explore) {
+                const seed = window.ResearchAgent.exploreSeedFromParams(searchParams);
+
+                if (seed.topic) {
+                    this.form = window.ResearchAgent.cloneSearchValues({
+                        ...this.form,
+                        topic: seed.topic,
+                        year: seed.year,
+                        venue: seed.venue,
+                        strictVenue: seed.strictVenue,
+                    });
+                }
+                this.setMode('workspace');
+                this.currentView = 'explore';
+                this.error = '';
+                this.resetExplore();
+                this.explore.seed = seed;
+                await this.loadMoreExplore();
                 return;
             }
 
