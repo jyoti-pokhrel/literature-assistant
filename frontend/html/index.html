@@ -17,9 +17,9 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/css/tokens.css?v=20260506n" />
-  <link rel="stylesheet" href="/css/style.css?v=20260506n" />
+  <link rel="stylesheet" href="/css/style.css?v=20260507b" />
   <link rel="stylesheet" href="/css/workspace.css?v=20260506n" />
-  <link rel="stylesheet" href="/css/dashboard.css?v=20260506n" />
+  <link rel="stylesheet" href="/css/dashboard.css?v=20260507b" />
 </head>
 <body class="landing-state" x-data="appShell()" x-init="init()" :class="$store.app.mode === 'workspace' ? 'workspace-state' : 'landing-state'">
   <div class="bg-grid"></div>
@@ -49,7 +49,7 @@
           Find what research is <span class="lp-hero-accent">missing.</span>
         </h1>
         <p class="lp-hero-subtitle reveal reveal-d2">
-          Surface gaps, limitations, and underexplored directions across your literature — in minutes, not weeks.
+          Search trusted research indexes and surface citation-backed gaps, limitations, and underexplored directions.
         </p>
 
         <!-- Search -->
@@ -67,92 +67,21 @@
             >
             <button type="submit" class="lp-search-btn">Search</button>
           </form>
-          <div class="lp-search-sources">
-            <span>Semantic Scholar</span>
-            <span class="lp-search-sources-sep" aria-hidden="true">·</span>
-            <span>arXiv</span>
-            <span class="lp-search-sources-sep" aria-hidden="true">·</span>
-            <span>OpenAlex</span>
+          <div class="lp-search-sources" aria-label="Research sources">
+            <span class="lp-source-label">Trusted sources</span>
+            <span class="lp-source-badge">
+              <span class="lp-source-name">Semantic Scholar</span>
+            </span>
+            <span class="lp-source-badge">
+              <span class="lp-source-name">arXiv</span>
+            </span>
+            <span class="lp-source-badge">
+              <span class="lp-source-name">OpenAlex</span>
+            </span>
           </div>
         </div>
       </div>
 
-      <!-- Browser-frame product mockup -->
-      <div class="lp-mockup reveal reveal-d4" aria-hidden="true">
-        <div class="lp-mockup-frame glass-glow">
-          <div class="lp-mockup-chrome">
-            <div class="lp-mockup-url">researchagent.app / workspace</div>
-          </div>
-          <div class="lp-mockup-body">
-            <div class="lp-mockup-header">
-              <div class="lp-mockup-kicker">Research query</div>
-              <div class="lp-mockup-h1">Sample efficiency in low-data RL regimes</div>
-              <div class="lp-mockup-meta">42 papers · 8 clusters · 12 gaps identified</div>
-            </div>
-            <div class="lp-mockup-tabs">
-              <span class="lp-mockup-tab is-active">Research Gaps</span>
-              <span class="lp-mockup-tab">Literature Map</span>
-              <span class="lp-mockup-tab">Source Papers</span>
-            </div>
-            <div class="lp-mockup-grid">
-              <div class="lp-mockup-card">
-                <div class="lp-mockup-card-title">Limited evaluation on real-world tasks</div>
-                <div class="lp-mockup-chips">
-                  <span class="lp-mockup-chip"><i></i> Cluster 02</span>
-                  <span class="lp-mockup-chip">4 papers</span>
-                </div>
-                <div class="lp-mockup-line"></div>
-                <div class="lp-mockup-line lp-mockup-line-sm"></div>
-              </div>
-              <div class="lp-mockup-card">
-                <div class="lp-mockup-card-title">No standard benchmarks for transfer</div>
-                <div class="lp-mockup-chips">
-                  <span class="lp-mockup-chip"><i></i> Cluster 04</span>
-                  <span class="lp-mockup-chip">7 papers</span>
-                </div>
-                <div class="lp-mockup-line"></div>
-                <div class="lp-mockup-line lp-mockup-line-sm"></div>
-              </div>
-              <div class="lp-mockup-card">
-                <div class="lp-mockup-card-title">Reward shaping under-explored</div>
-                <div class="lp-mockup-chips">
-                  <span class="lp-mockup-chip"><i></i> Cluster 01</span>
-                  <span class="lp-mockup-chip">3 papers</span>
-                </div>
-                <div class="lp-mockup-line"></div>
-                <div class="lp-mockup-line lp-mockup-line-sm"></div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- Logo strip -->
-    <section class="lp-logos fade-in">
-      <div class="lp-logos-label">Powered by open research infrastructure</div>
-      <div class="lp-logos-row">
-        <span class="lp-logo">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
-          Semantic Scholar
-        </span>
-        <span class="lp-logo">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-          arXiv
-        </span>
-        <span class="lp-logo">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
-          OpenAlex
-        </span>
-        <span class="lp-logo">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
-          CrossRef
-        </span>
-        <span class="lp-logo">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22s-8-4.5-8-11.8A8 8 0 0 1 12 2a8 8 0 0 1 8 8.2c0 7.3-8 11.8-8 11.8z"/><circle cx="12" cy="10" r="3"/></svg>
-          DOI
-        </span>
-      </div>
     </section>
 
     <!-- How it works (scroll scenes) -->
@@ -431,7 +360,6 @@
           <a href="https://www.semanticscholar.org" target="_blank" rel="noopener noreferrer">Semantic Scholar</a>
           <a href="https://arxiv.org" target="_blank" rel="noopener noreferrer">arXiv</a>
           <a href="https://openalex.org" target="_blank" rel="noopener noreferrer">OpenAlex</a>
-          <a href="https://www.crossref.org" target="_blank" rel="noopener noreferrer">CrossRef</a>
         </div>
         <div class="lp-footer-col">
           <span class="lp-footer-col-title">Company</span>
@@ -482,12 +410,6 @@
               </div>
             </div>
           </template>
-        </div>
-      </div>
-      <div class="sidebar-bottom">
-        <div class="user-row">
-          <div class="avatar-small">RA</div>
-          <span>Research Agent</span>
         </div>
       </div>
     </aside>
@@ -578,7 +500,7 @@
 
         </section>
 
-        <section id="thread-view" class="px-thread-view" x-data="resultsPage()" x-cloak x-show="$store.app.currentView === 'results'" style="max-width: none; margin: 0; display: flex; flex-direction: column;">
+        <section id="thread-view" class="px-thread-view" x-data="resultsPage()" x-cloak x-show="$store.app.currentView === 'results'" style="display: flex; flex-direction: column;">
           <!-- Zone 1: editorial header -->
           <header class="results-header" :class="{ 'is-scrolled': scrollY > 20 }" @scroll.window="scrollY = window.scrollY">
             <div class="results-header-text">
@@ -639,7 +561,7 @@
             <div class="results-workspace-content results-twoup">
               <div class="results-tabpanes">
                 <!-- Tab A: Gaps as entries -->
-                <div x-show="activeTab === 'gaps'" x-transition.opacity.duration.300ms>
+                <div x-show="activeTab === 'gaps'" x-transition.opacity.duration.500ms>
                     <ol class="gap-entries">
                         <template x-for="(gap, index) in filteredGaps()" :key="gapKey(gap, index)">
                           <li class="gap-entry" :class="{ 'is-selected': $store.app.explorer.selectedGapId === gapKey(gap, index) }" @click="selectGap(gap)">
@@ -653,7 +575,7 @@
                 </div>
 
                 <!-- Tab B: Map -->
-                <div x-show="activeTab === 'map'" x-transition.opacity.duration.300ms class="map-pane">
+                <div x-show="activeTab === 'map'" x-transition.opacity.duration.500ms class="map-pane">
                     <div class="cluster-map-container" x-ref="clusterMap"></div>
                     <div class="map-side" x-show="clusters().length">
                       <h4 class="map-side-label">Cluster size</h4>
@@ -662,7 +584,7 @@
                 </div>
 
                 <!-- Tab C: Papers as entries -->
-                <div x-show="activeTab === 'papers'" x-transition.opacity.duration.300ms>
+                <div x-show="activeTab === 'papers'" x-transition.opacity.duration.500ms>
                     <ol class="paper-entries">
                         <template x-for="(paper, index) in papers()" :key="paperKey(paper, index)">
                           <li class="paper-entry" @click="selectPaper(paper)">
@@ -866,7 +788,7 @@
   <script defer src="/js/alpine/components/resultsPage.js?v=20260502b"></script>
   <script defer src="/js/alpine/components/gapExplorer.js?v=20260506n"></script>
   <script defer src="/js/alpine/components/historySidebar.js?v=20260423a"></script>
-  <script defer src="/js/alpine/app.js?v=20260506n"></script>
+  <script defer src="/js/alpine/app.js?v=20260507b"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.9/dist/cdn.min.js"></script>
 </body>
 </html>

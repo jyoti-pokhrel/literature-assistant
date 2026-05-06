@@ -18,13 +18,17 @@ document.addEventListener('alpine:init', () => {
                 targets.forEach((el) => el.classList.add('is-in-view', 'visible'));
                 return;
             }
-            const reveal = (el) => el.classList.add('is-in-view', 'visible');
+            const reveal = (el) => {
+                window.requestAnimationFrame(() => {
+                    el.classList.add('is-in-view', 'visible');
+                });
+            };
 
             // Pre-pass: any element already touching the viewport gets revealed now.
             const vh = window.innerHeight;
             targets.forEach((el) => {
                 const rect = el.getBoundingClientRect();
-                if (rect.top < vh * 1.1) reveal(el);
+                if (rect.top < vh * 1.15) reveal(el);
             });
 
             const observer = new IntersectionObserver((entries) => {
@@ -34,16 +38,12 @@ document.addEventListener('alpine:init', () => {
                         observer.unobserve(entry.target);
                     }
                 });
-            }, { threshold: 0, rootMargin: '0px 0px -10% 0px' });
+            }, { threshold: 0.08, rootMargin: '0px 0px -6% 0px' });
             targets.forEach((el) => {
                 if (!el.classList.contains('is-in-view')) observer.observe(el);
             });
 
-            // Belt-and-braces fallback: anything still hidden after 1.5s gets revealed
-            // (e.g., headless browser screenshots, instant programmatic scrolls).
-            setTimeout(() => {
-                document.querySelectorAll('.fade-in:not(.is-in-view)').forEach(reveal);
-            }, 1500);
+            // Keep below-the-fold content observed so it actually fades in on scroll.
         },
 
         /* Cursor-follow glow — sets --cursor-x / --cursor-y on .glass-glow
