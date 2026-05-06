@@ -72,16 +72,11 @@ def filter_papers(
     venue: str | None = None,
 ) -> List[RetrievedPaper]:
     start_year, end_year = parse_year_filter(year)
-    venue_terms = _venue_terms(venue)
     results: List[RetrievedPaper] = []
 
     for paper in papers:
         if start_year is not None:
             if paper.year is None or paper.year < start_year or paper.year > (end_year or start_year):
-                continue
-        if venue_terms:
-            paper_venue = ((paper.venue or "") + " " + (paper.title or "")).lower()
-            if not any(term in paper_venue for term in venue_terms):
                 continue
         results.append(paper)
 

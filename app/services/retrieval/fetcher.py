@@ -1,6 +1,9 @@
 import asyncio
+import logging
 
 from app.schemas.paper import PaperSearchResponse, RetrievedPaper
+
+logger = logging.getLogger(__name__)
 from app.services.extraction.normalizer import clean_text, deduplicate_papers
 from app.services.retrieval.openalex_client import search_openalex
 from app.services.retrieval.arxiv_client import search_arxiv
@@ -38,24 +41,29 @@ async def retrieve_papers(
     fetchers = [
         ("semantic_scholar", search_semantic_scholar),
         ("openalex", search_openalex),
-tasks = [
-    fetcher(topic, year=year, venue=venue, limit=max_results)
-    for _, fetcher in fetchers
-]
+        ("arxiv", search_arxiv),
+    ]
 
-results_list = await asyncio.gather(*tasks, return_exceptions=True)
+    tasks = [
+        fetcher(topic, year=year, venue=venue, limit=max_results)
+        for _, fetcher in fetchers
+    ]
 
-results_by_source = {}
+    results_list = await asyncio.gather(*tasks, return_exceptions=True)
 
-for (source_name, _), results in zip(fetchers, results_list):
-    if isinstance(results, Exception):
-        logger.warning("Fetcher failed for %s: %s", source_name, results)
-        results_by_source[source_name] = []
-        continue
+    results_by_source = {}
 
-    results_by_source[source_name] = results
+    for (source_name, _), results in zip(fetchers, results_list):
+        if isinstance(results, Exception):
+            logger.warning("Fetcher failed for %s: %s", source_name, results)
+            results_by_source[source_name] = []
+            continue
+
+        results_by_source[source_name] = results
+
         if not results:
             continue
+
         sources_used.append(source_name)
         merged = deduplicate_papers([*merged, *results])
 
@@ -70,7 +78,11 @@ for (source_name, _), results in zip(fetchers, results_list):
             sources_used.append(FALLBACK_SOURCE)
             merged = deduplicate_papers([*merged, *tavily_results])
 
-    merged.sort(key=lambda paper: ((paper.citation_count or 0), (paper.year or 0)), reverse=True)
+    merged.sort(
+        key=lambda paper: ((paper.citation_count or 0), (paper.year or 0)),
+        reverse=True,
+    )
+
     papers = merged[:max_results]
 
     filters = {}

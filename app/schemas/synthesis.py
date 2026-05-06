@@ -123,27 +123,27 @@ class PatternAnalysis(BaseModel):
 
 
 class VisualizationData(BaseModel):
-# Static base64-encoded PNG charts (for PDF embedding)
-umap_scatter: Optional[str] = None
-confidence_bars: Optional[str] = None
-year_distribution: Optional[str] = None
-method_trends: Optional[str] = None
-dataset_frequency: Optional[str] = None
-metric_frequency: Optional[str] = None
+    # Static base64-encoded PNG charts (for PDF embedding)
+    umap_scatter: Optional[str] = None
+    confidence_bars: Optional[str] = None
+    year_distribution: Optional[str] = None
+    method_trends: Optional[str] = None
+    dataset_frequency: Optional[str] = None
+    metric_frequency: Optional[str] = None
 
-# Interactive Plotly JSON charts (for frontend)
-plotly_umap: Optional[Dict[str, Any]] = None
-plotly_dataset_freq: Optional[Dict[str, Any]] = None
-plotly_metric_freq: Optional[Dict[str, Any]] = None
-plotly_confidence_bars: Optional[Dict[str, Any]] = None
+    # Interactive Plotly JSON charts (for frontend)
+    plotly_umap: Optional[Dict[str, Any]] = None
+    plotly_dataset_freq: Optional[Dict[str, Any]] = None
+    plotly_metric_freq: Optional[Dict[str, Any]] = None
+    plotly_confidence_bars: Optional[Dict[str, Any]] = None
 
-# New charts (added in synthesis rebuild)
-plotly_research_intensity: Optional[Dict[str, Any]] = None
-plotly_cluster_distribution: Optional[Dict[str, Any]] = None
-plotly_gap_frequency: Optional[Dict[str, Any]] = None
-paper_gap_mapping: Optional[Dict[str, Any]] = None
+    # New charts (added in synthesis rebuild)
+    plotly_research_intensity: Optional[Dict[str, Any]] = None
+    plotly_cluster_distribution: Optional[Dict[str, Any]] = None
+    plotly_gap_frequency: Optional[Dict[str, Any]] = None
+    paper_gap_mapping: Optional[Dict[str, Any]] = None
 
-@model_validator(mode="before")
+    @model_validator(mode="before")
     @classmethod
     def sanitize_viz_fields(cls, values: Any) -> Any:
         if not isinstance(values, dict):

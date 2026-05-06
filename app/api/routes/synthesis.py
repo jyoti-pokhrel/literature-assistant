@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import asyncio
 import logging
-import asyncio
 import json
 import os
 from pathlib import Path
@@ -108,15 +107,7 @@ async def detect_gaps(
         )
 
 
-@router.post(
-<from fastapi import APIRouter, Depends, HTTPException, status
-from fastapi.responses import StreamingResponse
-from typing import List
-import asyncio
-import json
 
-router = APIRouter()
-  
 # BATCH GAP DETECTION
 @router.post(
     "/gaps/batch",

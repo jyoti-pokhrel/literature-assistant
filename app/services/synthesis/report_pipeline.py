@@ -3,7 +3,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import uuid
-from collections import defaultdict
+from collections import Counter, defaultdict
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
 from typing import Awaitable, Callable
@@ -36,11 +36,6 @@ logger = logging.getLogger(__name__)
 
 from app.db.session import gap_reports_collection
 
-from typing import Callable, Awaitable
-from collections import Counter
-import uuid
-
-
 
 ProgressCallback = Callable[[dict], Awaitable[None]]
 
@@ -48,7 +43,6 @@ ProgressCallback = Callable[[dict], Awaitable[None]]
 async def _emit_progress(progress_callback: ProgressCallback | None, **event) -> None:
     if progress_callback is not None:
         await progress_callback(event)
-
 
 
 def _build_cluster_dashboard(
@@ -79,7 +73,6 @@ def _build_cluster_dashboard(
             "y": round(float(point[1]), 4) if len(point) > 1 else 0.0,
         })
 
-    # fallback: all papers in single cluster
     if not cluster_map and normalized_papers:
         cluster_map[0] = [{
             "paper_id": p.get("paper_id"),
@@ -123,7 +116,6 @@ def _build_cluster_dashboard(
     return clusters
 
 
-
 def _cluster_top_terms(normalized_papers: list[dict], cluster_id: int, labels) -> list[str]:
     counter: Counter[str] = Counter()
 
@@ -148,10 +140,6 @@ def _cluster_top_terms(normalized_papers: list[dict], cluster_id: int, labels) -
 
     return [term for term, _ in counter.most_common(5)]
 
-
-
-async def _save_report_to_mongo(doc: dict) -> str:
-    return str(uuid.uuid4())
 
 async def _save_report_to_mongo(doc: dict) -> str:
     if gap_reports_collection is None:
@@ -188,6 +176,11 @@ def _build_cluster_summaries(
 
     return sorted(summaries, key=lambda s: s.cluster_id)
 
+
+async def run_synthesis_pipeline(
+    request: SynthesisRequest,
+    progress_callback: ProgressCallback | None = None,
+) -> SynthesisResponse:
     loop = asyncio.get_event_loop()
     await _emit_progress(
         progress_callback,
@@ -197,15 +190,15 @@ def _build_cluster_summaries(
         progress=6,
     )
 
-sources = ", ".join(enabled_sources)
+    sources = "semantic_scholar, openalex, arxiv"
 
-await _emit_progress(
-    progress_callback,
-    stage="retrieval",
-    label="Searching trusted paper indexes",
-    detail=f"Querying {sources}.",
-    progress=14,
-)
+    await _emit_progress(
+        progress_callback,
+        stage="retrieval",
+        label="Searching trusted paper indexes",
+        detail=f"Querying {sources}.",
+        progress=14,
+    )
     retrieval = await retrieve_papers(
         request.topic,
         year=request.year,
@@ -238,7 +231,6 @@ await _emit_progress(
             papers=[],
         )
 
-    #Normalize
     await _emit_progress(
         progress_callback,
         stage="evidence",
@@ -250,7 +242,6 @@ await _emit_progress(
         None, lambda: [normalize_analysis_paper(p) for p in raw_papers]
     )
 
-    #Embeddings
     await _emit_progress(
         progress_callback,
         stage="embedding",
@@ -260,48 +251,40 @@ await _emit_progress(
     )
     embeddings = await loop.run_in_executor(None, generate_embeddings, normalized_papers)
 
-    #UMAP + HDBSCAN
-await _emit_progress(
-    progress_callback,
-    stage="clustering",
-    label="Grouping research themes",
-    detail="Reducing dimensions and clustering papers into topic neighborhoods.",
-    progress=60,
-)
+    await _emit_progress(
+        progress_callback,
+        stage="clustering",
+        label="Grouping research themes",
+        detail="Reducing dimensions and clustering papers into topic neighborhoods.",
+        progress=60,
+    )
+    reduced_2d, reduced_nd, labels = await loop.run_in_executor(
+        None,
+        reduce_and_cluster,
+        embeddings,
+    )
 
-reduced_2d, reduced_nd, labels = await loop.run_in_executor(
-    None,
-    reduce_and_cluster,
-    embeddings,
-)
+    cluster_map: dict[int, list[dict]] = defaultdict(list)
 
+    for paper, label in zip(normalized_papers, labels.tolist()):
+        cluster_id = int(label)
+        if cluster_id != -1:
+            cluster_map[cluster_id].append(paper)
 
-cluster_map: dict[int, list[dict]] = defaultdict(list)
+    if not cluster_map:
+        cluster_map[0] = normalized_papers
 
-for paper, label in zip(normalized_papers, labels.tolist()):
-    cluster_id = int(label)
+    for paper, label in zip(normalized_papers, labels.tolist()):
+        paper["_cluster_id"] = int(label) if label != -1 else 0
 
-    if cluster_id != -1:
-        cluster_map[cluster_id].append(paper)
+    cluster_themes: dict[int, dict] = await loop.run_in_executor(
+        None,
+        lambda: {
+            cid: extract_cluster_themes(papers)
+            for cid, papers in cluster_map.items()
+        },
+    )
 
-# fallback cluster
-if not cluster_map:
-    cluster_map[0] = normalized_papers
-
-
-for paper, label in zip(normalized_papers, labels.tolist()):
-    paper["_cluster_id"] = int(label) if label != -1 else 0
-
-
-cluster_themes: dict[int, dict] = await loop.run_in_executor(
-    None,
-    lambda: {
-        cid: extract_cluster_themes(papers)
-        for cid, papers in cluster_map.items()
-    },
-)
-
-    #Pattern analysis
     await _emit_progress(
         progress_callback,
         stage="patterns",
@@ -313,7 +296,6 @@ cluster_themes: dict[int, dict] = await loop.run_in_executor(
         None, run_pattern_analysis, normalized_papers
     )
 
-    #LLM gap reasoning
     await _emit_progress(
         progress_callback,
         stage="gaps",
@@ -331,8 +313,7 @@ cluster_themes: dict[int, dict] = await loop.run_in_executor(
         request.top_k_gaps,
     )
 
-    #Cluster summaries
-    clusters: list[ClusterSummary] = await loop.run_in_executor(
+    cluster_summaries: list[ClusterSummary] = await loop.run_in_executor(
         None,
         _build_cluster_summaries,
         cluster_map,
@@ -340,7 +321,6 @@ cluster_themes: dict[int, dict] = await loop.run_in_executor(
         gaps,
     )
 
-    #Visualizations
     await _emit_progress(
         progress_callback,
         stage="visualizations",
@@ -361,17 +341,14 @@ cluster_themes: dict[int, dict] = await loop.run_in_executor(
     visualizations = VisualizationData(**{
         k: viz_dict.get(k) for k in VisualizationData.model_fields
     })
-    visualizations = VisualizationData(**viz_dict)
-    clusters = _build_cluster_dashboard(normalized_papers, labels, reduced, gaps)
+    cluster_dashboard = _build_cluster_dashboard(normalized_papers, labels, reduced_2d, gaps)
 
-    #IDs and share links
     report_id = str(uuid.uuid4())
     share_url = f"/synthesis/share/{report_id}"
     pdf_url = f"/synthesis/report/{report_id}/download"
     copy_text = _generate_copy_text(request.topic, gaps)
     created_at = datetime.now(NEPAL_TZ).isoformat()
 
-    #Save to MongoDB
     doc = {
         "_id": report_id,
         "report_id": report_id,
@@ -381,9 +358,8 @@ cluster_themes: dict[int, dict] = await loop.run_in_executor(
         "papers_analyzed": len(normalized_papers),
         "pattern_analysis": pattern.model_dump(),
         "gaps": [g.model_dump() for g in gaps],
-        "clusters": [c.model_dump() for c in clusters],
+        "clusters": cluster_dashboard,
         "visualizations": viz_dict,
-        "clusters": clusters,
         "papers": [p.model_dump() for p in retrieval.papers],
         "created_at": created_at,
         "copy_text": copy_text,
@@ -391,34 +367,31 @@ cluster_themes: dict[int, dict] = await loop.run_in_executor(
         "pdf_url": pdf_url,
         "success": True,
     }
-# Save the report to MongoDB
-await _save_report_to_mongo(doc)
+    await _save_report_to_mongo(doc)
 
+    dataset_path = append_gap_dataset_record({
+        "report_id": report_id,
+        "topic": request.topic,
+        "filters": retrieval.filters,
+        "sources_used": retrieval.sources_used,
+        "created_at": created_at,
+        "papers": [p.model_dump() for p in retrieval.papers],
+        "normalized_papers": normalized_papers,
+        "pattern_analysis": pattern.model_dump(),
+        "clusters": cluster_dashboard,
+        "gaps": [g.model_dump() for g in gaps],
+        "visualizations_present": {
+            key: bool(value) for key, value in viz_dict.items()
+        },
+    })
 
-dataset_path = append_gap_dataset_record({
-    "report_id": report_id,
-    "topic": request.topic,
-    "filters": retrieval.filters,
-    "sources_used": retrieval.sources_used,
-    "created_at": created_at,
-    "papers": [p.model_dump() for p in retrieval.papers],
-    "normalized_papers": normalized_papers,
-    "pattern_analysis": pattern.model_dump(),
-    "clusters": clusters,
-    "gaps": [g.model_dump() for g in gaps],
-    "visualizations_present": {
-        key: bool(value) for key, value in viz_dict.items()
-    },
-})
-
-
-await _emit_progress(
-    progress_callback,
-    stage="complete",
-    label="Report ready",
-    detail="The synthesis is complete.",
-    progress=100,
-)
+    await _emit_progress(
+        progress_callback,
+        stage="complete",
+        label="Report ready",
+        detail="The synthesis is complete.",
+        progress=100,
+    )
 
     return SynthesisResponse(
         success=True,
@@ -432,13 +405,13 @@ await _emit_progress(
         papers_analyzed=len(normalized_papers),
         pattern_analysis=pattern,
         gaps=gaps,
-        clusters=clusters,
-stats={
-    "total_gaps": len(gaps),
-    "analyzed": len(normalized_papers),
-    "clusters": len(clusters),
-    "dataset_path": dataset_path,
-}
+        clusters=cluster_summaries,
+        stats={
+            "total_gaps": len(gaps),
+            "analyzed": len(normalized_papers),
+            "clusters": len(cluster_summaries),
+            "dataset_path": dataset_path,
+        },
         visualizations=visualizations,
         pdf_url=pdf_url,
         created_at=created_at,
