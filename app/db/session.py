@@ -20,3 +20,4 @@ users_collection = db["users"] if db is not None else None
 papers_collection = db["papers"] if db is not None else None
 reports_collection = db["reports"] if db is not None else None
 gap_reports_collection = db["gap_reports"] if db is not None else None
+citation_cache_collection = db["citation_cache"] if db is not None else None

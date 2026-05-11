@@ -1569,3 +1569,196 @@
 .btn-primary-glow {
     border-radius: 9px;
 }
+
+/* =========================================================
+   Dashboard polish — masthead, suggested chips, featured row
+   ========================================================= */
+
+/* --- Masthead row above the omnibar -------------------------------- */
+.dash-masthead {
+    display: flex;
+    align-items: center;
+    gap: var(--s-2);
+    padding: var(--s-2) 0 var(--s-1);
+    margin-bottom: var(--s-2);
+    border-bottom: 1px solid var(--rule);
+    animation: dash-mast-in 700ms var(--ease-out) both;
+}
+@keyframes dash-mast-in {
+    from { opacity: 0; transform: translate3d(0, -4px, 0); }
+    to   { opacity: 1; transform: translate3d(0, 0, 0); }
+}
+.dash-masthead-date,
+.dash-masthead-folio {
+    font-family: var(--font-mono);
+    font-size: var(--t-mono-xs);
+    letter-spacing: 0.18em;
+    color: var(--ink-3);
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+.dash-masthead-folio { color: var(--ink-2); }
+.dash-masthead-rule {
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(90deg, var(--rule) 0%, var(--rule-strong) 50%, var(--rule) 100%);
+}
+
+/* --- Omnibar keyboard hint ---------------------------------------- */
+.dash-omnibar-kbd {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 22px;
+    height: 22px;
+    padding: 0 6px;
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    font-weight: 500;
+    color: var(--ink-3);
+    background: var(--accent-soft);
+    border: 1px solid var(--rule-strong);
+    border-radius: 6px;
+    box-shadow: inset 0 -1px 0 var(--rule-strong);
+    user-select: none;
+}
+
+/* --- Hairline between omnibar input and filter chips -------------- */
+.dash-omnibar .dash-filters-row {
+    border-top: 1px solid var(--rule);
+    margin-top: 2px;
+    padding-top: 0.55rem;
+}
+
+/* --- Suggested topic chips ---------------------------------------- */
+.dash-suggest {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--s-1);
+    margin-top: var(--s-2);
+    padding: 0 var(--s-0);
+    animation: dash-mast-in 800ms 120ms var(--ease-out) both;
+}
+.dash-suggest-kicker {
+    font-family: var(--font-mono);
+    font-size: var(--t-mono-xs);
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+    margin-right: var(--s-0);
+}
+.dash-suggest-chip {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.4rem 0.85rem;
+    font-family: var(--font-serif, 'Instrument Serif'), serif;
+    font-style: italic;
+    font-size: 0.92rem;
+    color: var(--ink-2);
+    background: var(--glass);
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-pill);
+    cursor: pointer;
+    transition:
+        background var(--t-fast) var(--ease),
+        color var(--t-fast) var(--ease),
+        border-color var(--t-fast) var(--ease),
+        transform var(--t-fast) var(--ease);
+}
+.dash-suggest-chip:hover {
+    background: var(--glass-strong);
+    color: var(--ink);
+    border-color: var(--accent-line);
+    transform: translateY(-1px);
+}
+.dash-suggest-chip:active { transform: translateY(0); }
+.dash-suggest-chip:focus-visible {
+    outline: 2px solid var(--accent-line);
+    outline-offset: 2px;
+}
+
+/* --- Recent: "All searches →" link in head ------------------------- */
+.dash-recent-head { gap: var(--s-2); }
+.dash-recent-allink {
+    margin-left: auto;
+    font-family: var(--font-mono);
+    font-size: var(--t-mono-xs);
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--ink-2);
+    text-decoration: none;
+    transition: color var(--t-fast) var(--ease);
+}
+.dash-recent-allink:hover { color: var(--ink); }
+
+/* --- Recent: empty state with icon -------------------------------- */
+.dash-recent-empty {
+    display: flex;
+    align-items: center;
+    gap: var(--s-1);
+    color: var(--ink-3);
+}
+.dash-recent-empty svg { opacity: 0.7; flex-shrink: 0; }
+.dash-recent-empty span {
+    font-family: var(--font-serif, 'Instrument Serif'), serif;
+    font-style: italic;
+    font-size: 1.02rem;
+}
+
+/* --- Recent: featured (most recent) row --------------------------- */
+.dash-recent-row { transition: background var(--t-fast) var(--ease), padding var(--t-fast) var(--ease); }
+.dash-recent-row:focus-visible {
+    outline: 2px solid var(--accent-line);
+    outline-offset: 2px;
+    border-radius: var(--radius-sm);
+}
+.dash-recent-row.is-featured {
+    padding: var(--s-3) 0 var(--s-2);
+    border-bottom: 1px solid var(--rule-strong);
+    align-items: baseline;
+}
+.dash-recent-row.is-featured:hover {
+    margin: 0 calc(var(--s-2) * -1);
+    padding-left: var(--s-2);
+    padding-right: var(--s-2);
+}
+.dash-recent-row.is-featured .dash-recent-idx {
+    color: var(--ink);
+}
+.dash-recent-row.is-featured .dash-recent-title {
+    font-size: 1.35rem;
+    max-width: 60%;
+    line-height: 1.25;
+}
+.dash-recent-row.is-featured .dash-recent-meta {
+    font-size: 0.7rem;
+}
+.dash-recent-resume {
+    margin-left: var(--s-1);
+    font-family: var(--font-mono);
+    font-size: var(--t-mono-xs);
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--ink-2);
+    opacity: 0;
+    transform: translateX(-4px);
+    transition: opacity var(--t-fast) var(--ease), transform var(--t-fast) var(--ease), color var(--t-fast) var(--ease);
+    flex-shrink: 0;
+}
+.dash-recent-row.is-featured:hover .dash-recent-resume,
+.dash-recent-row.is-featured:focus-visible .dash-recent-resume {
+    opacity: 1;
+    transform: translateX(0);
+    color: var(--ink);
+}
+
+/* --- Reduced motion --------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+    .dash-masthead,
+    .dash-suggest { animation: none !important; }
+    .dash-recent-resume { transition: none; opacity: 1; transform: none; }
+}

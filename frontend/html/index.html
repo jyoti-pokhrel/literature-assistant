@@ -15,11 +15,12 @@
   </script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/css/tokens.css?v=20260506n" />
-  <link rel="stylesheet" href="/css/style.css?v=20260507b" />
+  <link rel="stylesheet" href="/css/style.css?v=20260511a" />
   <link rel="stylesheet" href="/css/workspace.css?v=20260506n" />
-  <link rel="stylesheet" href="/css/dashboard.css?v=20260507b" />
+  <link rel="stylesheet" href="/css/dashboard.css?v=20260511b" />
+  <link rel="stylesheet" href="/css/citations.css?v=20260511a" />
 </head>
 <body class="landing-state" x-data="appShell()" x-init="init()" :class="$store.app.mode === 'workspace' ? 'workspace-state' : 'landing-state'">
   <div class="bg-grid"></div>
@@ -383,6 +384,16 @@
         <button id="new-thread-btn" class="btn-new-thread" type="button" @click="$store.app.startNewSearch()">New search</button>
         <button id="close-sidebar" class="btn-icon mobile-only" type="button" aria-label="Close sidebar" @click="$store.app.closeSidebar()">✕</button>
       </div>
+      <nav class="sidebar-nav" aria-label="Primary">
+        <button type="button" class="sidebar-nav-item" :class="{ active: $store.app.currentView === 'form' }" @click="$store.app.openWorkspace({ showForm: true })">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"></rect><rect x="14" y="3" width="7" height="7" rx="1.5"></rect><rect x="3" y="14" width="7" height="7" rx="1.5"></rect><rect x="14" y="14" width="7" height="7" rx="1.5"></rect></svg>
+          <span>Dashboard</span>
+        </button>
+        <button type="button" class="sidebar-nav-item" :class="{ active: $store.app.currentView === 'citations' }" @click="$store.app.currentView = 'citations'; $store.app.mode = 'workspace'" title="Citation Network Analysis">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="6" cy="6" r="2.2"></circle><circle cx="18" cy="6" r="2.2"></circle><circle cx="6" cy="18" r="2.2"></circle><circle cx="18" cy="18" r="2.2"></circle><circle cx="12" cy="12" r="2.4"></circle><line x1="7.7" y1="7.7" x2="10.3" y2="10.3"></line><line x1="16.3" y1="7.7" x2="13.7" y2="10.3"></line><line x1="7.7" y1="16.3" x2="13.7" y2="10.3"></line><line x1="16.3" y1="16.3" x2="13.7" y2="13.7"></line></svg>
+          <span>Citation Network Analysis</span>
+        </button>
+      </nav>
       <div class="sidebar-section">
         <div class="sidebar-label">Recent searches</div>
         <div id="search-history" x-data="{ activeMenu: null }">
@@ -412,6 +423,16 @@
           </template>
         </div>
       </div>
+      <div class="sidebar-bottom">
+        <button type="button" class="sidebar-nav-item" @click="$store.app.openProfile?.()">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"></circle><path d="M4 21a8 8 0 0 1 16 0"></path></svg>
+          <span>Profile settings</span>
+        </button>
+        <button type="button" class="sidebar-nav-item is-quiet" @click="$store.app.signOut?.()">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+          <span>Sign out</span>
+        </button>
+      </div>
     </aside>
 
     <section class="px-main">
@@ -436,7 +457,14 @@
       </header>
 
       <div class="px-content">
-        <section id="initial-view" class="dash-v2" x-show="$store.app.currentView === 'form'" x-transition:enter="fade-in visible">
+        <section id="initial-view" class="dash-v2" x-show="$store.app.currentView === 'form'" x-transition:enter="fade-in visible" x-data="{ get today() { try { return new Intl.DateTimeFormat('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' }).format(new Date()).toUpperCase().replace(/,/g, ' ·'); } catch(e) { return ''; } } }">
+
+          <!-- Masthead — editorial date + folio -->
+          <header class="dash-masthead" aria-hidden="false">
+            <span class="dash-masthead-date" x-text="today"></span>
+            <span class="dash-masthead-rule" aria-hidden="true"></span>
+            <span class="dash-masthead-folio">VOL. I &nbsp;·&nbsp; DASHBOARD</span>
+          </header>
 
           <!-- Hero Omnibar Search -->
           <section class="dash-omnibar-section">
@@ -445,6 +473,7 @@
                 <svg class="dash-omnibar-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
                 <label class="sr-only" for="main-prompt">Topic</label>
                 <input id="main-prompt" class="dash-omnibar-input" type="text" placeholder="What would you like to research?" x-model="$store.app.form.topic" autocomplete="off" />
+                <kbd class="dash-omnibar-kbd" aria-hidden="true">↵</kbd>
                 <button id="run-px-query" class="dash-omnibar-submit" type="submit" :class="{ 'is-loading': $store.app.isLoading }" :disabled="$store.app.isLoading">
                   <span x-show="!$store.app.isLoading">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
@@ -473,6 +502,12 @@
                 </label>
               </div>
             </form>
+            <div class="dash-suggest" x-data="searchForm()" x-show="!$store.app.form.topic.trim() && $store.app.history.length < 3 && !$store.app.isLoading" x-cloak>
+              <span class="dash-suggest-kicker">Try</span>
+              <template x-for="t in ['Mechanistic interpretability', 'Diffusion models', 'Retrieval-augmented generation', 'Long-context evaluation', 'Constitutional AI']" :key="t">
+                <button type="button" class="dash-suggest-chip" @click="$store.app.form.topic = t; submit()" x-text="t"></button>
+              </template>
+            </div>
             <p id="search-error" class="search-error" x-cloak x-show="$store.app.error" x-text="$store.app.error" style="text-align:center; margin-top:0.75rem;"></p>
           </section>
 
@@ -481,18 +516,23 @@
             <div class="dash-recent-head">
               <span class="dash-recent-kicker">Recent</span>
               <span class="dash-recent-count" x-text="$store.app.history.length + ' total'"></span>
+              <a class="dash-recent-allink" href="#" x-show="$store.app.history.length > 8" @click.prevent="document.getElementById('search-history')?.scrollIntoView({ behavior: 'smooth', block: 'start' })">All searches →</a>
             </div>
 
             <ol class="dash-recent-list">
               <template x-if="!$store.app.history.length">
-                <li class="dash-recent-empty">No projects yet — use the search above to start.</li>
+                <li class="dash-recent-empty">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="19" x2="12" y2="5"></line><polyline points="5 12 12 5 19 12"></polyline></svg>
+                  <span>Nothing yet — point the search above at a topic to begin.</span>
+                </li>
               </template>
               <template x-for="(item, index) in $store.app.history.slice(0, 8)" :key="item.id">
-                <li class="dash-recent-row" @click="$store.app.useHistoryItem(item)">
+                <li class="dash-recent-row" :class="{ 'is-featured': index === 0 }" tabindex="0" role="button" @click="$store.app.useHistoryItem(item)" @keydown.enter.prevent="$store.app.useHistoryItem(item)" @keydown.space.prevent="$store.app.useHistoryItem(item)">
                   <span class="dash-recent-idx" x-text="(index + 1).toString().padStart(2, '0')"></span>
                   <span class="dash-recent-title" x-text="item.topic"></span>
                   <i class="t-leader" aria-hidden="true"></i>
                   <span class="dash-recent-meta" x-text="item.summary"></span>
+                  <span class="dash-recent-resume" x-show="index === 0">Resume →</span>
                 </li>
               </template>
             </ol>
@@ -772,6 +812,167 @@
             ></div>
           </div>
         </section>
+
+        <section id="citations-view" class="px-thread-view cit-view"
+                 x-data="citationGraph()" x-init="init()"
+                 x-cloak x-show="$store.app.currentView === 'citations'"
+                 style="display:flex; flex-direction:column;">
+          <header class="results-header cit-header">
+            <div>
+              <div class="thread-query-kicker">Citation network</div>
+              <h2 class="results-query-title">Trace a paper's references and citers</h2>
+              <p class="results-query-meta" x-show="resolved" x-cloak>
+                <span x-text="resolved?.title || resolved?.paper_id"></span>
+                <template x-if="resolved?.year"><span> · <span x-text="resolved.year"></span></span></template>
+                <template x-if="cached"><span class="cit-pill" title="Served from 30-day cache">cached</span></template>
+              </p>
+            </div>
+          </header>
+
+          <section class="cit-form-shell glass">
+            <form class="cit-form" @submit.prevent="build()">
+              <label class="sr-only" for="cit-input">Paper URL or DOI</label>
+              <svg class="cit-form-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+              <input id="cit-input" class="cit-form-input" type="text" autocomplete="off"
+                     placeholder="Paste a DOI, arXiv ID, or paper URL (e.g. 10.1038/s41586-021-03819-2)"
+                     x-model="input" @input="resolved = null" />
+              <button type="button" class="btn-glass" @click="resolve()" :disabled="resolving || building">
+                <span x-show="!resolving">Resolve</span>
+                <span x-show="resolving">Resolving…</span>
+              </button>
+              <button type="submit" class="btn-primary-glow" :disabled="building || resolving || !input.trim()">
+                <span x-show="!building">Build network</span>
+                <span x-show="building">Building…</span>
+              </button>
+            </form>
+            <p class="cit-form-error" x-cloak x-show="errorMsg" x-text="errorMsg"></p>
+            <template x-if="resolved && !building">
+              <div class="cit-resolved">
+                <span class="cit-pill cit-pill-strong" x-text="resolved.source.replace('_', ' ')"></span>
+                <strong x-text="resolved.title || resolved.paper_id"></strong>
+                <template x-if="resolved.doi"><span class="cit-resolved-doi" x-text="'DOI ' + resolved.doi"></span></template>
+              </div>
+            </template>
+          </section>
+
+          <div class="cit-progress glass" x-cloak x-show="building">
+            <div class="cit-progress-row">
+              <span class="cit-progress-dots" aria-hidden="true"><i></i><i></i><i></i></span>
+              <span class="cit-progress-stage" x-text="stageLabel(progress.stage)"></span>
+              <span class="cit-progress-msg" x-text="progress.message"></span>
+            </div>
+            <div class="cit-progress-counts">
+              <span><strong x-text="progress.nodes"></strong> nodes</span>
+              <span><strong x-text="progress.edges"></strong> edges</span>
+            </div>
+            <template x-if="warnings.length">
+              <ul class="cit-warnings">
+                <template x-for="(w, i) in warnings" :key="i">
+                  <li x-text="w.message"></li>
+                </template>
+              </ul>
+            </template>
+          </div>
+
+          <div class="cit-shell" x-cloak x-show="graph.nodes.length">
+            <main class="cit-canvas glass" id="cit-graph-mount" x-ref="graphMount"></main>
+
+            <aside class="cit-panel glass" aria-label="Citation network controls">
+              <section class="cit-panel-section">
+                <h4 class="cit-panel-label">Filters</h4>
+                <label class="cit-checkbox">
+                  <input type="checkbox" x-model="filters.showRefs" />
+                  <span>References (<span x-text="meta.refs"></span>)</span>
+                </label>
+                <label class="cit-checkbox">
+                  <input type="checkbox" x-model="filters.showCiters" />
+                  <span>Citers (<span x-text="meta.citers"></span>)</span>
+                </label>
+                <label class="cit-range">
+                  <span>Min citations: <strong x-text="filters.minCites"></strong></span>
+                  <input type="range" min="0" max="500" step="5" x-model.number="filters.minCites" />
+                </label>
+                <label class="cit-range">
+                  <span>Year from: <strong x-text="filters.yearMin"></strong></span>
+                  <input type="range" :min="meta.yearMin" :max="meta.yearMax" step="1" x-model.number="filters.yearMin" />
+                </label>
+                <label class="cit-range">
+                  <span>Year to: <strong x-text="filters.yearMax"></strong></span>
+                  <input type="range" :min="meta.yearMin" :max="meta.yearMax" step="1" x-model.number="filters.yearMax" />
+                </label>
+              </section>
+
+              <section class="cit-panel-section">
+                <h4 class="cit-panel-label">Stats</h4>
+                <ul class="cit-stats">
+                  <li><span>Total nodes</span><strong x-text="meta.totalNodes"></strong></li>
+                  <li><span>Total edges</span><strong x-text="meta.totalEdges"></strong></li>
+                  <li><span>Sources</span><strong x-text="sourcesUsed.join(', ') || '—'"></strong></li>
+                </ul>
+              </section>
+
+              <section class="cit-panel-section">
+                <h4 class="cit-panel-label">Selected node</h4>
+                <template x-if="!selectedNode">
+                  <p class="cit-panel-empty">Click a node to inspect it. Double-click to expand it by one hop.</p>
+                </template>
+                <template x-if="selectedNode">
+                  <div class="cit-selected">
+                    <span class="cit-pill cit-pill-strong" x-text="roleLabel(selectedNode.role)"></span>
+                    <h5 class="cit-selected-title" x-text="selectedNode.title"></h5>
+                    <p class="cit-selected-meta">
+                      <span x-text="selectedNode.year || '—'"></span>
+                      <template x-if="Number.isFinite(selectedNode.citation_count)">
+                        <span> · <span x-text="selectedNode.citation_count.toLocaleString()"></span> citations</span>
+                      </template>
+                    </p>
+                    <p class="cit-selected-authors" x-show="selectedNode.authors && selectedNode.authors.length"
+                       x-text="(selectedNode.authors || []).slice(0,4).join(', ') + ((selectedNode.authors||[]).length>4 ? ' et al.' : '')"></p>
+                    <div class="cit-selected-actions">
+                      <template x-if="paperLink(selectedNode)">
+                        <a class="btn-glass" :href="paperLink(selectedNode)" target="_blank" rel="noopener noreferrer">Open ↗</a>
+                      </template>
+                      <button type="button" class="btn-glass" @click="expand(selectedNode.id)" :disabled="selectedNode.role==='seed'">Expand</button>
+                      <button type="button" class="btn-glass cit-btn-ghost" @click="clearSelection()">Clear</button>
+                    </div>
+                  </div>
+                </template>
+              </section>
+
+              <section class="cit-panel-section" x-show="topCited.length">
+                <h4 class="cit-panel-label">Top cited in network</h4>
+                <ol class="cit-top">
+                  <template x-for="(node, idx) in topCited" :key="node.id">
+                    <li @click="selectNode(node)" :class="{ 'is-selected': selectedNode && selectedNode.id === node.id }">
+                      <span class="cit-top-idx" x-text="(idx + 1).toString().padStart(2, '0')"></span>
+                      <div>
+                        <strong x-text="node.title"></strong>
+                        <span class="cit-top-meta">
+                          <span x-text="node.year || '—'"></span>
+                          <template x-if="Number.isFinite(node.citation_count)">
+                            <span> · <span x-text="node.citation_count.toLocaleString()"></span> cites</span>
+                          </template>
+                        </span>
+                      </div>
+                    </li>
+                  </template>
+                </ol>
+              </section>
+            </aside>
+          </div>
+
+          <template x-if="!building && !graph.nodes.length && !errorMsg">
+            <div class="cit-empty">
+              <p>Paste any of the following to begin:</p>
+              <ul>
+                <li><code>10.1038/s41586-021-03819-2</code> (DOI)</li>
+                <li><code>https://arxiv.org/abs/2005.14165</code> (arXiv URL)</li>
+                <li><code>2005.14165</code> (arXiv ID)</li>
+                <li><code>W2755950973</code> (OpenAlex ID)</li>
+              </ul>
+            </div>
+          </template>
+        </section>
       </div>
     </section>
   </main>
@@ -784,10 +985,12 @@
   <script defer src="/js/alpine/stores/appStore.js?v=20260503x"></script>
   <script defer src="/js/d3/clusterMap.js?v=20260503a"></script>
   <script defer src="/js/d3/charts.js?v=20260502b"></script>
+  <script defer src="/js/d3/citationGraph.js?v=20260511b"></script>
   <script defer src="/js/alpine/components/searchForm.js?v=20260423a"></script>
   <script defer src="/js/alpine/components/resultsPage.js?v=20260502b"></script>
   <script defer src="/js/alpine/components/gapExplorer.js?v=20260506n"></script>
   <script defer src="/js/alpine/components/historySidebar.js?v=20260423a"></script>
+  <script defer src="/js/alpine/components/citationGraph.js?v=20260511b"></script>
   <script defer src="/js/alpine/app.js?v=20260507b"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.9/dist/cdn.min.js"></script>
 </body>

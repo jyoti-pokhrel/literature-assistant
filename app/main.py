@@ -11,7 +11,7 @@ from dotenv import load_dotenv
 env_path = Path(__file__).resolve().parent.parent / '.env'
 load_dotenv(dotenv_path=env_path)
 
-from app.api.routes import auth, papers, reports, search, synthesis
+from app.api.routes import auth, citations, papers, reports, search, synthesis
 
 app = FastAPI(
     title="Research Agent API",
@@ -50,7 +50,22 @@ app.include_router(auth.router, tags=["Auth"])
 app.include_router(papers.router, tags=["Papers"])
 app.include_router(reports.router, tags=["Reports"])
 app.include_router(search.router, tags=["Search"])
-app.include_router(synthesis.router) 
+app.include_router(synthesis.router)
+app.include_router(citations.router)
+
+
+@app.on_event("startup")
+async def _bootstrap_citation_indexes() -> None:
+    from app.services.citations.cache import ensure_indexes
+
+    try:
+        await ensure_indexes()
+    except Exception:
+        import logging
+
+        logging.getLogger(__name__).exception("Failed to bootstrap citation_cache indexes")
+
+
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 app.mount("/css", StaticFiles(directory=FRONTEND_DIR / "css"), name="frontend-css")
 app.mount("/js", StaticFiles(directory=FRONTEND_DIR / "js"), name="frontend-js")

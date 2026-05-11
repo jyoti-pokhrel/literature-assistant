@@ -80,6 +80,9 @@ class RetrievedPaper(BaseModel):
     url: Optional[str] = None
     pdf_url: Optional[str] = None
     citation_count: Optional[int] = None
+    doi: Optional[str] = None
+    references: List[str] = Field(default_factory=list)
+    citing_papers: List[str] = Field(default_factory=list)
 
     @field_validator("title", "abstract", "venue", mode="before")
     @classmethod

@@ -49,7 +49,7 @@ window.ResearchAgent.defaults = Object.freeze({
 });
 
 window.ResearchAgent.searchHistoryKey = 'research-agent-search-history-v2';
-window.ResearchAgent.sidebarStateKey = 'research-agent-sidebar-collapsed-v1';
+window.ResearchAgent.sidebarStateKey = 'research-agent-sidebar-collapsed-v2';
 
 window.ResearchAgent.cloneSearchValues = function cloneSearchValues(values = {}) {
     const maxResults = Number.parseInt(values.maxResults, 10);
@@ -251,7 +251,7 @@ document.addEventListener('alpine:init', () => {
         mode: 'landing',
         currentView: 'form',
         theme: localStorage.getItem('theme') || 'light',
-        sidebarCollapsed: storedSidebarState === null ? window.innerWidth <= 768 : storedSidebarState === 'true',
+        sidebarCollapsed: storedSidebarState === null ? false : storedSidebarState === 'true',
         techPanelOpen: false,
         isLoading: false,
         error: '',
