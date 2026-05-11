@@ -6,10 +6,6 @@ import logging
 from pathlib import Path
 
 import numpy as np
-from dotenv import load_dotenv
-
-load_dotenv(dotenv_path=Path(__file__).resolve().parent.parent.parent.parent / ".env")
-
 PRIMARY_MODEL: str = os.getenv("EMBEDDING_MODEL")
 if not PRIMARY_MODEL:
     raise RuntimeError("EMBEDDING_MODEL is not set in .env")

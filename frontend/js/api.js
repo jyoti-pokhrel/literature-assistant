@@ -17,7 +17,7 @@ const BASE_URL = (() => {
 })();
 
 function getHeaders({ hasBody = false, includeAuth = true } = {}) {
-    const token = localStorage.getItem("token");
+    const token = localStorage.getItem("access_token");
     const headers = {};
 
     if (hasBody) {
@@ -50,18 +50,19 @@ async function login(username, password) {
     })
     const data = await response.json()
     if (data.access_token) {
-        localStorage.setItem("token", data.access_token)
+        localStorage.setItem("access_token", data.access_token)
     }
     return data
 }
 
 function logout() {
-    localStorage.removeItem("token")
+    localStorage.removeItem("access_token")
+    localStorage.removeItem("username")
     window.location.href = window.location.protocol.startsWith("http") ? "/" : "index.html"
 }
 
 function isLoggedIn() {
-    return localStorage.getItem("token") !== null
+    return localStorage.getItem("access_token") !== null
 }
 
 async function fetchPapers() {

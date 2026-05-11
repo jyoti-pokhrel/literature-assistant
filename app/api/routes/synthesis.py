@@ -8,11 +8,10 @@ from pathlib import Path
 from typing import List
 
 from bson import ObjectId
-from dotenv import load_dotenv
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import Response, StreamingResponse
 
-from app.api.dependencies import get_current_user
+from app.api.dependencies import require_researcher, require_viewer
 from app.schemas.synthesis import (
     SynthesisHistoryItem,
     SynthesisHistoryResponse,
@@ -20,11 +19,15 @@ from app.schemas.synthesis import (
     SynthesisResponse,
 )
 
-load_dotenv(dotenv_path=Path(__file__).resolve().parent.parent.parent.parent / ".env")
-
 logger = logging.getLogger(__name__)
 
-from app.db.session import gap_reports_collection
+from app.db.session import get_db
+
+
+def _get_gap_reports_collection():
+    """Get gap_reports collection dynamically at request time."""
+    db = get_db()
+    return db.gap_reports if db else None
 
 router = APIRouter(prefix="/synthesis", tags=["Synthesis"])
 
@@ -36,7 +39,8 @@ def _is_valid_object_id(id_str: str) -> bool:
 
 
 async def _fetch_report(report_id: str) -> dict:
-    if gap_reports_collection is None:
+    collection = _get_gap_reports_collection()
+    if collection is None:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="Database not configured",
@@ -46,7 +50,7 @@ async def _fetch_report(report_id: str) -> dict:
     if _is_valid_object_id(clean_id):
         query["$or"].append({"_id": ObjectId(clean_id)})
 
-    doc = await gap_reports_collection.find_one(query)
+    doc = await collection.find_one(query)
     if not doc:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -94,7 +98,7 @@ def _hydrate_report(doc: dict) -> dict:
 )
 async def detect_gaps(
     payload: SynthesisRequest,
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(require_researcher),
 ) -> SynthesisResponse:
     from app.services.synthesis.report_pipeline import run_synthesis_pipeline
     try:
@@ -117,7 +121,7 @@ async def detect_gaps(
 )
 async def detect_gaps_batch(
     payloads: List[SynthesisRequest],
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(require_researcher),
 ) -> List[SynthesisResponse]:
     if len(payloads) > 5:
         raise HTTPException(
@@ -161,7 +165,7 @@ async def detect_gaps_batch(
 )
 async def stream_detect_gaps(
     payload: SynthesisRequest,
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(require_researcher),
 ) -> StreamingResponse:
     from app.services.synthesis.report_pipeline import run_synthesis_pipeline
 
@@ -209,18 +213,30 @@ async def stream_detect_gaps(
     "/history",
     response_model=SynthesisHistoryResponse,
     status_code=status.HTTP_200_OK,
-    summary="List past synthesis reports",
+    summary="List past synthesis reports with cursor pagination",
 )
 async def get_synthesis_history(
     limit: int = 20,
-    current_user: dict = Depends(get_current_user),
+    last_id: Optional[str] = None,
+    current_user: dict = Depends(require_researcher),
 ) -> SynthesisHistoryResponse:
-    if gap_reports_collection is None:
+    collection = _get_gap_reports_collection()
+    if collection is None:
         return SynthesisHistoryResponse(total=0, items=[])
 
-    cursor = gap_reports_collection.find(
-        {}, {"topic": 1, "papers_analyzed": 1, "gaps": 1, "created_at": 1}
-    ).sort("created_at", -1).limit(limit)
+    # Filter by user
+    query = {"username": current_user["username"]}
+    
+    # Cursor pagination logic
+    if last_id and _is_valid_object_id(last_id):
+        query["_id"] = {"$lt": ObjectId(last_id)}
+
+    total = await collection.count_documents({"username": current_user["username"]})
+    
+    cursor = collection.find(
+        query, {"topic": 1, "papers_analyzed": 1, "gaps": 1, "created_at": 1}
+    ).sort("_id", -1).limit(limit)
+    
     items: list[SynthesisHistoryItem] = []
     async for doc in cursor:
         items.append(SynthesisHistoryItem(
@@ -230,7 +246,10 @@ async def get_synthesis_history(
             gap_count=len(doc.get("gaps", [])),
             created_at=doc.get("created_at", ""),
         ))
-    return SynthesisHistoryResponse(total=len(items), items=items)
+    
+    next_cursor = str(items[-1].report_id) if items else None
+    
+    return SynthesisHistoryResponse(total=total, items=items, next_cursor=next_cursor)
 
 
 @router.get(
@@ -241,7 +260,7 @@ async def get_synthesis_history(
 )
 async def get_synthesis_report(
     report_id: str,
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(require_researcher),
 ) -> SynthesisResponse:
     doc = _hydrate_report(await _fetch_report(report_id))
     return SynthesisResponse(**doc)
@@ -253,7 +272,10 @@ async def get_synthesis_report(
     status_code=status.HTTP_200_OK,
     summary="Publicly retrieve a saved report (share links)",
 )
-async def get_public_synthesis_report(report_id: str) -> SynthesisResponse:
+async def get_public_synthesis_report(
+    report_id: str,
+    current_user: dict = Depends(require_viewer)
+) -> SynthesisResponse:
     doc = _hydrate_report(await _fetch_report(report_id))
     return SynthesisResponse(**doc)
 
@@ -266,7 +288,7 @@ async def get_public_synthesis_report(report_id: str) -> SynthesisResponse:
 )
 async def download_synthesis_report(
     report_id: str,
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(require_researcher),
 ):
     doc = await _fetch_report(report_id)
 

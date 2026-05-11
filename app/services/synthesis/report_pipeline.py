@@ -10,10 +10,6 @@ from typing import Awaitable, Callable
 
 NEPAL_TZ = timezone(timedelta(hours=5, minutes=45))
 
-from dotenv import load_dotenv
-
-load_dotenv(dotenv_path=Path(__file__).resolve().parent.parent.parent.parent / ".env")
-
 from app.schemas.synthesis import (
     ClusterSummary,
     PatternAnalysis,

@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, status
 
-from app.api.dependencies import get_current_user
+from app.api.dependencies import require_researcher
 from app.schemas.gap_analysis import GapAnalysisRequest, GapAnalysisResponse
 from app.schemas.paper import (
     ArxivExploreRequest,
@@ -19,7 +19,7 @@ router = APIRouter()
 @router.post("/search/papers", response_model=PaperSearchResponse, status_code=status.HTTP_200_OK)
 async def search_papers(
     payload: PaperSearchRequest,
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(require_researcher),
 ):
     return await retrieve_papers(
         payload.topic,
@@ -33,7 +33,7 @@ async def search_papers(
 @router.post("/analysis/gaps", response_model=GapAnalysisResponse, status_code=status.HTTP_200_OK)
 async def analyze_gaps_for_topic(
     payload: GapAnalysisRequest,
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(require_researcher),
 ):
     return await run_gap_analysis(
         topic=payload.topic,
@@ -53,7 +53,7 @@ async def analyze_gaps_for_topic(
 )
 async def explore_arxiv(
     payload: ArxivExploreRequest,
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(require_researcher),
 ):
     papers, next_cursor, has_more = await fetch_arxiv_page(
         payload.topic,

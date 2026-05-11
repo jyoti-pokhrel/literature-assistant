@@ -25,6 +25,15 @@ A streamlined command center for your research projects:
 - **Typing Indicators**: Calming, "breathing" UI interactions that reduce cognitive load during processing.
 - **Technical Console**: A collapsible panel for environment monitoring and API status.
 
+### 🛡️ Production Security & Performance
+Hardened infrastructure for real-world deployment:
+- **JWT Authentication**: Secure, token-based sessions for all users.
+- **Role-Based Access Control (RBAC)**: Fine-grained permissions (Admin, Researcher, Viewer).
+- **Personal API Keys**: Generate and manage keys for programmatic research access.
+- **Rate Limiting**: Intelligent protection against API abuse (60 req/min).
+- **Cursor-based Pagination**: High-performance history retrieval for large datasets.
+- **Optimized Persistence**: MongoDB connection pooling and targeted indexing.
+
 ## 🛠️ Tech Stack
 
 ### Backend
@@ -69,6 +78,12 @@ A streamlined command center for your research projects:
    ```
 
 Visit `http://localhost:8000/workspace` to start your first research project.
+
+### 💻 VS Code Setup
+The project includes a `.vscode` configuration for an optimal development experience:
+- **Auto-formatting**: Enabled on save using standard Python tools.
+- **Debugger**: Pre-configured "FastAPI: Research Agent" launch target.
+- **Interpreter**: Automatically points to the `.venv` directory.
 
 ## 📁 Project Structure
 

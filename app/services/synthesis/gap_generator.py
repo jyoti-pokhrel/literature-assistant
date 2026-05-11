@@ -8,10 +8,6 @@ import math
 from pathlib import Path
 from typing import Any
 
-from dotenv import load_dotenv
-
-load_dotenv(dotenv_path=Path(__file__).resolve().parent.parent.parent.parent / ".env")
-
 # Model chain
 PRIMARY_MODEL: str = os.getenv("SYNTHESIS_MODEL_PRIMARY")
 if not PRIMARY_MODEL:

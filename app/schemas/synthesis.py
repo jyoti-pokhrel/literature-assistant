@@ -235,3 +235,5 @@ class SynthesisHistoryItem(BaseModel):
 class SynthesisHistoryResponse(BaseModel):
     total: int
     items: List[SynthesisHistoryItem]
+    next_cursor: Optional[str] = None
+

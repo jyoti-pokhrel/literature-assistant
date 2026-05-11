@@ -248,6 +248,11 @@ document.addEventListener('alpine:init', () => {
     const storedSidebarState = localStorage.getItem(window.ResearchAgent.sidebarStateKey);
     Alpine.store('app', {
         initialized: false,
+        get isLoggedIn() {
+            const token = localStorage.getItem('access_token');
+            return !!(token && token !== 'undefined' && token !== 'null');
+        },
+
         mode: 'landing',
         currentView: 'form',
         theme: localStorage.getItem('theme') || 'light',
@@ -463,6 +468,15 @@ document.addEventListener('alpine:init', () => {
             this.currentView = 'form';
             this.goToPath(window.ResearchAgent.routes.landing, { replace });
         },
+
+        logout() {
+            localStorage.removeItem('access_token');
+            localStorage.removeItem('username');
+            // Hard redirect to landing page to ensure all state is reset
+            window.location.href = window.ResearchAgent.routes.landing;
+        },
+
+
 
         openWorkspace({ replace = false, showForm = true } = {}) {
             this.setMode('workspace');

@@ -37,9 +37,21 @@
         <a href="#faq">FAQ</a>
       </div>
       <div class="lp-nav-actions">
-        <a href="#" class="lp-nav-login">GitHub</a>
-        <button class="btn-primary lp-btn-primary" type="button" @click="$store.app.openWorkspace()">Start free →</button>
+        <template x-if="!$store.app.isLoggedIn">
+          <div style="display: flex; gap: 1rem; align-items: center;">
+            <a href="/html/login.html" class="lp-nav-login" style="text-decoration: none; font-weight: 600; color: var(--text-color);">Log in</a>
+            <button class="btn-secondary" type="button" style="padding: 0.5rem 1rem; border-radius: 8px; font-weight: 600; cursor: pointer;" @click="window.location.href='/html/signup.html'">Sign up</button>
+            <button class="btn-primary lp-btn-primary" type="button" @click="$store.app.openWorkspace()">Start free</button>
+          </div>
+        </template>
+        <template x-if="$store.app.isLoggedIn">
+          <div style="display: flex; gap: 1rem; align-items: center;">
+            <button class="lp-nav-login" type="button" @click="$store.app.logout()" style="background: none; border: none; cursor: pointer; font-family: inherit; font-size: 0.95rem; font-weight: 600; color: var(--text-color);">Log out</button>
+            <button class="btn-primary lp-btn-primary" type="button" @click="$store.app.openWorkspace()">Workspace →</button>
+          </div>
+        </template>
       </div>
+
     </nav>
 
     <!-- Hero -->
@@ -428,11 +440,15 @@
           <button class="btn-icon" type="button" aria-label="Explore arXiv" title="Explore arXiv" @click="$store.app.openExplore()">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
           </button>
+          <button x-show="$store.app.isLoggedIn" class="btn-logout-header" type="button" @click="$store.app.logout()" title="Logout" style="background: none; border: none; cursor: pointer; font-family: inherit; font-size: 0.85rem; font-weight: 600; color: var(--text-muted); padding: 0 0.5rem; transition: color 0.2s;" onmouseover="this.style.color='var(--text-color)'" onmouseout="this.style.color='var(--text-muted)'">
+            Logout
+          </button>
           <button class="btn-icon theme-toggle-btn" type="button" aria-label="Toggle theme" @click="$store.app.toggleTheme()">
             <span class="sun-icon" x-cloak x-show="$store.app.theme === 'light'">☀</span>
             <span class="moon-icon" x-cloak x-show="$store.app.theme === 'dark'">☾</span>
           </button>
         </div>
+
       </header>
 
       <div class="px-content">

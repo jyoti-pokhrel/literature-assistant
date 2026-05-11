@@ -14,7 +14,7 @@ async function parseResponse(response, fallbackMessage) {
 async function searchPapers(payload) {
     const response = await fetch(`${BASE_URL}/search/papers`, {
         method: "POST",
-        headers: getHeaders({ hasBody: true, includeAuth: false }),
+        headers: getHeaders({ hasBody: true }),
         body: JSON.stringify(payload),
     });
 
@@ -24,7 +24,7 @@ async function searchPapers(payload) {
 async function analyzeGaps(payload) {
     const response = await fetch(`${BASE_URL}/synthesis/gaps`, {
         method: "POST",
-        headers: getHeaders({ hasBody: true, includeAuth: false }),
+        headers: getHeaders({ hasBody: true }),
         body: JSON.stringify(payload),
     });
 
@@ -34,7 +34,7 @@ async function analyzeGaps(payload) {
 async function analyzeGapsStream(payload, onEvent) {
     const response = await fetch(`${BASE_URL}/synthesis/gaps/stream`, {
         method: "POST",
-        headers: getHeaders({ hasBody: true, includeAuth: false }),
+        headers: getHeaders({ hasBody: true }),
         body: JSON.stringify(payload),
     });
 
@@ -92,7 +92,7 @@ async function analyzeGapsStream(payload, onEvent) {
 async function exploreArxiv(payload) {
     const response = await fetch(`${BASE_URL}/explore/arxiv`, {
         method: "POST",
-        headers: getHeaders({ hasBody: true, includeAuth: false }),
+        headers: getHeaders({ hasBody: true }),
         body: JSON.stringify(payload),
     });
 
