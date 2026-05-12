@@ -183,4 +183,5 @@ window.searchAPI = {
     buildExplorePayload,
     formatFilters,
     sourceLabel,
+    authenticatedFetch,
 };

@@ -16,7 +16,8 @@ logger = logging.getLogger(__name__)
 
 def _fig_to_b64(fig) -> str:
     buf = io.BytesIO()
-    fig.savefig(buf, format="png", dpi=120, bbox_inches="tight", transparent=True)
+   
+    fig.savefig(buf, format="png", dpi=90, bbox_inches="tight", transparent=False)
     buf.seek(0)
     return base64.b64encode(buf.read()).decode("utf-8")
 
@@ -120,41 +121,6 @@ def make_year_distribution(papers: list[dict]) -> Optional[str]:
         logger.warning("year_distribution failed: %s", exc)
         return None
 
-
-def make_method_trends(method_trend_by_year: Dict[str, List[str]]) -> Optional[str]:
-    if not method_trend_by_year:
-        return None
-
-    try:
-        plt = _safe_import_matplotlib()
-
-        years = sorted(method_trend_by_year.keys())
-        counts = [len(method_trend_by_year.get(year, [])) for year in years]
-
-        if not any(counts):
-            return None
-
-        fig, ax = plt.subplots(figsize=(8, 4))
-
-        ax.plot(years, counts, marker="o", linewidth=2.5, color="#14b8a6")
-        ax.fill_between(years, counts, alpha=0.16, color="#14b8a6")
-
-        ax.set_title("Method Mentions by Year", fontsize=13, fontweight="bold")
-        ax.set_xlabel("Year")
-        ax.set_ylabel("Method mentions")
-        ax.grid(True, alpha=0.3)
-
-        fig.tight_layout()
-
-        result = _fig_to_b64(fig)
-        plt.close(fig)
-        return result
-
-    except Exception as exc:
-        logger.warning("method_trends failed: %s", exc)
-        return None
-
-
 def make_frequency_bar(freq_data: Dict[str, int], title: str) -> Optional[str]:
     if not freq_data:
         return None
@@ -236,43 +202,6 @@ def make_plotly_frequency_bar(freq_data: Dict[str, int], title: str) -> Optional
         return json.loads(fig.to_json())
     except Exception as exc:
         logger.warning("%s plotly failed: %s", title, exc)
-        return None
-
-
-
-
-def make_plotly_research_intensity(papers: list[dict]) -> Optional[dict]:
-  
-    if not papers:
-        return None
-    try:
-        years = [int(p.get("year")) for p in papers if p.get("year") and str(p.get("year")).isdigit()]
-        if not years:
-            return None
-        min_year, max_year = min(years), max(years)
-        all_years = list(range(min_year, max_year + 1))
-        year_counts = Counter(years)
-        counts = [year_counts[y] for y in all_years]
-        fig = go.Figure()
-        fig.add_trace(go.Scatter(
-            x=all_years, y=counts,
-            mode='lines+markers', name='Papers',
-            line=dict(color='#6366f1', width=3),
-            marker=dict(size=8, color='#4f46e5'),
-            fill='tozeroy', fillcolor='rgba(99, 102, 241, 0.1)',
-        ))
-        fig.update_layout(
-            title={"text": "Research Intensity Over Time", "font": {"size": 16}},
-            xaxis=dict(title="Year", tickmode='linear'),
-            yaxis=dict(title="Paper Count", rangemode='tozero'),
-            template="plotly_white",
-            height=250,
-            margin=dict(l=20, r=20, t=40, b=20),
-            showlegend=False,
-        )
-        return json.loads(fig.to_json())
-    except Exception as exc:
-        logger.warning("gap_evolution_chart failed: %s", exc)
         return None
 
 
@@ -495,24 +424,14 @@ def generate_all_visualizations(
         "year_distribution": make_year_distribution(papers),
 
 
-"method_trends": make_method_trends(pattern.method_trend_by_year),
-"dataset_frequency": make_frequency_bar(pattern.dataset_frequency, "Dataset Frequency"),
-"metric_frequency": make_frequency_bar(pattern.metric_frequency, "Metric Frequency"),
+        "metric_frequency": make_frequency_bar(pattern.metric_frequency, "Metric Frequency"),
+        "plotly_umap": make_plotly_umap(reduced_2d, labels, titles),
 
+        "plotly_metric_freq": make_plotly_frequency_bar(
+        pattern.metric_frequency,
+        "Metric Frequency"
+        ),
 
-"plotly_research_intensity": make_plotly_research_intensity(papers),
-"plotly_umap": make_plotly_umap(reduced_2d, labels, titles),
-
-"plotly_dataset_freq": make_plotly_frequency_bar(
-    pattern.dataset_frequency,
-    "Dataset Frequency"
-),
-
-"plotly_metric_freq": make_plotly_frequency_bar(
-    pattern.metric_frequency,
-    "Metric Frequency"
-),
-
-"plotly_cluster_distribution": make_plotly_cluster_distribution(labels, _themes),
-"plotly_gap_frequency": make_plotly_gap_frequency(gaps),
-    }
+        "plotly_cluster_distribution": make_plotly_cluster_distribution(labels, _themes),
+        "plotly_gap_frequency": make_plotly_gap_frequency(gaps),
+       }

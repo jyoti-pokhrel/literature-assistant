@@ -100,8 +100,8 @@ document.addEventListener('alpine:init', () => {
         },
 
         loadingProgress() {
-            const progress = Number(this.currentProgressEvent().progress || 4);
-            return Math.max(4, Math.min(100, Math.round(progress)));
+            const progress = Math.max(4, Math.min(100, Math.round(this.currentProgressEvent().progress || 4)));
+            return progress;
         },
 
         paperLink(paper) {
@@ -120,6 +120,7 @@ document.addEventListener('alpine:init', () => {
         },
 
         getCitationLink(citation) {
+            if (!citation) return null;
             if (citation.url) return citation.url;
             const match = this.papers().find(p => p.title && p.title.toLowerCase() === citation.title.toLowerCase());
             return match ? this.paperLink(match) : null;
@@ -229,6 +230,74 @@ document.addEventListener('alpine:init', () => {
             return path ? `${window.location.origin}${path}` : '';
         },
 
+        isDownloadingPdf: false,
+
+        async downloadPdf() {
+            const path = this.$store.app.result?.gapData?.pdf_url;
+            if (!path) {
+                alert("PDF not available for this report.");
+                return;
+            }
+            
+            if (this.isDownloadingPdf) return;
+            this.isDownloadingPdf = true;
+            
+            try {
+                const response = await window.searchAPI.authenticatedFetch(`${BASE_URL}${path}`);
+                if (!response.ok) throw new Error("Failed to download PDF.");
+                
+                const blob = await response.blob();
+                const downloadUrl = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = downloadUrl;
+                a.download = `Research_Report_${this.title().substring(0,30).replace(/[^a-zA-Z0-9]/g, '_')}.pdf`;
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                window.URL.revokeObjectURL(downloadUrl);
+            } catch (err) {
+                console.error("PDF Download error:", err);
+                alert("Could not download the full report. Please try again later.");
+            } finally {
+                this.isDownloadingPdf = false;
+            }
+        },
+
+        isDownloadingMarkdown: false,
+
+        async downloadMarkdown() {
+            const reportId = this.reportId();
+            if (!reportId) {
+                alert("Markdown export not available for this report.");
+                return;
+            }
+            
+            if (this.isDownloadingMarkdown) return;
+            this.isDownloadingMarkdown = true;
+            
+            try {
+                // Using the exact route pattern from synthesis.py
+                const url = `${BASE_URL}/synthesis/report/${reportId}/markdown`;
+                const response = await window.searchAPI.authenticatedFetch(url);
+                if (!response.ok) throw new Error("Failed to download Markdown.");
+                
+                const blob = await response.blob();
+                const downloadUrl = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = downloadUrl;
+                a.download = `Synthesis_Report_${this.title().substring(0,30).replace(/[^a-zA-Z0-9]/g, '_')}.md`;
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                window.URL.revokeObjectURL(downloadUrl);
+            } catch (err) {
+                console.error("Markdown Download error:", err);
+                alert("Could not download the markdown report. Please try again later.");
+            } finally {
+                this.isDownloadingMarkdown = false;
+            }
+        },
+
         isCopied: false,
 
         async copyToClipboard() {
@@ -281,47 +350,19 @@ document.addEventListener('alpine:init', () => {
         isRefreshing: false,
         async regenerateSynthesis() {
             if (this.isRefreshing) return;
-            
-            const gapData = this.$store.app.result?.gapData;
-            const searchData = this.$store.app.result?.searchData;
-            
-            const topic = gapData?.topic || searchData?.topic || this.$store.app.form?.topic;
-            
-            if (!topic) {
-                alert("Original search topic not found. Cannot refresh.");
-                return;
-            }
-
-            const filters = gapData?.filters || searchData?.filters || {};
-
             this.isRefreshing = true;
-            this.$store.app.isLoading = true; // Show the loading animation and status
-
             try {
-                const response = await window.searchAPI.analyzeGaps({
-                    topic: topic,
-                    year: filters.year,
-                    venue: filters.venue,
-                    max_results: 10
+                await this.$store.app.runSearch(this.$store.app.form, { 
+                    regenerate: true, 
+                    allowCached: false, 
+                    replaceRoute: true, 
+                    saveHistory: false 
                 });
-                
-                if (response && response.success) {
-                    // Replace the result reference so dependent explorer views rerender.
-                    this.$store.app.result = {
-                        ...this.$store.app.result,
-                        searchData: { ...this.$store.app.result?.searchData, ...response },
-                        gapData: response,
-                    };
-                    this.$store.app.resetExplorer?.();
-                } else {
-                    alert("Failed to refresh report: " + (response?.detail || "Unknown error"));
-                }
             } catch (err) {
                 console.error("Regeneration failed:", err);
                 alert("Error refreshing report: " + err.message);
             } finally {
                 this.isRefreshing = false;
-                this.$store.app.isLoading = false; // Hide loading animation
             }
         },
 
@@ -366,7 +407,7 @@ document.addEventListener('alpine:init', () => {
             const text = `Check out this research synthesis on "${this.title()}" via Research Agent!\n\nView full report: ${url}`;
             window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
         },
-    async nativeShare() {
+        async nativeShare() {
             const url = this.shareUrl();
             if (!url) return;
             if (navigator.share) {

@@ -113,7 +113,21 @@ def extract_cluster_themes(cluster_papers: list[dict]) -> dict:
     top_fw = [item for item, _ in fw_counter.most_common(5)]
 
     # Theme label
-    raw_label = top_lims[0] if top_lims else (top_fw[0] if top_fw else "unspecified gap")
+    if top_lims:
+        raw_label = top_lims[0]
+    elif top_fw:
+        raw_label = top_fw[0]
+    elif cluster_papers:
+        # Fallback to common words in titles
+        title_words = [w.lower() for p in cluster_papers for w in (p.get("title") or "").split() if len(w) > 3]
+        common_titles = Counter(title_words).most_common(2)
+        if common_titles:
+            raw_label = f"Study of {' '.join(w for w, _ in common_titles)}"
+        else:
+            raw_label = cluster_papers[0].get("title", "unspecified gap")
+    else:
+        raw_label = "unspecified gap"
+
     theme_label = _shorten_theme(raw_label)
 
     return {

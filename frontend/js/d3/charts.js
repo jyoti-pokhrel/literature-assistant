@@ -1,23 +1,10 @@
-/**
- * FrontendCharts — D3-based chart rendering for gap detection results.
- *
- * Charts rendered:
- *   1. Confidence Bars    — vertical bar chart of gap confidence scores
- *   2. Year Distribution  — bar chart of papers per year
- *   3. Cluster Size       — horizontal bar chart of papers per cluster
- *   4. Method Trends      — area + line chart of method mentions by year
- *   5. Dataset Frequency  — horizontal bar chart of top datasets
- *   6. Metric Frequency   — horizontal bar chart of top metrics
- *
- * Usage:
- *   window.FrontendCharts.renderAll(containers, data)
- */
+
 (function () {
     'use strict';
 
-    /* ------------------------------------------------------------------ */
-    /*  Palette                                                           */
-    /* ------------------------------------------------------------------ */
+
+    /*  Palette  */
+
 
     function readVar(name, fallback = '') {
         return getComputedStyle(document.documentElement).getPropertyValue(name).trim() || fallback;
@@ -64,9 +51,7 @@
         };
     }
 
-    /* ------------------------------------------------------------------ */
-    /*  Shared helpers                                                    */
-    /* ------------------------------------------------------------------ */
+    /*  Shared helpers  */
 
     function ensureSvg(container, width, height, margin) {
         d3.select(container).selectAll('*').remove();
@@ -143,66 +128,54 @@
             .style('font-family', "'Manrope', sans-serif");
     }
 
-    /* ------------------------------------------------------------------ */
-    /*  1. Confidence Bars                                                */
-    /* ------------------------------------------------------------------ */
+    /*  1. Confidence Bars  */
 
     function renderConfidenceBars(container, gaps) {
         if (!container || !gaps || !gaps.length) return;
 
         const theme = getThemeColors();
-        const margin = { top: 12, right: 16, bottom: 40, left: 44 };
+        const longestLabel = d3.max(gaps, g => (g.gap_id || '').length);
+        const leftMargin = Math.min(Math.max(longestLabel * 7.5, 86), 180);
+        const margin = { top: 8, right: 28, bottom: 20, left: leftMargin };
+        const barH = 28;
+        const gapSize = 7;
+        const height = margin.top + margin.bottom + gaps.length * (barH + gapSize);
         const width = 480;
-        const height = 260;
         const { g, innerWidth, innerHeight } = ensureSvg(container, width, height, margin);
 
         const data = gaps.map((gap, i) => ({
             label: gap.gap_id || `G${i + 1}`,
             score: Number(gap.confidence_score ?? 0),
             title: gap.gap_title || '',
-        }));
+        })).sort((a, b) => b.score - a.score);
 
-        const x = d3.scaleBand()
-            .domain(data.map(d => d.label))
-            .range([0, innerWidth])
-            .padding(0.32);
-
-        const y = d3.scaleLinear()
+        const x = d3.scaleLinear()
             .domain([0, 1])
-            .range([innerHeight, 0]);
+            .range([0, innerWidth]);
+
+        const y = d3.scaleBand()
+            .domain(data.map(d => d.label))
+            .range([0, innerHeight])
+            .padding(0.18);
 
         // Grid lines
         g.append('g')
             .attr('class', 'grid-lines')
             .selectAll('line')
-            .data(y.ticks(5))
+            .data(x.ticks(5))
             .join('line')
-            .attr('x1', 0).attr('x2', innerWidth)
-            .attr('y1', d => y(d)).attr('y2', d => y(d))
+            .attr('x1', d => x(d)).attr('x2', d => x(d))
+            .attr('y1', 0).attr('y2', innerHeight)
             .attr('stroke', theme.grid)
             .attr('stroke-dasharray', '3,3');
 
         // Axes
         const xAxis = g.append('g')
             .attr('transform', `translate(0,${innerHeight})`)
-            .call(d3.axisBottom(x).tickSize(0).tickPadding(8));
-
-        const yAxis = g.append('g')
-            .call(d3.axisLeft(y).ticks(5).tickFormat(d3.format('.1f')).tickSize(-innerWidth).tickPadding(6));
+            .call(d3.axisBottom(x).ticks(5).tickFormat(d3.format('.1f')).tickSize(0).tickPadding(8));
 
         addAxisStyles(g, theme);
-        yAxis.selectAll('.tick line').attr('stroke', 'none');
-
-        // Y label
-        g.append('text')
-            .attr('transform', 'rotate(-90)')
-            .attr('x', -innerHeight / 2)
-            .attr('y', -34)
-            .attr('text-anchor', 'middle')
-            .attr('fill', theme.textMuted)
-            .style('font-size', '0.72rem')
-            .style('font-family', "'Manrope', sans-serif")
-            .text('Confidence');
+        xAxis.selectAll('.tick line').attr('stroke', 'none');
 
         // Tooltip
         const tip = addTooltip(container);
@@ -213,12 +186,12 @@
             .data(data)
             .join('rect')
             .attr('class', 'bar')
-            .attr('x', d => x(d.label))
-            .attr('width', x.bandwidth())
-            .attr('y', innerHeight)
-            .attr('height', 0)
+            .attr('x', 0)
+            .attr('y', d => y(d.label))
+            .attr('height', y.bandwidth())
             .attr('rx', 4)
             .attr('fill', (d, i) => PALETTE.multiBar[i % PALETTE.multiBar.length])
+            .attr('width', 0)
             .style('cursor', 'pointer')
             .on('mouseenter', function (event, d) {
                 d3.select(this).attr('opacity', 0.82);
@@ -234,33 +207,44 @@
             .transition()
             .duration(600)
             .ease(d3.easeCubicOut)
-            .delay((_, i) => i * 60)
-            .attr('y', d => y(d.score))
-            .attr('height', d => innerHeight - y(d.score));
+            .delay((_, i) => i * 45)
+            .attr('width', d => x(d.score));
 
-        // Score labels above bars
-        g.selectAll('.bar-label')
+        // Score labels after bars
+        g.selectAll('.val-label')
             .data(data)
             .join('text')
-            .attr('class', 'bar-label')
-            .attr('x', d => x(d.label) + x.bandwidth() / 2)
-            .attr('y', d => y(d.score) - 6)
-            .attr('text-anchor', 'middle')
+            .attr('class', 'val-label')
+            .attr('x', d => x(d.score) + 6)
+            .attr('y', d => y(d.label) + y.bandwidth() / 2)
+            .attr('dy', '0.35em')
             .attr('fill', theme.text)
-            .style('font-size', '0.7rem')
+            .style('font-size', '0.72rem')
             .style('font-weight', '700')
             .style('font-family', "'Manrope', sans-serif")
             .style('opacity', 0)
             .text(d => d.score.toFixed(2))
             .transition()
             .duration(400)
-            .delay((_, i) => 400 + i * 60)
+            .delay((_, i) => 400 + i * 45)
             .style('opacity', 1);
+
+        // Y labels
+        g.selectAll('.y-label')
+            .data(data)
+            .join('text')
+            .attr('class', 'y-label')
+            .attr('x', -8)
+            .attr('y', d => y(d.label) + y.bandwidth() / 2)
+            .attr('dy', '0.35em')
+            .attr('text-anchor', 'end')
+            .attr('fill', theme.textMuted)
+            .style('font-size', '0.74rem')
+            .style('font-family', "'Manrope', sans-serif")
+            .text(d => d.label);
     }
 
-    /* ------------------------------------------------------------------ */
-    /*  2. Year Distribution                                              */
-    /* ------------------------------------------------------------------ */
+    /*  2. Year Distribution */
 
     function renderYearDistribution(container, papers) {
         if (!container || !papers || !papers.length) return;
@@ -361,9 +345,8 @@
             .attr('height', d => innerHeight - y(d.count));
     }
 
-    /* ------------------------------------------------------------------ */
-    /*  3. Cluster Size                                                   */
-    /* ------------------------------------------------------------------ */
+
+    /*  3. Cluster Size */
 
     function renderClusterSizes(container, clusters) {
         if (!container || !clusters || !clusters.length) return;
@@ -454,9 +437,8 @@
             .text(d => d.label);
     }
 
-    /* ------------------------------------------------------------------ */
-    /*  4. Method Trends                                                  */
-    /* ------------------------------------------------------------------ */
+    /*  4. Method Trends  */
+
 
     function renderMethodTrends(container, methodTrendByYear) {
         if (!container || !methodTrendByYear) return;
@@ -583,9 +565,9 @@
             .attr('r', 4);
     }
 
-    /* ------------------------------------------------------------------ */
-    /*  5 & 6. Frequency horizontal bars (dataset / metric)               */
-    /* ------------------------------------------------------------------ */
+ 
+    /*  5 & 6. Frequency horizontal bars (dataset / metric)  */
+
 
     function renderFrequencyBars(container, freqData, color) {
         if (!container || !freqData) return;
@@ -684,10 +666,8 @@
             .text(d => d.label.length > 22 ? d.label.slice(0, 20) + '…' : d.label);
     }
 
-    /* ------------------------------------------------------------------ */
-    /*  Public API                                                        */
-    /* ------------------------------------------------------------------ */
-
+    /*  Public API */
+ 
     window.FrontendCharts = {
         /**
          * Render all charts into the provided container refs.

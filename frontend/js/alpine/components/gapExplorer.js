@@ -498,14 +498,24 @@ document.addEventListener('alpine:init', () => {
         renderTextWithCitations(text, gap) {
             if (!this.hasValue(text)) return '';
             const citations = this.supportingPapers(gap);
-            return String(text).replace(/\[(\d+)\]/g, (match, n) => {
+
+            // Step 1: split grouped citations like [1, 2] into individual [1][2]
+            let processed = String(text).replace(/\[(\d+(?:\s*,\s*\d+)+)\]/g, (_, inner) => {
+                return inner.split(',').map(n => `[${n.trim()}]`).join('');
+            });
+
+            // Step 2: render each [N] as a badge (linked if URL exists, hide if not)
+            return processed.replace(/\[(\d+)\]/g, (match, n) => {
                 const idx = parseInt(n, 10) - 1;
                 const citation = citations[idx];
                 const link = this.getCitationLink(citation);
+                
                 if (link) {
                     return `<a href="${link}" target="_blank" rel="noopener noreferrer" class="cite-badge">${match}</a>`;
                 }
-                return match;
+                
+                // No URL: strip the citation marker entirely so it doesn't show in the UI
+                return '';
             });
         },
     }));

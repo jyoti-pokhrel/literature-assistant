@@ -24,9 +24,23 @@ load_dotenv(dotenv_path=Path(__file__).resolve().parent.parent.parent.parent / "
 
 logger = logging.getLogger(__name__)
 
-from app.db.session import gap_reports_collection
+from app.db.session import gap_reports_collection, cached_searches_collection
 
 router = APIRouter(prefix="/synthesis", tags=["Synthesis"])
+
+
+def _generate_search_hash(request: SynthesisRequest) -> str:
+    import hashlib
+    params = {
+        "topic": request.topic.strip().lower(),
+        "year": request.year or "",
+        "venue": request.venue.strip().lower() if request.venue else "",
+        "strict": request.strict_venue,
+        "max_results": request.max_results,
+        "top_k_gaps": request.top_k_gaps
+    }
+    param_str = json.dumps(params, sort_keys=True)
+    return hashlib.md5(param_str.encode()).hexdigest()
 
 
 #Helpers
@@ -97,8 +111,46 @@ async def detect_gaps(
     current_user: dict = Depends(get_current_user),
 ) -> SynthesisResponse:
     from app.services.synthesis.report_pipeline import run_synthesis_pipeline
+    import datetime
+    
+    search_hash = _generate_search_hash(payload)
+
+    if not payload.regenerate and cached_searches_collection is not None:
+        cached_report = await cached_searches_collection.find_one({"search_hash": search_hash})
+        if cached_report and "data" in cached_report:
+            logger.info("Serving synthesis report from cache for hash: %s", search_hash)
+            cached_data = cached_report["data"]
+            # Enforce schema validation and inject cache meta
+            response = SynthesisResponse(**cached_data)
+            response.is_cached = True
+            response.generated_at = cached_report.get("created_at", datetime.datetime.utcnow().isoformat())
+            return response
+
     try:
-        return await run_synthesis_pipeline(payload)
+        result = await run_synthesis_pipeline(payload)
+        
+        # Save to cache asynchronously if DB is configured
+        if cached_searches_collection is not None:
+            # Dump to JSON first to ensure all dictionary keys (like ints) become strings for MongoDB
+            import json
+            result_dict = json.loads(result.model_dump_json())
+            
+            async def _save_cache():
+                try:
+                    await cached_searches_collection.update_one(
+                        {"search_hash": search_hash},
+                        {"$set": {
+                            "data": result_dict,
+                            "created_at": datetime.datetime.utcnow().isoformat()
+                        }},
+                        upsert=True
+                    )
+                except Exception as e:
+                    logger.error("Failed to cache search: %s", e)
+                    
+            asyncio.create_task(_save_cache())
+            
+        return result
     except Exception as exc:
         logger.exception("Synthesis pipeline error: %s", exc)
         raise HTTPException(
@@ -171,12 +223,47 @@ async def stream_detect_gaps(
         await queue.put({"type": "progress", **event})
 
     async def run_pipeline() -> None:
+        import datetime
+        search_hash = _generate_search_hash(payload)
+        
         try:
+            # 1. Check cache first
+            if not payload.regenerate and cached_searches_collection is not None:
+                cached_report = await cached_searches_collection.find_one({"search_hash": search_hash})
+                if cached_report and "data" in cached_report:
+                    logger.info("Serving streaming synthesis from cache for hash: %s", search_hash)
+                    cached_data = cached_report["data"]
+                    cached_data["is_cached"] = True
+                    cached_data["generated_at"] = cached_report.get("created_at", datetime.datetime.utcnow().isoformat())
+                    await queue.put({"type": "result", "data": cached_data})
+                    return
+
+            # 2. Run normal pipeline if no cache
             result = await run_synthesis_pipeline(
                 payload,
                 progress_callback=progress_callback
             )
-            await queue.put({"type": "result", "data": result.model_dump()})
+            
+            # 3. Save to cache asynchronously
+            if cached_searches_collection is not None:
+                result_dict = json.loads(result.model_dump_json())
+                
+                async def _save_cache_stream():
+                    try:
+                        await cached_searches_collection.update_one(
+                            {"search_hash": search_hash},
+                            {"$set": {
+                                "data": result_dict,
+                                "created_at": datetime.datetime.utcnow().isoformat()
+                            }},
+                            upsert=True
+                        )
+                    except Exception as e:
+                        logger.error("Failed to cache stream search: %s", e)
+                        
+                asyncio.create_task(_save_cache_stream())
+
+            await queue.put({"type": "result", "data": json.loads(result.model_dump_json())})
 
         except Exception as exc:
             logger.exception("Synthesis stream error: %s", exc)
@@ -268,7 +355,7 @@ async def download_synthesis_report(
     report_id: str,
     current_user: dict = Depends(get_current_user),
 ):
-    doc = await _fetch_report(report_id)
+    doc = _hydrate_report(await _fetch_report(report_id))
 
     from app.schemas.synthesis import ClusterSummary, PatternAnalysis, SynthesisGap, VisualizationData
     from app.services.synthesis.pdf import generate_pdf_report
@@ -301,5 +388,29 @@ async def download_synthesis_report(
     return Response(
         content=pdf_bytes,
         media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
+
+@router.get(
+    "/report/{report_id}/markdown",
+    status_code=status.HTTP_200_OK,
+    summary="Download synthesis report as Markdown",
+    response_class=Response,
+)
+async def download_synthesis_report_markdown(
+    report_id: str,
+    current_user: dict = Depends(get_current_user),
+):
+    doc = _hydrate_report(await _fetch_report(report_id))
+    md_content = doc.get("copy_text") or f"# Synthesis Report\n\nNo content available for report {report_id}."
+    
+    safe_topic = (doc.get("topic") or "report").replace(" ", "_")[:40]
+    filename = f"synthesis_{safe_topic}_{report_id[:8]}.md"
+
+    return Response(
+        content=md_content.encode("utf-8"),
+        media_type="text/markdown",
         headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )

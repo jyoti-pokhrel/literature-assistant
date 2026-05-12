@@ -1,4 +1,6 @@
 from pathlib import Path
+import asyncio
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -13,8 +15,21 @@ load_dotenv(dotenv_path=env_path)
 
 from app.api.routes import auth, citations, papers, reports, search, synthesis
 
+# Warm-up: pre-load embedding model 
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    loop = asyncio.get_event_loop()
+    try:
+        from app.services.synthesis.embeddings import warm_up_model
+        await loop.run_in_executor(None, warm_up_model)
+    except Exception as exc:
+        import logging
+        logging.getLogger(__name__).warning("Embedding warm-up failed: %s", exc)
+    yield
+
 app = FastAPI(
     title="Research Agent API",
+    lifespan=lifespan,
 )
 BASE_DIR = Path(__file__).resolve().parent.parent
 FRONTEND_DIR = BASE_DIR / "frontend"
@@ -25,7 +40,7 @@ NODE_MODULES_DIR = BASE_DIR / "node_modules"
 # Updated Middleware with Bypass for Localhost
 @app.middleware("http")
 async def api_key_middleware(request: Request, call_next):
-    # Authentication is temporarily disabled to simplify retrieval testing.
+    
     response = await call_next(request)
     path = request.url.path
 
