@@ -764,8 +764,16 @@ html[data-route-mode='workspace'] .px-theme {
     vertical-align: super;
     cursor: pointer;
     margin-left: 2px;
+    text-decoration: none;
 }
 .cite-badge:hover { background: var(--text-muted); }
+
+/* Citations that have no URL — same look, no pointer cursor */
+.cite-badge--no-link {
+    cursor: default;
+    opacity: 0.75;
+}
+.cite-badge--no-link:hover { background: var(--border-color); }
 
 /* Visualizations embedded */
 .px-visualizations { margin: 1.5rem 0; }
@@ -2138,7 +2146,7 @@ body,
         opacity: 1;
         transform: translateY(0);
     }
-}
+ 
 
 .lp-hero-missing {
     position: relative;
@@ -4082,6 +4090,7 @@ body,
     margin-bottom: 0.6rem;
     display: -webkit-box;
     -webkit-line-clamp: 2;
+    line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
     line-height: 1.3;
@@ -7360,9 +7369,84 @@ body.landing-state #landing-page {
 }
 
 #thread-view .results-tabpanes {
-    padding: var(--s-3) 0;
+    padding: var(--s-3) 0 0 0;
     border-right: 0;
     min-width: 0;
+    height: calc(100vh - 320px);
+    min-height: 400px;
+    overflow-y: auto;
+    padding-right: 0.5rem;
+}
+
+#thread-view .gap-entries,
+#thread-view .paper-entries {
+    padding-bottom: 12rem;
+}
+
+#thread-view .results-tabpanes::-webkit-scrollbar {
+    width: 6px;
+}
+#thread-view .results-tabpanes::-webkit-scrollbar-track {
+    background: transparent;
+}
+#thread-view .results-tabpanes::-webkit-scrollbar-thumb {
+    background: var(--border-color, rgba(0, 0, 0, 0.1));
+    border-radius: 3px;
+}
+
+#thread-view .filter-pill-container {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    background: var(--glass);
+    border: 1px solid var(--rule);
+    border-radius: 8px;
+    margin-bottom: 1rem;
+    font-size: 0.85rem;
+}
+
+#thread-view .filter-label {
+    color: var(--ink-3);
+    font-weight: 500;
+}
+
+#thread-view .filter-pill {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    background: var(--accent-soft);
+    color: var(--accent);
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+    font-weight: 600;
+}
+
+#thread-view .filter-clear-btn {
+    background: none;
+    border: none;
+    color: var(--accent);
+    cursor: pointer;
+    font-size: 1rem;
+    line-height: 1;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+#thread-view .filter-clear-btn:hover {
+    color: var(--ink-1);
+}
+
+#thread-view .text-btn-small {
+    background: none;
+    border: none;
+    color: var(--accent);
+    cursor: pointer;
+    font-size: 0.85rem;
+    text-decoration: underline;
+    margin-left: auto;
 }
 
 #thread-view .gap-rail {
@@ -7372,6 +7456,25 @@ body.landing-state #landing-page {
     background: var(--glass);
     box-shadow: var(--shadow-card);
     min-width: 0;
+    height: calc(100vh - 320px);
+    max-height: none;
+    min-height: 400px;
+    padding-bottom: 0;
+}
+
+#thread-view .gap-rail > div {
+    padding-bottom: 12rem;
+}
+
+#thread-view .gap-rail::-webkit-scrollbar {
+    width: 6px;
+}
+#thread-view .gap-rail::-webkit-scrollbar-track {
+    background: transparent;
+}
+#thread-view .gap-rail::-webkit-scrollbar-thumb {
+    background: var(--border-color, rgba(0, 0, 0, 0.1));
+    border-radius: 3px;
 }
 
 #thread-view .gap-entry,

@@ -31,6 +31,14 @@ function getHeaders({ hasBody = false, includeAuth = true } = {}) {
     return headers;
 }
 
+async function authenticatedFetch(url, options = {}) {
+    options.headers = {
+        ...options.headers,
+        ...getHeaders({ hasBody: !!options.body })
+    };
+    return await fetch(url, options);
+}
+
 async function signup(username, email, password, role) {
     const response = await fetch(`${BASE_URL}/signup`, {
         method: "POST",

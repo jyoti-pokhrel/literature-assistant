@@ -59,9 +59,9 @@ def generate_pdf_report(
         styles = getSampleStyleSheet()
 
         # Styles
-        h1_style = ParagraphStyle("H1", parent=styles["Heading1"], textColor=colors.HexColor("#070707"), fontSize=20, spaceAfter=10)
-        h2_style = ParagraphStyle("H2", parent=styles["Heading2"], textColor=colors.HexColor("#070707"), fontSize=14, spaceBefore=15, spaceAfter=6)
-        h3_style = ParagraphStyle("H3", parent=styles["Heading3"], fontSize=12, textColor=colors.HexColor("#4f46e5"), spaceBefore=10)
+        h1_style = ParagraphStyle("H1", parent=styles["Heading1"], textColor=colors.HexColor("#070707"), fontSize=20, spaceAfter=10, keepWithNext=True)
+        h2_style = ParagraphStyle("H2", parent=styles["Heading2"], textColor=colors.HexColor("#070707"), fontSize=14, spaceBefore=15, spaceAfter=6, keepWithNext=True)
+        h3_style = ParagraphStyle("H3", parent=styles["Heading3"], fontSize=12, textColor=colors.HexColor("#4f46e5"), spaceBefore=10, keepWithNext=True)
         body_style = ParagraphStyle("Body", parent=styles["BodyText"], fontSize=10, leading=14)
         label_style = ParagraphStyle("Label", parent=styles["BodyText"], fontSize=9, textColor=colors.HexColor("#7c3aed"), fontName="Helvetica-Bold")
         cite_style = ParagraphStyle("Cite", parent=styles["BodyText"], fontSize=9, leftIndent=10, textColor=colors.HexColor("#475569"))
@@ -94,9 +94,7 @@ def generate_pdf_report(
         story.append(Paragraph(f"<b>Generated:</b> {datetime.now(NEPAL_TZ).strftime('%Y-%m-%d %H:%M NPT')}", body_style))
         story.append(Paragraph(f"<b>Papers Analyzed:</b> {papers_analyzed}", body_style))
         story.append(Paragraph(f"<b>Research Gaps Identified:</b> {len(gaps)}", body_style))
-        story.append(Spacer(1, 0.5 * cm))
-        story.append(HRFlowable(width="100%", thickness=1, color=colors.HexColor("#e2e8f0")))
-        story.append(Spacer(1, 0.5 * cm))
+        story.append(Spacer(1, 1.0 * cm))
 
         #Executive Summary
         story.append(Paragraph("Executive Summary", h2_style))
@@ -117,7 +115,7 @@ def generate_pdf_report(
         story.append(Spacer(1, 0.6 * cm))
 
         #Pattern Analysis
-        story.append(Paragraph("1. High-Level Pattern Analysis", h2_style))
+        story.append(Paragraph("High-Level Pattern Analysis", h2_style))
         story.append(Paragraph(
             "This section synthesizes recurring themes, methodological trends, and dataset usage observed across the analyzed research corpus.",
             body_style))
@@ -132,7 +130,6 @@ def generate_pdf_report(
         pat_data = [
             [wrap_p("Category", True), wrap_p("Synthesis of Findings", True)],
             [wrap_p("Methodologies"), wrap_p(", ".join(top_m) or "No dominant methods detected")],
-            [wrap_p("Datasets"), wrap_p(", ".join(top_d) or "No specific datasets identified")],
             [wrap_p("Common Metrics"), wrap_p(", ".join(top_met) or "No standardized metrics found")],
             [wrap_p("Key Limitations"), wrap_p(format_list(top_lim, "No recurring limitations noted"), is_html=True)],
             [wrap_p("Future Research"), wrap_p(format_list(top_fw, "No clear future directions stated"), is_html=True)],
@@ -164,48 +161,10 @@ def generate_pdf_report(
                 story.append(Paragraph(f"• {escape(str(opp))}", body_style))
             story.append(Spacer(1, 0.4 * cm))
 
-        #Cluster Summary Table
-        if clusters:
-            story.append(Spacer(1, 0.4 * cm))
-            story.append(Paragraph("2. Semantic Cluster Summary", h2_style))
-            story.append(Paragraph(
-                "Each cluster represents a semantically distinct group of papers sharing common gap themes, "
-                "derived from UMAP dimensionality reduction and HDBSCAN clustering of paper limitations and future-work signals.",
-                body_style))
-            story.append(Spacer(1, 0.3 * cm))
-
-            cluster_table_data = [
-                [wrap_p("Cluster", True), wrap_p("Theme Label", True), wrap_p("Papers", True), wrap_p("Top Limitation", True), wrap_p("Linked Gap", True)],
-            ]
-            for cl in clusters:
-                top_lim_text = cl.top_limitations[0] if cl.top_limitations else "—"
-                cluster_table_data.append([
-                    wrap_p(f"#{cl.cluster_id}"),
-                    wrap_p(cl.theme_label[:50]),
-                    wrap_p(str(cl.paper_count)),
-                    wrap_p(top_lim_text[:60]),
-                    wrap_p(cl.gap_id or "—"),
-                ])
-
-            cl_table = Table(cluster_table_data, colWidths=[1.5 * cm, 4.5 * cm, 1.5 * cm, 5.5 * cm, 4.0 * cm])
-            cl_table.setStyle(TableStyle([
-                ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#ede9fe")),
-                ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
-                ("FONTSIZE", (0, 0), (-1, -1), 9),
-                ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, colors.HexColor("#f5f3ff")]),
-                ("GRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#ddd6fe")),
-                ("VALIGN", (0, 0), (-1, -1), "TOP"),
-                ("TOPPADDING", (0, 0), (-1, -1), 8),
-                ("BOTTOMPADDING", (0, 0), (-1, -1), 8),
-                ("LEFTPADDING", (0, 0), (-1, -1), 6),
-                ("RIGHTPADDING", (0, 0), (-1, -1), 6),
-            ]))
-            story.append(cl_table)
-            story.append(Spacer(1, 0.6 * cm))
+        # Section removed by user request
 
         #Research Gaps
-        section_num = 3 if clusters else 2
-        story.append(Paragraph(f"{section_num}. Critical Research Gaps", h2_style))
+        story.append(Paragraph("Critical Research Gaps", h2_style))
         if not gaps:
             story.append(Paragraph("No significant research gaps were identified in the analyzed corpus.", body_style))
         else:
@@ -232,56 +191,9 @@ def generate_pdf_report(
                         story.append(Paragraph(f"[{idx}] {title_text} ({c.year or 'N/A'})", cite_style))
                 story.append(Spacer(1, 0.5 * cm))
 
-        #Paper-to-Gap Mapping Table
-        if papers and gaps:
-            story.append(Spacer(1, 0.4 * cm))
-            section_num += 1
-            story.append(Paragraph(f"{section_num}. Paper-to-Gap Support Mapping", h2_style))
-            story.append(Paragraph(
-                "The following table shows which papers provide direct evidence for each identified research gap.",
-                body_style))
-            story.append(Spacer(1, 0.3 * cm))
-
-            pg_header = [wrap_p("Paper Title", True), wrap_p("Year", True), wrap_p("Supported Gaps", True)]
-
-            # Build paper_id/title → list of gap_ids from gap.supporting_papers
-            paper_to_gaps: dict[str, list[str]] = {}
-            for g in gaps:
-                for sp in (getattr(g, 'supporting_papers', []) or []):
-                    key = str(sp).strip()
-                    if key:
-                        paper_to_gaps.setdefault(key, []).append(g.gap_id)
-
-            pg_data = [pg_header]
-            for paper in (papers or [])[:15]:
-                title = str(paper.get("title", "Unknown"))
-                year = str(paper.get("year") or "N/A")
-                pid = str(paper.get("paper_id") or "").strip()
-                # Match by paper_id first, then by title
-                matched = paper_to_gaps.get(pid) or paper_to_gaps.get(title.strip())
-                supported = ", ".join(matched) if matched else "—"
-                pg_data.append([wrap_p(title[:50]), wrap_p(year), wrap_p(supported)])
-
-            pg_table = Table(pg_data, colWidths=[9.0 * cm, 2.0 * cm, 6.0 * cm])
-            pg_table.setStyle(TableStyle([
-                ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#f1f5f9")),
-                ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
-                ("FONTSIZE", (0, 0), (-1, -1), 9),
-                ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, colors.HexColor("#f8fafc")]),
-                ("GRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#cbd5e1")),
-                ("VALIGN", (0, 0), (-1, -1), "TOP"),
-                ("TOPPADDING", (0, 0), (-1, -1), 7),
-                ("BOTTOMPADDING", (0, 0), (-1, -1), 7),
-                ("LEFTPADDING", (0, 0), (-1, -1), 6),
-                ("RIGHTPADDING", (0, 0), (-1, -1), 6),
-            ]))
-            story.append(pg_table)
-            story.append(Spacer(1, 0.6 * cm))
-
         #Recommendations
-        section_num += 1
         story.append(Spacer(1, 0.4 * cm))
-        story.append(Paragraph(f"{section_num}. Synthesis Recommendations", h2_style))
+        story.append(Paragraph("Synthesis Recommendations", h2_style))
         if gaps:
             top_gap = gaps[0]
             rec_text = getattr(top_gap, 'proposed_direction', "Explore identified clusters for novel research paths.")
@@ -292,9 +204,8 @@ def generate_pdf_report(
                 body_style))
 
         #Visualizations
-        section_num += 1
         story.append(Spacer(1, 0.8 * cm))
-        story.append(Paragraph(f"{section_num}. Analytical Visualizations", h2_style))
+        story.append(Paragraph("Analytical Visualizations", h2_style))
         story.append(Paragraph(
             "The following charts provide a visual decomposition of the research landscape based on "
             "semantic embedding, cluster analysis, and metadata-driven frequency analysis.",
@@ -305,7 +216,6 @@ def generate_pdf_report(
             ("umap_scatter", "Semantic Cluster Mapping (UMAP)"),
             ("confidence_bars", "Gap Confidence Distribution"),
             ("year_distribution", "Temporal Publication Density"),
-            ("dataset_frequency", "Data Resource Utilization"),
             ("metric_frequency", "Evaluation Metric Prevalence"),
         ]
 
