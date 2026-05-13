@@ -1,15 +1,6 @@
-from passlib.context import CryptContext
-
-pwd_context = CryptContext(schemes=["argon2"], deprecated="auto")
 import secrets
 import string
 import re
-
-def hashed_password(password: str) -> str:
-    return pwd_context.hash(password)
-
-def verify_password(plain_password: str, hashed: str) -> bool:
-    return pwd_context.verify(plain_password, hashed)
 
 
 def generate_otp(length: int = 6) -> str:
