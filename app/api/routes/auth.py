@@ -366,7 +366,7 @@ async def google_auth_callback(code: str):
         # Read from settings (which pulls from your .env)
         FRONTEND_URL = settings.FRONTEND_URL
         encoded_username = quote(user['username'], safe='')
-        final_redirect = f"{FRONTEND_URL}/html/login.html?token={token}&username={encoded_username}"
+        final_redirect = f"{FRONTEND_URL}/html/login.html#token={token}&username={encoded_username}"
         
         
         from fastapi.responses import RedirectResponse
