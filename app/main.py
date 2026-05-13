@@ -13,7 +13,7 @@ from dotenv import load_dotenv
 env_path = Path(__file__).resolve().parent.parent / '.env'
 load_dotenv(dotenv_path=env_path)
 
-from app.api.routes import auth, citations, papers, reports, search, synthesis
+from app.api.routes import auth, admin, chat, citations, papers, reports, search, synthesis, user
 
 # Warm-up: pre-load embedding model 
 @asynccontextmanager
@@ -67,6 +67,9 @@ app.include_router(reports.router, tags=["Reports"])
 app.include_router(search.router, tags=["Search"])
 app.include_router(synthesis.router)
 app.include_router(citations.router)
+app.include_router(admin.router)
+app.include_router(user.router)
+app.include_router(chat.router)
 
 
 @app.on_event("startup")
@@ -104,6 +107,7 @@ async def _shutdown_db() -> None:
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 app.mount("/css", StaticFiles(directory=FRONTEND_DIR / "css"), name="frontend-css")
 app.mount("/js", StaticFiles(directory=FRONTEND_DIR / "js"), name="frontend-js")
+app.mount("/html", StaticFiles(directory=FRONTEND_DIR / "html"), name="frontend-html")
 
 if NODE_MODULES_DIR.exists():
     app.mount("/vendor", StaticFiles(directory=NODE_MODULES_DIR), name="vendor-node-modules")
@@ -145,6 +149,14 @@ def frontend_workspace_search():
 @app.get("/synthesis/share/{report_id}", include_in_schema=False)
 def frontend_share_link(report_id: str):
     return FileResponse(INDEX_FILE)
+
+
+ADMIN_PAGE = FRONTEND_DIR / "html" / "admin.html"
+
+
+@app.get("/admin-panel", include_in_schema=False)
+def frontend_admin_panel():
+    return FileResponse(ADMIN_PAGE)
 
 
 @app.get("/health", tags=["Health"])
