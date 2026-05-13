@@ -11,7 +11,7 @@ router = APIRouter(prefix="/chat", tags=["chat"])
 async def save_chat(chat_data: ChatSave, current_user: dict = Depends(get_current_user)):
     try:
         db = get_db()
-        chat_item = chat_data.dict()
+        chat_item = chat_data.model_dump()
         chat_item["username"] = current_user["username"]
         chat_item["created_at"] = datetime.now(timezone.utc)
         
