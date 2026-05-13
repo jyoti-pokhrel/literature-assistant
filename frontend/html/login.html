@@ -390,7 +390,10 @@
         });
       }
 
-      const urlParams = new URLSearchParams(window.location.search);
+      // Token arrives in the URL fragment (#token=...&username=...) to keep it
+      // out of browser history, Referer headers, and server access logs.
+      const hash = window.location.hash.startsWith('#') ? window.location.hash.slice(1) : window.location.hash;
+      const urlParams = new URLSearchParams(hash || window.location.search);
       const token = urlParams.get('token');
       const username = urlParams.get('username');
       
