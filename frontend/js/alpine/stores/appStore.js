@@ -247,6 +247,10 @@ document.addEventListener('alpine:init', () => {
     const storedSidebarState = localStorage.getItem(window.ResearchAgent.sidebarStateKey);
     Alpine.store('app', {
         initialized: false,
+        get isLoggedIn() {
+            const token = localStorage.getItem('access_token');
+            return !!(token && token !== 'undefined' && token !== 'null');
+        },
         mode: 'landing',
         currentView: 'form',
         theme: localStorage.getItem('theme') || 'light',
@@ -457,6 +461,12 @@ document.addEventListener('alpine:init', () => {
             this.setMode('landing');
             this.currentView = 'form';
             this.goToPath(window.ResearchAgent.routes.landing, { replace });
+        },
+
+        logout() {
+            localStorage.removeItem('access_token');
+            localStorage.removeItem('username');
+            window.location.href = window.ResearchAgent.routes.landing;
         },
 
         openWorkspace({ replace = false, showForm = true } = {}) {
