@@ -1,145 +1,111 @@
-import logging
-import os
-from pathlib import Path
-
-import certifi
-from dotenv import load_dotenv
 from motor.motor_asyncio import AsyncIOMotorClient
-
+import logging
+from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 
-ENV_PATH = Path(__file__).resolve().parent.parent.parent / ".env"
-load_dotenv(dotenv_path=ENV_PATH)
+class Database:
+    client: AsyncIOMotorClient = None
+    db = None
 
-MONGO_URL = os.getenv("MONGODB_URL") or os.getenv("MONGO_URI")
-DB_NAME = os.getenv("DB_NAME", "research_agent")
+db_ctx = Database()
 
-# Connection settings rationale:
-#   maxPoolSize=50            Motor is async; a single uvicorn worker rarely
-#                             needs more than ~50 concurrent Mongo ops here
-#                             (OLTP REST endpoints — synthesis work is CPU /
-#                             external-API bound, not Mongo bound).
-#   minPoolSize=5             Pre-warm a small set so first requests skip the
-#                             TLS handshake (Atlas handshake is ~100–500ms).
-#   maxIdleTimeMS=30_000      Release idle sockets after 30s — Atlas closes
-#                             idle connections itself; matching keeps the
-#                             client-side view clean.
-#   serverSelectionTimeoutMS  Fail fast at 5s instead of the 30s default so a
-#                             dead cluster doesn't stall every endpoint.
-#   connectTimeoutMS=10_000   Generous budget for Atlas TLS + auth handshake.
-#   socketTimeoutMS=20_000    Cap a single stuck op; synthesis pipeline does
-#                             not hold one Mongo socket open for long.
-#   retryWrites=True          Atlas best practice; safe for idempotent writes.
-#   appname                   Surfaces in Atlas server logs for traceability.
-CLIENT_OPTIONS: dict = {
-    "tlsCAFile": certifi.where(),
-    "maxPoolSize": 50,
-    "minPoolSize": 5,
-    "maxIdleTimeMS": 30_000,
-    "serverSelectionTimeoutMS": 5_000,
-    "connectTimeoutMS": 10_000,
-    "socketTimeoutMS": 20_000,
-    "retryWrites": True,
-    "appname": "research-agent",
-}
+# Module-level collection references used by route modules.
+# These are None until connect_to_mongo() runs at startup.
+papers_collection = None
+reports_collection = None
+gap_reports_collection = None
 
-
-def _make_client() -> AsyncIOMotorClient | None:
-    if not MONGO_URL:
-        return None
+async def connect_to_mongo():
+    global papers_collection, reports_collection, gap_reports_collection
     try:
-        return AsyncIOMotorClient(MONGO_URL, **CLIENT_OPTIONS)
-    except Exception:
-        logger.exception("Mongo client init failed with certifi; retrying with permissive TLS")
-    try:
-        fallback = {**CLIENT_OPTIONS, "tlsAllowInvalidCertificates": True}
-        fallback.pop("tlsCAFile", None)
-        return AsyncIOMotorClient(MONGO_URL, **fallback)
-    except Exception:
-        logger.exception("Mongo client init failed in fallback path")
-        return None
-
-
-client = _make_client()
-db = client[DB_NAME] if client is not None else None
-
-users_collection = db["users"] if db is not None else None
-papers_collection = db["papers"] if db is not None else None
-reports_collection = db["reports"] if db is not None else None
-gap_reports_collection = db["gap_reports"] if db is not None else None
-citation_cache_collection = db["citation_cache"] if db is not None else None
-cached_searches_collection = db["cached_searches"] if db is not None else None
-projects_collection = db["projects"] if db is not None else None
-library_items_collection = db["library_items"] if db is not None else None
-feedback_collection = db["feedback"] if db is not None else None
-
-
-async def ping() -> bool:
-    """Verify the cluster is reachable. Returns False instead of raising."""
-    if client is None:
-        return False
-    try:
-        await client.admin.command("ping")
-        return True
-    except Exception:
-        logger.exception("MongoDB ping failed")
-        return False
-
-
-async def _safe_create_index(collection, keys, **kwargs) -> None:
-    """Create one index, swallowing conflicts so the rest of init can proceed.
-
-    A pre-existing index with a slightly different spec (e.g. missing the
-    `sparse` flag set on an older deployment) raises IndexKeySpecsConflict;
-    we log and move on rather than aborting startup.
-    """
-    if collection is None:
-        return
-    try:
-        await collection.create_index(keys, **kwargs)
-    except Exception as exc:
-        logger.warning(
-            "Skipping index on %s (keys=%s): %s",
-            getattr(collection, "name", "<unknown>"),
-            keys,
-            exc,
+        logger.info("Connecting to MongoDB...")
+        # Important: specific options to fix SSL and timeout issues as requested
+        db_ctx.client = AsyncIOMotorClient(
+            settings.MONGODB_URL,
+            tls=True,
+            tlsAllowInvalidCertificates=True,
+            serverSelectionTimeoutMS=30000,
+            connectTimeoutMS=30000,
+            socketTimeoutMS=30000,
+            maxPoolSize=50,
+            minPoolSize=5
         )
+        db_ctx.db = db_ctx.client[settings.DB_NAME]
+        
+        # Test connection by running a simple command
+        await db_ctx.client.admin.command('ping')
+        logger.info("Connected to MongoDB successfully.")
+
+        # Bind module-level collection references so route imports work
+        papers_collection = db_ctx.db["papers"]
+        reports_collection = db_ctx.db["reports"]
+        gap_reports_collection = db_ctx.db["gap_reports"]
+    except Exception as e:
+        logger.error(f"Failed to connect to MongoDB: {e}")
+        raise e
+
+async def close_mongo_connection():
+    if db_ctx.client:
+        logger.info("Closing MongoDB connection...")
+        db_ctx.client.close()
+        logger.info("MongoDB connection closed.")
+
+def get_db():
+    return db_ctx.db
 
 
-async def init_indexes() -> None:
-    """Create indexes for collections whose access patterns are owner-scoped.
-
-    Citation-cache indexes are handled separately in services/citations/cache.py
-    because that module owns its TTL/expiry semantics.
+async def create_indexes():
+    """Create database indexes for performance and TTL auto-cleanup.
+    
+    Called once on application startup. Safe to call multiple times -
+    MongoDB will skip indexes that already exist.
     """
+    db = get_db()
     if db is None:
-        logger.info("MongoDB not configured; skipping index creation")
+        logger.warning("Database not available; skipping index creation.")
         return
 
-    # users — match the historical spec (unique, non-sparse) to avoid
-    # IndexKeySpecsConflict on clusters that predate this code.
-    await _safe_create_index(users_collection, "email", unique=True)
-    await _safe_create_index(users_collection, "username", unique=True)
+    try:
+        # --- Users collection ---
+        # Unique indexes for fast lookups and constraint enforcement
+        await db.users.create_index("username", unique=True)
+        await db.users.create_index("email", unique=True)
+        # Role index for admin panel filtering
+        await db.users.create_index("role")
+        logger.info("Created unique indexes on users (username, email) and index on role")
 
-    await _safe_create_index(projects_collection, [("owner", 1), ("updated_at", -1)])
-    await _safe_create_index(projects_collection, [("owner", 1), ("archived", 1)])
+        # --- OTPs collection ---
+        # TTL index: automatically deletes the document when current time > expires_at
+        # OTPs are set to expire in 5 minutes in auth.py
+        await db.otps.create_index("expires_at", expireAfterSeconds=0)
+        await db.otps.create_index("email")
+        logger.info("Created TTL index on otps.expires_at (5m auto-delete)")
 
-    await _safe_create_index(
-        library_items_collection,
-        [("project_id", 1), ("owner", 1), ("source", 1), ("external_id", 1)],
-        unique=True,
-        name="library_paper_uniq",
-    )
-    await _safe_create_index(
-        library_items_collection,
-        [("project_id", 1), ("owner", 1), ("updated_at", -1)],
-    )
+        # --- Reset Tokens collection ---
+        # TTL index: automatically deletes the document when current time > expires_at
+        # Reset tokens are set to expire in 15 minutes in auth.py
+        await db.reset_tokens.create_index("expires_at", expireAfterSeconds=0)
+        await db.reset_tokens.create_index("email")
+        await db.reset_tokens.create_index("token", unique=True)
+        logger.info("Created TTL index on reset_tokens.expires_at (15m auto-delete)")
 
-    await _safe_create_index(reports_collection, [("owner", 1), ("created_at", -1)])
-    await _safe_create_index(gap_reports_collection, [("owner", 1), ("created_at", -1)])
+        # --- Search History collection ---
+        await db.search_history.create_index("user_id")
+        await db.search_history.create_index("username")
+        await db.search_history.create_index("created_at")
+        logger.info("Created indexes on search_history.user_id, search_history.username and search_history.created_at")
 
+        # --- Chat History collection ---
+        await db.chat_history.create_index("username")
+        await db.chat_history.create_index("created_at")
+        logger.info("Created indexes on chat_history.username and chat_history.created_at")
 
-async def close_db() -> None:
-    if client is not None:
-        client.close()
+        # --- Gap Reports collection ---
+        await db.gap_reports.create_index("report_id", unique=True)
+        logger.info("Created unique index on gap_reports.report_id")
+
+        logger.info("All database indexes created successfully.")
+    except Exception as e:
+        logger.error(f"Failed to create indexes: {e}")
+        # Don't raise - indexes are optional for functionality, just performance

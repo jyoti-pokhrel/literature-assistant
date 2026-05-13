@@ -49,7 +49,7 @@ window.ResearchAgent.defaults = Object.freeze({
 });
 
 window.ResearchAgent.searchHistoryKey = 'research-agent-search-history-v2';
-window.ResearchAgent.sidebarStateKey = 'research-agent-sidebar-collapsed-v2';
+window.ResearchAgent.sidebarStateKey = 'research-agent-sidebar-collapsed-v1';
 
 window.ResearchAgent.cloneSearchValues = function cloneSearchValues(values = {}) {
     const maxResults = Number.parseInt(values.maxResults, 10);
@@ -181,9 +181,10 @@ window.ResearchAgent.loadSearchHistory = function loadSearchHistory() {
 
         return raw
             .map((item) => {
-                if (!item) return null;
-                // Note: We no longer strictly require `result` here because we use server-side cache
                 const result = window.ResearchAgent.coerceStoredResult(item?.result);
+                if (!item || !result) {
+                    return null;
+                }
 
                 const values = window.ResearchAgent.normalizeSearchValues({
                     topic: item.topic,
@@ -201,7 +202,7 @@ window.ResearchAgent.loadSearchHistory = function loadSearchHistory() {
                     strictVenue: values.strictVenue,
                     maxResults: values.maxResults,
                     summary: item.summary || window.ResearchAgent.buildHistorySummary(values, result),
-                    // Intentionally omitting result to save localStorage space; use API cache instead.
+                    result,
                 };
             })
             .filter(Boolean)
@@ -247,10 +248,15 @@ document.addEventListener('alpine:init', () => {
     const storedSidebarState = localStorage.getItem(window.ResearchAgent.sidebarStateKey);
     Alpine.store('app', {
         initialized: false,
+        get isLoggedIn() {
+            const token = localStorage.getItem('access_token');
+            return !!(token && token !== 'undefined' && token !== 'null');
+        },
+
         mode: 'landing',
         currentView: 'form',
         theme: localStorage.getItem('theme') || 'light',
-        sidebarCollapsed: storedSidebarState === null ? false : storedSidebarState === 'true',
+        sidebarCollapsed: storedSidebarState === null ? window.innerWidth <= 768 : storedSidebarState === 'true',
         techPanelOpen: false,
         isLoading: false,
         error: '',
@@ -368,7 +374,11 @@ document.addEventListener('alpine:init', () => {
         },
 
         async openExplore({ replace = false, fromForm = false } = {}) {
-            const sourceValues = fromForm ? this.form : {};
+            const sourceValues = fromForm
+                ? this.form
+                : (this.activeSearchKey
+                    ? this.form
+                    : this.form);
             const seed = window.ResearchAgent.buildExploreSeed(sourceValues);
 
             this.resetExplore();
@@ -459,6 +469,15 @@ document.addEventListener('alpine:init', () => {
             this.goToPath(window.ResearchAgent.routes.landing, { replace });
         },
 
+        logout() {
+            localStorage.removeItem('access_token');
+            localStorage.removeItem('username');
+            // Hard redirect to landing page to ensure all state is reset
+            window.location.href = window.ResearchAgent.routes.landing;
+        },
+
+
+
         openWorkspace({ replace = false, showForm = true } = {}) {
             this.setMode('workspace');
             if (showForm) {
@@ -483,12 +502,25 @@ document.addEventListener('alpine:init', () => {
             return this.history.find((item) => window.ResearchAgent.searchKey(item) === targetKey) || null;
         },
 
-        async useHistoryItem(item, { replace = false } = {}) {
+        useHistoryItem(item, { replace = false } = {}) {
             const values = window.ResearchAgent.normalizeSearchValues(item);
+            const result = window.ResearchAgent.coerceStoredResult(item.result);
+            if (!result) {
+                return;
+            }
+
             this.form = window.ResearchAgent.cloneSearchValues(values);
-            // Run a new search instead of pulling from localStorage. 
-            // Our server-side cache will instantly serve the result.
-            await this.runSearch(values, { replaceRoute: replace, pushRoute: true, saveHistory: false });
+            this.result = result;
+            this.resetExplorer();
+            this.error = '';
+            this.isLoading = false;
+            this.currentView = 'results';
+            this.activeSearchKey = window.ResearchAgent.searchKey(values);
+            this.setMode('workspace');
+            this.closeSidebar();
+
+            const route = this.buildSearchRoute(values);
+            this.goToPath(route.pathname, { search: route.search, replace });
         },
 
         persistHistory(values, result) {
@@ -501,7 +533,7 @@ document.addEventListener('alpine:init', () => {
                 strictVenue: normalized.strictVenue,
                 maxResults: normalized.maxResults,
                 summary: window.ResearchAgent.buildHistorySummary(normalized, result),
-                // We no longer save the massive result payload to avoid QuotaExceededError
+                result,
             };
 
             const key = window.ResearchAgent.searchKey(normalized);
@@ -542,7 +574,6 @@ document.addEventListener('alpine:init', () => {
                 replaceRoute = false,
                 saveHistory = true,
                 allowCached = false,
-                regenerate = false,
             } = options;
 
             let normalized;
@@ -581,7 +612,6 @@ document.addEventListener('alpine:init', () => {
                 const gapPayload = {
                     ...paperPayload,
                     top_k_gaps: 5,
-                    regenerate: regenerate,
                 };
 
                 const onProgress = (event) => {

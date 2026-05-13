@@ -2,14 +2,11 @@ import os
 from typing import List
 
 import httpx
-from dotenv import load_dotenv
 from httpx import HTTPStatusError
 
 from app.schemas.paper import RetrievedPaper
 from app.services.extraction.normalizer import clean_text, filter_papers
 
-
-load_dotenv()
 
 OPENALEX_URL = "https://api.openalex.org/works"
 PAGE_SIZE = 100  # OpenAlex allows up to 200 per page
