@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Verify Email - Research Agent</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/tokens.css">
+  <link rel="stylesheet" href="/css/style.css">
+  <style>
+    :root {
+      --auth-bg: #fdfdfd;
+      --auth-card-bg: #ffffff;
+      --auth-text: #000000;
+      --auth-muted: #666666;
+      --auth-border: #e2e2e2;
+      --auth-input-bg: #ffffff;
+      --auth-primary: #000000;
+      --auth-primary-hover: #333333;
+      --auth-focus: #000000;
+      --auth-success: #10b981;
+    }
+    
+    [data-theme='dark'] {
+      --auth-bg: #0a0a0c;
+      --auth-card-bg: #111111;
+      --auth-text: #ffffff;
+      --auth-muted: #a1a1a1;
+      --auth-border: #2a2a2a;
+      --auth-input-bg: #0a0a0c;
+      --auth-primary: #ffffff;
+      --auth-primary-hover: #e0e0e0;
+      --auth-focus: #ffffff;
+      --auth-success: #10b981;
+    }
+
+    body {
+      background-color: var(--auth-bg);
+      color: var(--auth-text);
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      margin: 0;
+    }
+
+    .auth-nav {
+      padding: 1.5rem 2.5rem;
+      display: flex;
+      align-items: center;
+    }
+
+    .auth-brand {
+      font-weight: 700;
+      font-size: 1.2rem;
+      text-decoration: none;
+      color: var(--auth-text);
+      letter-spacing: -0.02em;
+    }
+
+    .auth-container {
+      flex: 1;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 2rem;
+    }
+
+    .auth-card {
+      background: var(--auth-card-bg);
+      border: 1px solid var(--auth-border);
+      border-radius: 12px;
+      padding: 3rem;
+      width: 100%;
+      max-width: 420px;
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.03);
+      animation: fadeUp 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .auth-header {
+      margin-bottom: 2rem;
+      text-align: center;
+    }
+
+    .auth-title {
+      font-size: 1.75rem;
+      font-weight: 700;
+      margin: 0 0 0.5rem 0;
+      letter-spacing: -0.02em;
+    }
+
+    .auth-subtitle {
+      color: var(--auth-muted);
+      font-size: 0.95rem;
+      margin: 0;
+      line-height: 1.5;
+    }
+
+    .auth-form-group {
+      margin-bottom: 1.5rem;
+    }
+
+    .auth-label {
+      display: block;
+      font-size: 0.85rem;
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+      text-align: center;
+    }
+
+    .auth-input {
+      width: 100%;
+      padding: 0.8rem 1rem;
+      border: 1px solid var(--auth-border);
+      border-radius: 8px;
+      background: var(--auth-input-bg);
+      color: var(--auth-text);
+      font-family: inherit;
+      font-size: 1.5rem;
+      font-weight: 600;
+      letter-spacing: 0.2em;
+      text-align: center;
+      transition: all 0.2s ease;
+      box-sizing: border-box;
+    }
+
+    .auth-input:focus {
+      outline: none;
+      border-color: var(--auth-focus);
+      box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.05);
+    }
+    
+    [data-theme='dark'] .auth-input:focus {
+      box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.1);
+    }
+
+    .auth-button {
+      width: 100%;
+      padding: 0.85rem;
+      background: var(--auth-primary);
+      color: var(--auth-bg);
+      border: none;
+      border-radius: 8px;
+      font-family: inherit;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s ease;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .auth-button:hover {
+      background: var(--auth-primary-hover);
+    }
+
+    .auth-button:disabled {
+      opacity: 0.7;
+      cursor: not-allowed;
+    }
+
+    .resend-link {
+      display: block;
+      text-align: center;
+      margin-top: 1.5rem;
+      font-size: 0.9rem;
+      color: var(--auth-muted);
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-family: inherit;
+      font-weight: 600;
+      text-decoration: underline;
+      transition: color 0.2s;
+    }
+
+    .resend-link:hover {
+      color: var(--auth-text);
+    }
+    
+    .resend-link:disabled {
+      cursor: not-allowed;
+      opacity: 0.5;
+      text-decoration: none;
+    }
+
+    .auth-alert {
+      padding: 0.75rem;
+      border-radius: 6px;
+      font-size: 0.9rem;
+      margin-bottom: 1.25rem;
+      display: none;
+      border: 1px solid transparent;
+      text-align: center;
+    }
+
+    .auth-error {
+      background: #ffeeee;
+      color: #cc0000;
+      border-color: #ffcccc;
+    }
+    
+    .auth-success {
+      background: #ecfdf5;
+      color: #065f46;
+      border-color: #a7f3d0;
+    }
+    
+    [data-theme='dark'] .auth-error {
+      background: rgba(204, 0, 0, 0.1);
+      border-color: rgba(204, 0, 0, 0.3);
+      color: #ff6666;
+    }
+
+    [data-theme='dark'] .auth-success {
+      background: rgba(16, 185, 129, 0.1);
+      border-color: rgba(16, 185, 129, 0.3);
+      color: #34d399;
+    }
+  </style>
+  <script>
+    (function () {
+      var storedTheme = localStorage.getItem('theme');
+      document.documentElement.setAttribute('data-theme', storedTheme === 'dark' ? 'dark' : 'light');
+    })();
+  </script>
+</head>
+<body>
+  <nav class="auth-nav">
+    <a href="/index.html" class="auth-brand">Research Agent</a>
+  </nav>
+
+  <div class="auth-container">
+    <div class="auth-card">
+      <div class="auth-header">
+        <h1 class="auth-title">Verify Email</h1>
+        <p class="auth-subtitle">We've sent a 6-digit code to <br><strong id="user-email-display">your email</strong></p>
+      </div>
+
+      <div id="alert-msg" class="auth-alert"></div>
+
+      <form id="otp-form">
+        <div class="auth-form-group">
+          <input class="auth-input" type="text" id="otp" name="otp" placeholder="000000" maxlength="6" pattern="\d{6}" title="6 digit code" required autocomplete="one-time-code">
+        </div>
+
+        <button type="submit" class="auth-button" id="submit-btn">Verify Account</button>
+      </form>
+
+      <button type="button" id="resend-btn" class="resend-link">Didn't receive code? Resend</button>
+    </div>
+  </div>
+
+  <script>
+    const urlParams = new URLSearchParams(window.location.search);
+    const email = urlParams.get('email');
+    
+    if (email) {
+      document.getElementById('user-email-display').innerText = email;
+    } else {
+      window.location.href = 'login.html';
+    }
+
+    const alertMsg = document.getElementById('alert-msg');
+
+    function showAlert(message, isError = true) {
+      alertMsg.innerText = message;
+      alertMsg.className = isError ? 'auth-alert auth-error' : 'auth-alert auth-success';
+      alertMsg.style.display = 'block';
+    }
+
+    document.getElementById('otp-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const otp = document.getElementById('otp').value;
+      const submitBtn = document.getElementById('submit-btn');
+
+      alertMsg.style.display = 'none';
+      submitBtn.disabled = true;
+      submitBtn.innerText = 'Verifying...';
+
+      try {
+        const response = await fetch('/verify-otp', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ email, otp })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.detail || 'Verification failed');
+        }
+
+        // Save token and redirect
+        localStorage.setItem('access_token', data.access_token);
+        localStorage.setItem('username', data.username);
+        window.location.href = '/workspace';
+
+
+      } catch (err) {
+        showAlert(err.message, true);
+        submitBtn.disabled = false;
+        submitBtn.innerText = 'Verify Account';
+      }
+    });
+
+    document.getElementById('resend-btn').addEventListener('click', async (e) => {
+      const resendBtn = e.target;
+      resendBtn.disabled = true;
+      resendBtn.innerText = 'Sending...';
+      alertMsg.style.display = 'none';
+
+      try {
+        const response = await fetch('/resend-otp', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ email })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.detail || 'Failed to resend OTP');
+        }
+
+        showAlert('A new verification code has been sent.', false);
+        
+        let cooldown = 60;
+        const interval = setInterval(() => {
+          resendBtn.innerText = `Resend available in ${cooldown}s`;
+          cooldown--;
+          if (cooldown < 0) {
+            clearInterval(interval);
+            resendBtn.disabled = false;
+            resendBtn.innerText = "Didn't receive code? Resend";
+          }
+        }, 1000);
+
+      } catch (err) {
+        showAlert(err.message, true);
+        resendBtn.disabled = false;
+        resendBtn.innerText = "Didn't receive code? Resend";
+      }
+    });
+  </script>
+</body>
+</html>
