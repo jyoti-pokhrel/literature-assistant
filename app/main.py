@@ -156,6 +156,9 @@ ADMIN_PAGE = FRONTEND_DIR / "html" / "admin.html"
 
 @app.get("/admin-panel", include_in_schema=False)
 def frontend_admin_panel():
+    if not ADMIN_PAGE.exists():
+        from fastapi import HTTPException
+        raise HTTPException(status_code=404, detail="Admin page not available")
     return FileResponse(ADMIN_PAGE)
 
 
