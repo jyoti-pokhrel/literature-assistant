@@ -6,6 +6,8 @@ from httpx import HTTPStatusError
 
 from app.schemas.paper import RetrievedPaper
 from app.services.extraction.normalizer import _venue_terms, clean_text, filter_papers
+from app.core.http import get_http_client
+from app.services.retrieval.cache import semantic_scholar_cache
 
 SEMANTIC_SCHOLAR_URL = "https://api.semanticscholar.org/graph/v1/paper/search"
 SEMANTIC_SCHOLAR_FIELDS = ",".join(
@@ -74,6 +76,12 @@ async def _fetch_page(
     limit: int,
     headers: dict,
 ) -> List[RetrievedPaper]:
+    # Cache key for individual page fetches
+    cache_key = f"fetch_page:{topic}:{venue}:{year}:{offset}:{limit}"
+    cached_results = await semantic_scholar_cache.get(cache_key)
+    if cached_results is not None:
+        return cached_results
+
     params: dict = {
         "query": topic,
         "offset": offset,
@@ -81,7 +89,6 @@ async def _fetch_page(
         "fields": SEMANTIC_SCHOLAR_FIELDS,
     }
     if venue:
-        # Semantic Scholar accepts comma-separated venues; pass aliases for recall.
         venue_terms = _venue_terms(venue)
         if venue_terms:
             params["venue"] = ",".join(venue_terms)
@@ -90,7 +97,9 @@ async def _fetch_page(
     try:
         response = await client.get(SEMANTIC_SCHOLAR_URL, params=params, headers=headers)
         response.raise_for_status()
-        return _parse_items(response.json())
+        results = _parse_items(response.json())
+        await semantic_scholar_cache.set(cache_key, results)
+        return results
     except (HTTPStatusError, httpx.RequestError):
         return []
 
@@ -118,34 +127,43 @@ async def search_semantic_scholar(
     offset = 0
     page_size = min(max(limit * 5, limit), 50) if not filters_active else PAGE_SIZE
 
-    async with httpx.AsyncClient(timeout=timeout) as client:
-        while len(candidates) < MAX_CANDIDATES and offset < MAX_OFFSET:
-            this_page = min(page_size, MAX_OFFSET - offset)
-            page = await _fetch_page(
-                client,
-                topic=cleaned_topic,
-                venue=cleaned_venue,
-                year=year,
-                offset=offset,
-                limit=this_page,
-                headers=headers,
-            )
-            if not page:
-                break
-            for paper in page:
-                pid = paper.external_id or paper.url or paper.title
-                if pid in seen_ids:
-                    continue
-                seen_ids.add(pid)
-                candidates.append(paper)
+    # High-level cache for the full search result
+    full_cache_key = f"search:{topic}:{year}:{venue}:{strict_venue}:{limit}"
+    cached_search = await semantic_scholar_cache.get(full_cache_key)
+    if cached_search is not None:
+        return cached_search
 
-            filtered_so_far = filter_papers(
-                candidates, year=year, venue=cleaned_venue, strict_venue=strict_venue
-            )
-            if len(filtered_so_far) >= limit or not filters_active:
-                break
-            offset += this_page
+    client = get_http_client()
+    while len(candidates) < MAX_CANDIDATES and offset < MAX_OFFSET:
+        this_page = min(page_size, MAX_OFFSET - offset)
+        page = await _fetch_page(
+            client,
+            topic=cleaned_topic,
+            venue=cleaned_venue,
+            year=year,
+            offset=offset,
+            limit=this_page,
+            headers=headers,
+        )
+        if not page:
+            break
+        for paper in page:
+            pid = paper.external_id or paper.url or paper.title
+            if pid in seen_ids:
+                continue
+            seen_ids.add(pid)
+            candidates.append(paper)
 
-    return filter_papers(
+        filtered_so_far = filter_papers(
+            candidates, year=year, venue=cleaned_venue, strict_venue=strict_venue
+        )
+        if len(filtered_so_far) >= limit or not filters_active:
+            break
+        offset += this_page
+
+    final_results = filter_papers(
         candidates, year=year, venue=cleaned_venue, strict_venue=strict_venue
     )[:limit]
+    
+    await semantic_scholar_cache.set(full_cache_key, final_results)
+    return final_results

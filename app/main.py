@@ -1,4 +1,6 @@
 from pathlib import Path
+import asyncio
+import os
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.openapi.utils import get_openapi
@@ -10,6 +12,7 @@ import logging
 from app.api.routes import auth, papers, synthesis, search, admin, user
 from app.db.session import connect_to_mongo, close_mongo_connection, create_indexes
 from app.core.config import settings
+from app.core.http import get_http_client, close_http_client
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -112,9 +115,46 @@ async def startup_db_client():
     await connect_to_mongo()
     await create_indexes()
 
+@app.on_event("startup")
+async def startup_services():
+    # Initialize shared HTTP client
+    get_http_client()
+    
+    # Background preloading
+    asyncio.create_task(preload_assets())
+
+async def preload_assets():
+    """Background task to preload models and establish initial connections."""
+    logger.info("Starting background asset preloading...")
+    try:
+        # Preload embedding model (SentenceTransformer)
+        from app.services.synthesis.embeddings import get_model
+        from app.core.config import settings
+        
+        loop = asyncio.get_event_loop()
+        await loop.run_in_executor(None, get_model, os.getenv("EMBEDDING_MODEL"))
+        logger.info("Embedding model preloaded successfully.")
+        
+        # Pre-connect to external APIs
+        client = get_http_client()
+        urls = [
+            "https://export.arxiv.org/api/query",
+            "https://api.openalex.org/works",
+            "https://api.semanticscholar.org/graph/v1/paper/search"
+        ]
+        for url in urls:
+            try:
+                await client.options(url, timeout=2.0)
+            except Exception:
+                pass
+        logger.info("Initial API pre-connections attempted.")
+    except Exception as exc:
+        logger.warning("Background preloading encountered an issue: %s", exc)
+
 @app.on_event("shutdown")
 async def shutdown_db_client():
     await close_mongo_connection()
+    await close_http_client()
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):

@@ -237,3 +237,24 @@ class SynthesisHistoryResponse(BaseModel):
     items: List[SynthesisHistoryItem]
     next_cursor: Optional[str] = None
 
+
+# ── Background Jobs ──────────────────────────────────────────────────────────
+
+from enum import Enum
+
+class JobStatusEnum(str, Enum):
+    PENDING = "pending"
+    PROCESSING = "processing"
+    COMPLETED = "completed"
+    FAILED = "failed"
+
+class SynthesisJobStatus(BaseModel):
+    job_id: str
+    status: JobStatusEnum
+    progress: int = 0
+    detail: str = ""
+    result: Optional[SynthesisResponse] = None
+    error: Optional[str] = None
+    created_at: str
+    updated_at: str
+

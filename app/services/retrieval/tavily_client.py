@@ -7,6 +7,8 @@ from httpx import HTTPStatusError
 
 from app.schemas.paper import RetrievedPaper
 from app.services.extraction.normalizer import clean_text, filter_papers
+from app.core.http import get_http_client
+from app.services.retrieval.cache import tavily_cache
 
 
 TAVILY_URL = "https://api.tavily.com/search"
@@ -35,6 +37,12 @@ async def search_tavily(
     if not api_key:
         return []
 
+    # High-level cache for the full search result
+    full_cache_key = f"search:{topic}:{year}:{venue}:{strict_venue}:{limit}"
+    cached_search = await tavily_cache.get(full_cache_key)
+    if cached_search is not None:
+        return cached_search
+
     query_parts = [topic, "research paper"]
     if year is not None:
         query_parts.append(str(year))
@@ -49,10 +57,10 @@ async def search_tavily(
     headers = {"Authorization": f"Bearer {api_key}"}
 
     try:
-        async with httpx.AsyncClient(timeout=timeout) as client:
-            response = await client.post(TAVILY_URL, json=payload, headers=headers)
-            response.raise_for_status()
-            data = response.json()
+        client = get_http_client()
+        response = await client.post(TAVILY_URL, json=payload, headers=headers)
+        response.raise_for_status()
+        data = response.json()
     except (HTTPStatusError, httpx.RequestError):
         return []
 
@@ -81,4 +89,6 @@ async def search_tavily(
             )
         )
 
-    return filter_papers(papers, year=year, venue=venue, strict_venue=strict_venue)[:limit]
+    final_results = filter_papers(papers, year=year, venue=venue, strict_venue=strict_venue)[:limit]
+    await tavily_cache.set(full_cache_key, final_results)
+    return final_results

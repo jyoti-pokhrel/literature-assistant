@@ -12,16 +12,20 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import Response, StreamingResponse
 
 from app.api.dependencies import require_researcher, require_viewer
+from app.db.session import get_db
 from app.schemas.synthesis import (
     SynthesisHistoryItem,
     SynthesisHistoryResponse,
     SynthesisRequest,
     SynthesisResponse,
+    SynthesisJobStatus,
+    JobStatusEnum,
 )
+import datetime
 
-logger = logging.getLogger(__name__)
-
-from app.db.session import get_db
+# Global job store for tracking background tasks
+# In production, this could be moved to Redis or MongoDB TTL collection
+job_store: Dict[str, SynthesisJobStatus] = {}
 
 
 def _get_gap_reports_collection():
@@ -94,7 +98,7 @@ def _hydrate_report(doc: dict) -> dict:
     "/gaps",
     response_model=SynthesisResponse,
     status_code=status.HTTP_200_OK,
-    summary="Analyze research gaps for a single topic",
+    summary="Analyze research gaps for a single topic (Synchronous)",
 )
 async def detect_gaps(
     payload: SynthesisRequest,
@@ -109,6 +113,74 @@ async def detect_gaps(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Synthesis failed: {exc}",
         )
+
+@router.post(
+    "/gaps/async",
+    status_code=status.HTTP_202_ACCEPTED,
+    summary="Analyze research gaps in the background (Asynchronous)",
+)
+async def detect_gaps_async(
+    payload: SynthesisRequest,
+    current_user: dict = Depends(require_researcher),
+):
+    from app.services.synthesis.report_pipeline import run_synthesis_pipeline
+    import uuid
+    
+    job_id = str(uuid.uuid4())
+    now = datetime.datetime.now().isoformat()
+    
+    job_status = SynthesisJobStatus(
+        job_id=job_id,
+        status=JobStatusEnum.PENDING,
+        progress=0,
+        detail="Initializing background task",
+        created_at=now,
+        updated_at=now
+    )
+    job_store[job_id] = job_status
+
+    async def progress_callback(event: dict):
+        job = job_store.get(job_id)
+        if job:
+            job.status = JobStatusEnum.PROCESSING
+            job.progress = event.get("progress", job.progress)
+            job.detail = event.get("label", job.detail)
+            job.updated_at = datetime.datetime.now().isoformat()
+
+    async def run_task():
+        try:
+            result = await run_synthesis_pipeline(payload, progress_callback=progress_callback)
+            job = job_store.get(job_id)
+            if job:
+                job.status = JobStatusEnum.COMPLETED
+                job.progress = 100
+                job.detail = "Synthesis complete"
+                job.result = result
+                job.updated_at = datetime.datetime.now().isoformat()
+        except Exception as exc:
+            logger.exception("Background synthesis failed for job %s: %s", job_id, exc)
+            job = job_store.get(job_id)
+            if job:
+                job.status = JobStatusEnum.FAILED
+                job.error = str(exc)
+                job.updated_at = datetime.datetime.now().isoformat()
+
+    asyncio.create_task(run_task())
+    return {"job_id": job_id, "status": "accepted"}
+
+@router.get(
+    "/status/{job_id}",
+    response_model=SynthesisJobStatus,
+    summary="Check status of a background synthesis job",
+)
+async def get_job_status(job_id: str):
+    job = job_store.get(job_id)
+    if not job:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Job {job_id} not found"
+        )
+    return job
 
 
 
