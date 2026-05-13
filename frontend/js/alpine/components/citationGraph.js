@@ -33,6 +33,21 @@ document.addEventListener('alpine:init', () => {
             });
 
             this.$watch('filters', () => this._applyFiltersToGraph(), { deep: true });
+
+            // Keep the year sliders ordered — dragging one past the other would
+            // produce an empty year range and silently blank the graph.
+            this.$watch('filters.yearMin', (v) => {
+                const n = Number(v);
+                if (Number.isFinite(n) && n > Number(this.filters.yearMax)) {
+                    this.filters.yearMax = n;
+                }
+            });
+            this.$watch('filters.yearMax', (v) => {
+                const n = Number(v);
+                if (Number.isFinite(n) && n < Number(this.filters.yearMin)) {
+                    this.filters.yearMin = n;
+                }
+            });
         },
 
         destroy() {

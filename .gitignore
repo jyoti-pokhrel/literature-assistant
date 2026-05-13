@@ -47,7 +47,5 @@ htmlcov/
 /tests
 skills
 
-# ── Claude ────────────────────────────────────────
-.claude/settings.local.json
 .claude
 CLAUDE.md

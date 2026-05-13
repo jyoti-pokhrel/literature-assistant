@@ -70,15 +70,35 @@ app.include_router(citations.router)
 
 
 @app.on_event("startup")
-async def _bootstrap_citation_indexes() -> None:
+async def _bootstrap_db() -> None:
+    import logging
+
+    from app.db.session import init_indexes, ping
     from app.services.citations.cache import ensure_indexes
+
+    log = logging.getLogger(__name__)
+    if await ping():
+        log.info("MongoDB reachable; bootstrapping indexes")
+    else:
+        log.warning("MongoDB unreachable at startup; index creation will be skipped")
+        return
+
+    try:
+        await init_indexes()
+    except Exception:
+        log.exception("Failed to bootstrap core indexes")
 
     try:
         await ensure_indexes()
     except Exception:
-        import logging
+        log.exception("Failed to bootstrap citation_cache indexes")
 
-        logging.getLogger(__name__).exception("Failed to bootstrap citation_cache indexes")
+
+@app.on_event("shutdown")
+async def _shutdown_db() -> None:
+    from app.db.session import close_db
+
+    await close_db()
 
 
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")

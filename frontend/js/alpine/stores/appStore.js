@@ -368,11 +368,7 @@ document.addEventListener('alpine:init', () => {
         },
 
         async openExplore({ replace = false, fromForm = false } = {}) {
-            const sourceValues = fromForm
-                ? this.form
-                : (this.activeSearchKey
-                    ? this.form
-                    : this.form);
+            const sourceValues = fromForm ? this.form : {};
             const seed = window.ResearchAgent.buildExploreSeed(sourceValues);
 
             this.resetExplore();

@@ -60,8 +60,12 @@ async def get_cached(paper_id: str) -> Optional[dict]:
     if doc is None:
         return None
     expires_at = doc.get("expires_at")
-    if isinstance(expires_at, datetime) and expires_at <= _utcnow():
-        return None
+    if isinstance(expires_at, datetime):
+        # Mongo BSON datetimes come back tz-naive (UTC by convention).
+        if expires_at.tzinfo is None:
+            expires_at = expires_at.replace(tzinfo=timezone.utc)
+        if expires_at <= _utcnow():
+            return None
     return _strip_mongo(doc)
 
 

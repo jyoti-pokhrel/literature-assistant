@@ -101,8 +101,10 @@ async def _fetch_page(
         }
     else:
         # No topic: feed-style browse over all of arXiv, newest first.
+        # arXiv's API rejects `all:*` with a 500; `cat:*` matches every entry
+        # across all categories and works as the "latest" feed.
         params = {
-            "search_query": "all:*",
+            "search_query": "cat:*",
             "start": start,
             "max_results": page_size,
             "sortBy": "submittedDate",

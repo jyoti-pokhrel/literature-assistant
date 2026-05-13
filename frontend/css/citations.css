@@ -126,6 +126,13 @@
     align-items: center;
     gap: var(--s-2);
     font-size: var(--t-small);
+    flex-wrap: wrap;
+}
+
+.cit-progress-cancel {
+    margin-left: auto;
+    padding: 0.3rem 0.8rem;
+    font-size: var(--t-xs);
 }
 
 .cit-progress-stage {
@@ -213,6 +220,192 @@
     display: block;
 }
 
+/* ---------- graph element styles ---------- */
+
+.cit-edge {
+    transition:
+        stroke-opacity 240ms cubic-bezier(0.22, 1, 0.36, 1),
+        stroke-width   240ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.cit-node {
+    transition: opacity 260ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.cit-node .cit-core {
+    transition: transform 220ms cubic-bezier(0.22, 1, 0.36, 1);
+    transform-box: fill-box;
+    transform-origin: center;
+}
+
+.cit-node.is-dim { opacity: 0.18; }
+.cit-node.is-active .cit-core { transform: scale(1.18); }
+
+/* ---------- canvas overlays: legend + zoom controls ---------- */
+
+.cit-canvas-overlay {
+    position: absolute;
+    z-index: 2;
+    pointer-events: none;
+}
+
+.cit-legend {
+    top: var(--s-2);
+    left: var(--s-2);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 10px 12px;
+    background: var(--glass-2);
+    border: 1px solid var(--glass-border);
+    border-radius: 12px;
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
+    box-shadow: var(--shadow-glass);
+    color: var(--ink);
+    pointer-events: auto;
+    max-width: 220px;
+}
+
+.cit-legend-title {
+    font-family: var(--font-mono);
+    text-transform: uppercase;
+    font-size: 0.6rem;
+    letter-spacing: 0.18em;
+    color: var(--ink-3);
+}
+
+.cit-legend-row {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.cit-legend-row-label {
+    font-family: var(--font-mono);
+    font-size: 0.62rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+}
+
+.cit-legend-bar {
+    position: relative;
+    height: 6px;
+    border-radius: 999px;
+    background: linear-gradient(to right, var(--c-4), var(--c-3), var(--c-1));
+    border: 1px solid var(--rule);
+}
+
+.cit-legend-bar-ticks {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 4px;
+    font-family: var(--font-mono);
+    font-size: 0.64rem;
+    color: var(--ink-2);
+    font-variant-numeric: tabular-nums;
+}
+
+.cit-legend-roles {
+    display: flex;
+    gap: var(--s-2);
+    flex-wrap: wrap;
+    font-size: var(--t-xs);
+    color: var(--ink-2);
+}
+
+.cit-legend-role {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    line-height: 1;
+}
+
+.cit-legend-glyph {
+    width: 11px;
+    height: 11px;
+    border-radius: 50%;
+    box-sizing: border-box;
+    flex: 0 0 auto;
+}
+
+.cit-legend-glyph--seed {
+    background: var(--ink);
+    box-shadow: 0 0 0 2px var(--glass-2),
+                0 0 0 3px color-mix(in srgb, var(--ink) 35%, transparent);
+}
+
+.cit-legend-glyph--ref {
+    background: var(--ink-2);
+}
+
+.cit-legend-glyph--cite {
+    background: transparent;
+    border: 1.5px solid var(--ink-2);
+}
+
+.cit-zoom {
+    bottom: var(--s-2);
+    right: var(--s-2);
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 4px;
+    background: var(--glass-2);
+    border: 1px solid var(--glass-border);
+    border-radius: 12px;
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
+    box-shadow: var(--shadow-glass);
+    pointer-events: auto;
+}
+
+.cit-zoom button {
+    appearance: none;
+    width: 30px;
+    height: 30px;
+    border: 0;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--ink-2);
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 160ms ease, color 160ms ease, transform 160ms ease;
+}
+
+.cit-zoom button:hover {
+    background: var(--accent-soft);
+    color: var(--ink);
+}
+
+.cit-zoom button:active { transform: scale(0.94); }
+
+.cit-zoom svg { width: 14px; height: 14px; }
+
+.cit-hint {
+    bottom: var(--s-2);
+    left: var(--s-2);
+    padding: 6px 10px;
+    background: var(--glass);
+    border: 1px solid var(--rule);
+    border-radius: 10px;
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
+    color: var(--ink-3);
+    font-family: var(--font-mono);
+    font-size: 0.66rem;
+    letter-spacing: 0.04em;
+    text-transform: lowercase;
+}
+
+@media (max-width: 700px) {
+    .cit-hint { display: none; }
+    .cit-legend { max-width: 160px; padding: 8px 10px; }
+}
+
 .cit-panel {
     padding: var(--s-3);
     border-radius: var(--radius-lg);
@@ -227,6 +420,39 @@
     align-self: start;
     position: sticky;
     top: var(--s-3);
+    max-height: calc(100vh - var(--s-4));
+    overflow-y: auto;
+    overscroll-behavior: contain;
+
+    /* Subtle scrollbar that matches the glass surface */
+    scrollbar-width: thin;
+    scrollbar-color: var(--rule-strong) transparent;
+}
+
+.cit-panel::-webkit-scrollbar {
+    width: 8px;
+}
+.cit-panel::-webkit-scrollbar-track {
+    background: transparent;
+}
+.cit-panel::-webkit-scrollbar-thumb {
+    background: var(--rule-strong);
+    border-radius: 8px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+}
+.cit-panel::-webkit-scrollbar-thumb:hover {
+    background: var(--accent-line);
+    background-clip: padding-box;
+    border: 2px solid transparent;
+}
+
+@media (max-width: 1100px) {
+    .cit-panel {
+        position: static;
+        max-height: none;
+        overflow-y: visible;
+    }
 }
 
 .cit-panel-section {
@@ -311,6 +537,17 @@
     color: var(--ink);
     line-height: 1.3;
     margin: 0;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    overflow-wrap: anywhere;
+}
+
+.cit-selected-meta,
+.cit-selected-authors {
+    overflow-wrap: anywhere;
 }
 
 .cit-selected-meta {
@@ -347,14 +584,16 @@
 
 .cit-top li {
     display: grid;
-    grid-template-columns: 32px 1fr;
-    gap: var(--s-2);
+    grid-template-columns: 28px minmax(0, 1fr);
+    gap: var(--s-1);
     align-items: start;
     padding: var(--s-1);
     border-radius: var(--radius-sm);
     cursor: pointer;
     transition: background var(--t-fast) var(--ease-out);
 }
+
+.cit-top li > div { min-width: 0; }
 
 .cit-top li:hover {
     background: var(--accent-soft);
@@ -372,7 +611,12 @@
 }
 
 .cit-top strong {
-    display: block;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    overflow-wrap: anywhere;
     font-size: var(--t-small);
     color: var(--ink);
     font-weight: 600;
