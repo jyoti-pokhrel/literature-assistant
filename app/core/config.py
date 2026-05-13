@@ -10,7 +10,7 @@ load_dotenv(dotenv_path=ENV_PATH, override=True)
 class Settings:
     MONGODB_URL = os.environ.get("MONGODB_URL", "mongodb://localhost:27017")
     DB_NAME = os.environ.get("DB_NAME", "research_agent")
-    SECRET_KEY = os.environ.get("SECRET_KEY", "secret")
+    SECRET_KEY = os.environ.get("SECRET_KEY", "")
     ALGORITHM = os.environ.get("ALGORITHM", "HS256")
     ACCESS_TOKEN_EXPIRE_MINUTES = int(os.environ.get("ACCESS_TOKEN_EXPIRE_MINUTES", "1440"))
 
@@ -37,3 +37,11 @@ class Settings:
 
 
 settings = Settings()
+
+import logging as _logging
+
+if not settings.SECRET_KEY:
+    _logging.getLogger(__name__).warning(
+        "SECRET_KEY is not set; JWT operations will fail at runtime. "
+        "Set SECRET_KEY in your .env before enabling auth."
+    )
