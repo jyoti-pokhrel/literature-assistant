@@ -10,7 +10,7 @@ window.ResearchAgent.routes = {
 };
 
 window.ResearchAgent.exploreDefaults = Object.freeze({
-    pageSize: 20,
+    pageSize: 40,
 });
 
 window.ResearchAgent.defaults = Object.freeze({
@@ -243,6 +243,7 @@ document.addEventListener('alpine:init', () => {
         sidebarCollapsed: storedSidebarState === null ? false : storedSidebarState === 'true',
         techPanelOpen: false,
         isLoading: false,
+        activeHistoryMenuId: null,
         error: '',
         progressEvents: [],
         form: window.ResearchAgent.cloneSearchValues(window.ResearchAgent.defaults),

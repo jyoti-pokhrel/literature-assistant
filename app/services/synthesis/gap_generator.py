@@ -37,7 +37,11 @@ logger = logging.getLogger(__name__)
 from app.schemas.synthesis import CitationRef, SynthesisGap
 from app.services.synthesis.gap_scorer import compute_gap_score
 from app.services.synthesis.pattern_analysis import extract_cluster_themes
-from app.services.synthesis.citation_validation import validate_gap_citations
+from app.services.synthesis.citation_validation import (
+    validate_gap_citations, 
+    validate_gap_against_supported_papers,
+    verify_gap_with_llm
+)
 from app.services.analysis.scoring import (
     score_support, score_severity, score_actionability,
     score_novelty, score_citation_confidence, compute_overall_score,
@@ -46,6 +50,23 @@ from app.services.analysis.scoring import (
 
 #Minimum cluster size to warrant LLM gap generation
 MIN_CLUSTER_SIZE_FOR_LLM = 2
+
+
+class GapLLMClient:
+    """Simple wrapper to provide the .generate() interface for citation validation."""
+    async def generate(self, prompt: str, response_format: dict = None) -> str:
+        # Use existing routing logic
+        if LLM_PROVIDER == "local" or (not OPENROUTER_API_KEY and LOCAL_LLM_URL):
+            return await _call_local_model(prompt)
+        else:
+            # Try primary then fallback
+            last_exc = None
+            for model_name in [PRIMARY_MODEL, FALLBACK_MODEL]:
+                try:
+                    return await _call_openrouter(prompt, model_name)
+                except Exception as exc:
+                    last_exc = exc
+            raise last_exc or RuntimeError("All LLM models failed in client.")
 
 #Shared aiohttp session (reused across all requests; avoids TLS overhead)
 _http_session: aiohttp.ClientSession | None = None
@@ -157,6 +178,12 @@ STEP 2 — QUALITY RULES
   ✗ BAD:  "Current methods do not scale well."
   ✓ GOOD: "Attention-based coordination mechanisms degrade by >35% throughput when
            agent count exceeds 64 due to quadratic message complexity [2]."
+
+▸ MATHEMATICAL RIGOR & NOTATION PRESERVATION (CRITICAL):
+  ✓ ALWAYS preserve original variable names (|S|, |A|, |B|, \gamma, \epsilon) and mathematical notation exactly as they appear in the paper abstracts.
+  ✓ NEVER simplify complexity notation; if a paper mentions O~(|S||A||B|(1-gamma)^{-3}epsilon^{-2}), do NOT change it to "sab(1-gamma-3epsilon-2)".
+  ✓ Ensure all exponents, subscripts, and superscripts are correctly represented using standard text or LaTeX-style notation (e.g., ^-3, _0).
+  ✗ NEVER substitute Greek letters with plain English words if the symbol is provided.
 
 ▸ CITATIONS — One [N] per sentence, placed at the sentence end:
   ✗ BAD:  "Paper [1] and [2] both show this."
@@ -457,6 +484,8 @@ def _heuristic_gap(
         citations=citations,
         score_breakdown=build_gap_score_breakdown(papers, evidence, _gap_category(evidence)),
         citation_validation=validate_gap_citations(gap_fields, citations),
+        cross_paper_validation=validate_gap_against_supported_papers(gap_fields, papers),
+        llm_verification={"status": "unvalidated", "reason": "Heuristic fallback"}
     )
 
 
@@ -558,6 +587,12 @@ async def generate_gaps_for_cluster(
             def clean(key: str, default: str = "") -> str:
                 return _clean_val(gap_data.get(key)) or default
 
+            gap_fields_for_val = {
+                "what_fails":    clean("what_fails"),
+                "missing_piece": clean("missing_piece"),
+            }
+            cross_val = validate_gap_against_supported_papers(gap_fields_for_val, cluster_papers)
+
             base_score     = _score_from_evidence(cluster_papers, cluster_id, text_content)
             try:
                 llm_conf = float(gap_data.get("confidence_score", base_score))
@@ -566,6 +601,10 @@ async def generate_gaps_for_cluster(
             
             # Blend objective evidence score with the gap-specific LLM confidence
             final_score = round(0.6 * base_score + 0.4 * llm_conf, 2)
+            
+            # Apply penalty if the gap is potentially addressed by newer papers
+            if cross_val.get("status") == "potentially_addressed":
+                final_score = round(final_score * 0.7, 2)
 
             evidence       = _build_evidence(cluster_papers)
             score_breakdown = build_gap_score_breakdown(
@@ -596,6 +635,8 @@ async def generate_gaps_for_cluster(
                 citations=citations,
                 score_breakdown=score_breakdown,
                 citation_validation=validate_gap_citations(gap_fields, citations),
+                cross_paper_validation=cross_val,
+                llm_verification=await verify_gap_with_llm(gap_fields, citations, GapLLMClient()),
             ))
 
         return gaps_out, llm_theme_label
@@ -631,13 +672,14 @@ async def generate_all_gaps(
         cluster_map[0] = papers
 
     # Sort clusters by size descending to prioritise LLM calls for the largest clusters.
-
     sorted_clusters = sorted(cluster_map.items(), key=lambda x: len(x[1]), reverse=True)
-    max_llm_clusters = top_k  # derived: no wasted calls, no artificial cap
+    
+    # Process all clusters with the LLM for maximum gap coverage
+    max_llm_clusters = 100 
 
     results = []
     for i, (cid, cprs) in enumerate(sorted_clusters):
-        # Force heuristic for clusters beyond the top max_llm_clusters
+        # Allow all clusters to use the LLM if they meet the minimum size
         force_heuristic = (i >= max_llm_clusters)
         try:
             res = await generate_gaps_for_cluster(
@@ -665,8 +707,8 @@ async def generate_all_gaps(
         if theme_label:
             llm_theme_labels[cid] = theme_label
 
-    # Sort by confidence, then return exactly top_k gaps
-    sorted_gaps = sorted(gaps, key=lambda g: g.confidence_score, reverse=True)[:top_k]
+    # Sort by confidence, then return all generated gaps
+    sorted_gaps = sorted(gaps, key=lambda g: g.confidence_score, reverse=True)
     return sorted_gaps, llm_theme_labels
 
 

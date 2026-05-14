@@ -6,7 +6,7 @@ from app.schemas.paper import RetrievedPaper
 
 VENUE_ALIASES: dict[str, tuple[str, ...]] = {
     "icml": ("icml", "international conference on machine learning"),
-    "neurips": ("neurips", "nips", "conference on neural information processing systems"),
+    "neurips": ("neurips", "nips", "conference on neural information processing systems", "advances in neural information processing systems"),
     "iclr": ("iclr", "international conference on learning representations"),
     "acl": ("acl", "annual meeting of the association for computational linguistics"),
     "emnlp": ("emnlp", "empirical methods in natural language processing"),
