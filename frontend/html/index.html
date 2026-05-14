@@ -979,43 +979,45 @@
                                         return 'unknown';
                                       }
                                     }">
-                             <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem;">
+                             <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem; flex-wrap: wrap; gap: 0.5rem;">
                                <h4 class="gap-rail-section-label" style="margin-bottom: 0;">Validation</h4>
                                
-                               <!-- Status Pill -->
-                               <div style="display: flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; text-transform: capitalize;"
-                                    :style="{
-                                      background: status() === 'validated' ? 'rgba(34, 197, 94, 0.1)' : 
-                                                  status() === 'weakly_supported' ? 'rgba(245, 158, 11, 0.1)' : 
-                                                  status() === 'potentially_addressed' ? 'rgba(59, 130, 246, 0.1)' :
-                                                  status() === 'hallucinated' ? 'rgba(239, 68, 68, 0.1)' : 'rgba(100, 100, 100, 0.1)',
-                                      color: status() === 'validated' ? 'rgb(34, 197, 94)' : 
-                                             status() === 'weakly_supported' ? 'rgb(245, 158, 11)' : 
-                                             status() === 'potentially_addressed' ? 'rgb(59, 130, 246)' :
-                                             status() === 'hallucinated' ? 'rgb(239, 68, 68)' : 'rgb(100, 100, 100)'
-                                    }">
-                                 
-                                 <!-- Tick icon (Grounded) -->
-                                 <template x-if="status() === 'validated'">
-                                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                               <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+                                 <!-- Novelty Status Pill -->
+                                 <template x-if="selectedGap().cross_paper_validation?.status">
+                                   <div style="display: flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; text-transform: capitalize;"
+                                        :style="{
+                                          background: selectedGap().cross_paper_validation?.status?.toLowerCase() === 'potentially_addressed' ? 'rgba(59, 130, 246, 0.1)' : 'rgba(34, 197, 94, 0.1)',
+                                          color: selectedGap().cross_paper_validation?.status?.toLowerCase() === 'potentially_addressed' ? 'rgb(59, 130, 246)' : 'rgb(34, 197, 94)'
+                                        }">
+                                     <template x-if="selectedGap().cross_paper_validation?.status?.toLowerCase() === 'potentially_addressed'">
+                                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+                                     </template>
+                                     <template x-if="selectedGap().cross_paper_validation?.status?.toLowerCase() !== 'potentially_addressed'">
+                                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                     </template>
+                                     <span x-text="selectedGap().cross_paper_validation?.status?.toLowerCase() === 'potentially_addressed' ? 'Potentially Addressed' : 'Unique Gap'"></span>
+                                   </div>
                                  </template>
 
-                                 <!-- Warning icon (Weakly Supported) -->
-                                 <template x-if="status() === 'weakly_supported'">
-                                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                                 <!-- Grounding Status Pill -->
+                                 <template x-if="selectedGap().citation_validation?.status">
+                                   <div style="display: flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; text-transform: capitalize;"
+                                        :style="{
+                                          background: selectedGap().citation_validation?.status?.toLowerCase() === 'grounded' ? 'rgba(34, 197, 94, 0.1)' : 
+                                                      selectedGap().citation_validation?.status?.toLowerCase() === 'weakly_supported' ? 'rgba(245, 158, 11, 0.1)' : 'rgba(100, 100, 100, 0.1)',
+                                          color: selectedGap().citation_validation?.status?.toLowerCase() === 'grounded' ? 'rgb(34, 197, 94)' : 
+                                                 selectedGap().citation_validation?.status?.toLowerCase() === 'weakly_supported' ? 'rgb(245, 158, 11)' : 'rgb(100, 100, 100)'
+                                        }">
+                                     <template x-if="selectedGap().citation_validation?.status?.toLowerCase() === 'grounded'">
+                                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                     </template>
+                                     <template x-if="selectedGap().citation_validation?.status?.toLowerCase() === 'weakly_supported'">
+                                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                                     </template>
+                                     <span x-text="selectedGap().citation_validation?.status?.replace('_', ' ')"></span>
+                                   </div>
                                  </template>
-
-                                 <!-- Info icon (Potentially Addressed) -->
-                                 <template x-if="status() === 'potentially_addressed'">
-                                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
-                                 </template>
-
-                                 <!-- Error icon (Hallucinated) -->
-                                 <template x-if="status() === 'hallucinated'">
-                                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-                                 </template>
-
-                                 <span x-text="status() === 'validated' ? 'Validated' : status().replace('_', ' ')"></span>
                                </div>
                              </div>
 
