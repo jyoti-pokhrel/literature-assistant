@@ -53,7 +53,7 @@ async def api_key_middleware(request: Request, call_next):
     response = await call_next(request)
     path = request.url.path
 
-    if path in {"/", "/index.html", "/workspace", "/workspace/search"} or path.startswith("/js/") or path.startswith("/css/"):
+    if path in {"/", "/index.html", "/workspace", "/workspace/search"} or path.startswith("/js/") or path.startswith("/css/") or path.startswith("/html/"):
         response.headers["Cache-Control"] = "no-store, max-age=0"
         response.headers["Pragma"] = "no-cache"
         response.headers["Expires"] = "0"
