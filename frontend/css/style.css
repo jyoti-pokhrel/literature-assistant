@@ -10646,3 +10646,89 @@ body.landing-state #landing-page {
     padding-bottom: clamp(6rem, 10vw, 8.5rem);
     min-height: 92vh;
 }
+
+
+/* ============================================================
+   Hero — suggested topic chips under the search line
+   ============================================================ */
+
+.lp-hero-tries {
+    margin: 1.6rem auto 0;
+    max-width: 780px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: flex-start;
+    gap: 0.5rem 0.7rem;
+}
+
+.lp-hero-tries-label {
+    font-family: var(--font-mono);
+    font-size: 0.66rem;
+    font-weight: 600;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: rgba(74, 85, 100, 0.62);
+    margin-right: 0.3rem;
+    white-space: nowrap;
+    align-self: center;
+}
+
+.lp-hero-tries-chip {
+    background: transparent;
+    border: 0;
+    padding: 0.22rem 0.45rem;
+    font-family: var(--font-sans);
+    font-size: 0.88rem;
+    font-weight: 500;
+    color: rgba(5, 6, 8, 0.76);
+    cursor: pointer;
+    border-radius: 6px;
+    letter-spacing: -0.005em;
+    text-decoration: underline;
+    text-decoration-color: rgba(5, 6, 8, 0.18);
+    text-decoration-style: dotted;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 4px;
+    transition:
+        color 200ms cubic-bezier(0.22, 1, 0.36, 1),
+        background 200ms cubic-bezier(0.22, 1, 0.36, 1),
+        text-decoration-color 200ms cubic-bezier(0.22, 1, 0.36, 1),
+        transform 220ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.lp-hero-tries-chip:hover {
+    color: rgba(5, 6, 8, 0.96);
+    text-decoration-color: rgba(5, 6, 8, 0.55);
+    background: rgba(5, 6, 8, 0.04);
+    transform: translate3d(0, -1px, 0);
+}
+
+.lp-hero-tries-chip:focus-visible {
+    outline: 2px solid rgba(5, 6, 8, 0.35);
+    outline-offset: 2px;
+}
+
+:root[data-theme='dark'] .lp-hero-tries-label {
+    color: rgba(174, 182, 196, 0.62);
+}
+
+:root[data-theme='dark'] .lp-hero-tries-chip {
+    color: rgba(246, 248, 252, 0.8);
+    text-decoration-color: rgba(246, 248, 252, 0.22);
+}
+
+:root[data-theme='dark'] .lp-hero-tries-chip:hover {
+    color: rgba(246, 248, 252, 0.98);
+    text-decoration-color: rgba(246, 248, 252, 0.6);
+    background: rgba(255, 255, 255, 0.06);
+}
+
+@media (max-width: 720px) {
+    .lp-hero-tries {
+        gap: 0.4rem 0.55rem;
+    }
+    .lp-hero-tries-chip {
+        font-size: 0.82rem;
+    }
+}

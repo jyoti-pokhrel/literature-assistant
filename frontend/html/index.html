@@ -17,7 +17,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/css/tokens.css?v=20260506n" />
-  <link rel="stylesheet" href="/css/style.css?v=20260515u" />
+  <link rel="stylesheet" href="/css/style.css?v=20260515v" />
   <link rel="stylesheet" href="/css/workspace.css?v=20260506n" />
   <link rel="stylesheet" href="/css/dashboard.css?v=20260514x" />
   <link rel="stylesheet" href="/css/citations.css?v=20260512c" />
@@ -83,6 +83,12 @@
                 <span class="lp-search-btn-kbd" aria-hidden="true">↵</span>
               </button>
             </form>
+            <div class="lp-hero-tries reveal reveal-d4" x-data="searchForm()" aria-label="Suggested research topics">
+              <span class="lp-hero-tries-label">Try one</span>
+              <template x-for="t in ['Mechanistic interpretability', 'Long-context evaluation', 'Diffusion models', 'Constitutional AI', 'Retrieval-augmented generation']" :key="t">
+                <button type="button" class="lp-hero-tries-chip" @click="$store.app.form.topic = t; submit()" x-text="t"></button>
+              </template>
+            </div>
           </div>
         </div>
 
