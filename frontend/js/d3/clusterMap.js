@@ -389,6 +389,216 @@
         return current;
     }
 
+    function renderSpider(container, clusters = []) {
+        if (!container) return;
+        d3.select(container).selectAll('*').remove();
+        if (!Array.isArray(clusters) || clusters.length === 0) return;
+
+        const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+
+        const data = clusters
+            .map((c) => ({
+                id: c.cluster_id,
+                label: (c.theme_label && c.theme_label.trim()) || `Cluster ${c.cluster_id}`,
+                count: Number(c.paper_count || (c.papers && c.papers.length) || 0) || 0,
+                trend: c.trend_status || '',
+                gap_id: c.gap_id || null,
+            }))
+            .sort((a, b) => b.count - a.count);
+
+        const maxCount = Math.max(1, ...data.map((d) => d.count));
+        data.forEach((d) => { d.value = d.count / maxCount; });
+
+        if (data.length < 3) {
+            // A spider needs at least 3 axes to read as a polygon.
+            // For 1 or 2 clusters, draw a single ring + count.
+            renderClusterFallback(container, data, isDark);
+            return;
+        }
+
+        const size = 560;
+        const padding = 110;
+        const radius = (size - padding * 2) / 2;
+        const cx = size / 2, cy = size / 2;
+
+        const svg = d3.select(container).append('svg')
+            .attr('viewBox', `0 0 ${size} ${size}`)
+            .attr('preserveAspectRatio', 'xMidYMid meet')
+            .style('width', '100%')
+            .style('height', '100%')
+            .style('display', 'block')
+            .style('overflow', 'visible');
+
+        const root = svg.append('g').attr('transform', `translate(${cx},${cy})`);
+        const angleSlice = (Math.PI * 2) / data.length;
+        const levels = [0.25, 0.5, 0.75, 1.0];
+
+        const gridColor = isDark ? 'rgba(246,248,252,0.12)' : 'rgba(5,6,8,0.10)';
+        const spokeColor = isDark ? 'rgba(246,248,252,0.10)' : 'rgba(5,6,8,0.08)';
+        const inkColor = isDark ? 'rgba(246,248,252,0.94)' : 'rgba(5,6,8,0.94)';
+        const labelColor = isDark ? 'rgba(246,248,252,0.86)' : 'rgba(5,6,8,0.86)';
+        const metaColor = isDark ? 'rgba(174,182,196,0.7)' : 'rgba(74,85,100,0.7)';
+
+        // Concentric reference polygons (matching the data polygon shape)
+        levels.forEach((level) => {
+            const ringPoints = data.map((_, i) => {
+                const a = angleSlice * i - Math.PI / 2;
+                return [Math.cos(a) * radius * level, Math.sin(a) * radius * level];
+            });
+            root.append('path')
+                .attr('d', d3.line().curve(d3.curveLinearClosed)(ringPoints))
+                .attr('fill', 'none')
+                .attr('stroke', gridColor)
+                .attr('stroke-width', level === 1 ? 1 : 0.8)
+                .attr('stroke-dasharray', level === 1 ? 'none' : '2 5');
+        });
+
+        // Axis spokes
+        data.forEach((d, i) => {
+            const a = angleSlice * i - Math.PI / 2;
+            root.append('line')
+                .attr('x1', 0).attr('y1', 0)
+                .attr('x2', Math.cos(a) * radius).attr('y2', Math.sin(a) * radius)
+                .attr('stroke', spokeColor)
+                .attr('stroke-width', 0.7);
+        });
+
+        // Axis labels (cluster name + paper count) just outside the perimeter
+        const labelOffset = 20;
+        data.forEach((d, i) => {
+            const a = angleSlice * i - Math.PI / 2;
+            const lx = Math.cos(a) * (radius + labelOffset);
+            const ly = Math.sin(a) * (radius + labelOffset);
+
+            let anchor = 'middle';
+            if (lx > 8) anchor = 'start';
+            else if (lx < -8) anchor = 'end';
+
+            let dyName = '0.35em';
+            if (ly < -12) dyName = '0';
+            else if (ly > 12) dyName = '0.85em';
+
+            const labelText = d.label.length > 20 ? d.label.slice(0, 18) + '…' : d.label;
+
+            // Cluster name
+            root.append('text')
+                .attr('x', lx).attr('y', ly)
+                .attr('text-anchor', anchor)
+                .attr('dy', dyName)
+                .attr('fill', labelColor)
+                .style('font-size', '0.78rem')
+                .style('font-family', "'Plus Jakarta Sans', 'Manrope', sans-serif")
+                .style('font-weight', '600')
+                .style('letter-spacing', '-0.005em')
+                .text(labelText)
+                .append('title').text(`${d.label} — ${d.count} papers${d.trend ? ', ' + d.trend : ''}`);
+
+            // Paper count subline
+            const dyMeta = ly > 12 ? '2.05em' : (ly < -12 ? '1.15em' : '1.55em');
+            root.append('text')
+                .attr('x', lx).attr('y', ly)
+                .attr('text-anchor', anchor)
+                .attr('dy', dyMeta)
+                .attr('fill', metaColor)
+                .style('font-size', '0.66rem')
+                .style('font-family', "'Plus Jakarta Sans', 'Manrope', sans-serif")
+                .style('font-weight', '500')
+                .style('letter-spacing', '0.04em')
+                .text(`${d.count} ${d.count === 1 ? 'paper' : 'papers'}`);
+        });
+
+        // Data polygon
+        const polyPoints = data.map((d, i) => {
+            const a = angleSlice * i - Math.PI / 2;
+            return [Math.cos(a) * radius * d.value, Math.sin(a) * radius * d.value];
+        });
+
+        root.append('path')
+            .attr('d', d3.line().curve(d3.curveLinearClosed)(polyPoints))
+            .attr('fill', inkColor)
+            .attr('fill-opacity', 0)
+            .attr('stroke', inkColor)
+            .attr('stroke-width', 1.8)
+            .attr('stroke-linejoin', 'round')
+            .attr('stroke-opacity', 0)
+            .transition()
+            .duration(620)
+            .ease(d3.easeCubicOut)
+            .attr('fill-opacity', 0.12)
+            .attr('stroke-opacity', 1);
+
+        // Vertex dots, opacity tied to relative cluster size
+        polyPoints.forEach((p, i) => {
+            root.append('circle')
+                .attr('cx', p[0]).attr('cy', p[1])
+                .attr('r', 5)
+                .attr('fill', inkColor)
+                .attr('fill-opacity', 0)
+                .transition()
+                .duration(360)
+                .delay(280 + i * 50)
+                .attr('fill-opacity', 0.6 + 0.4 * data[i].value);
+        });
+
+        // Center readout — total papers and cluster count
+        const totalPapers = data.reduce((sum, d) => sum + d.count, 0);
+        const centerGroup = root.append('g').style('opacity', 0);
+
+        centerGroup.append('text')
+            .attr('text-anchor', 'middle')
+            .attr('dy', '-0.1em')
+            .attr('fill', inkColor)
+            .style('font-size', '2.1rem')
+            .style('font-weight', '700')
+            .style('font-family', "'Plus Jakarta Sans', 'Manrope', sans-serif")
+            .style('letter-spacing', '-0.028em')
+            .text(totalPapers);
+
+        centerGroup.append('text')
+            .attr('text-anchor', 'middle')
+            .attr('dy', '1.4em')
+            .attr('fill', metaColor)
+            .style('font-size', '0.62rem')
+            .style('font-weight', '600')
+            .style('letter-spacing', '0.16em')
+            .style('text-transform', 'uppercase')
+            .style('font-family', "'Plus Jakarta Sans', 'Manrope', sans-serif")
+            .text(`papers · ${data.length} clusters`);
+
+        centerGroup.transition().duration(420).delay(700).style('opacity', 1);
+    }
+
+    function renderClusterFallback(container, data, isDark) {
+        const total = data.reduce((sum, d) => sum + d.count, 0);
+        const inkColor = isDark ? 'rgba(246,248,252,0.94)' : 'rgba(5,6,8,0.94)';
+        const gridColor = isDark ? 'rgba(246,248,252,0.12)' : 'rgba(5,6,8,0.10)';
+        const metaColor = isDark ? 'rgba(174,182,196,0.7)' : 'rgba(74,85,100,0.7)';
+
+        const size = 360;
+        const r = (size - 60) / 2;
+        const svg = d3.select(container).append('svg')
+            .attr('viewBox', `0 0 ${size} ${size}`)
+            .attr('preserveAspectRatio', 'xMidYMid meet')
+            .style('width', '100%')
+            .style('height', '100%')
+            .style('display', 'block');
+
+        const g = svg.append('g').attr('transform', `translate(${size / 2},${size / 2})`);
+        g.append('circle').attr('r', r).attr('fill', 'none').attr('stroke', gridColor).attr('stroke-width', 1);
+        g.append('text').attr('text-anchor', 'middle').attr('dy', '-0.1em')
+            .attr('fill', inkColor)
+            .style('font-size', '2rem').style('font-weight', '700')
+            .style('font-family', "'Plus Jakarta Sans', sans-serif")
+            .style('letter-spacing', '-0.025em')
+            .text(total);
+        g.append('text').attr('text-anchor', 'middle').attr('dy', '1.4em')
+            .attr('fill', metaColor)
+            .style('font-size', '0.62rem').style('font-weight', '600')
+            .style('letter-spacing', '0.16em').style('text-transform', 'uppercase')
+            .style('font-family', "'Plus Jakarta Sans', sans-serif")
+            .text(`papers · ${data.length} ${data.length === 1 ? 'cluster' : 'clusters'}`);
+    }
+
     function highlightPapers(paperIds = []) {
         if (!state) return;
         state.selectedPaperIds = new Set((paperIds || []).map((id) => String(id)).filter(Boolean));
@@ -410,6 +620,7 @@
 
     window.ClusterMap = {
         render,
+        renderSpider,
         highlightPapers,
         clearHighlight,
         destroy,
