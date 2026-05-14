@@ -15,16 +15,25 @@ load_dotenv(dotenv_path=env_path)
 
 from app.api.routes import auth, admin, chat, citations, papers, reports, search, synthesis, user
 
-# Warm-up: pre-load embedding model 
+# Warm-up: kick off embedding model load in the background. The server
+# accepts requests immediately; the first synthesis request after boot will
+# wait on the same get_model() call if warmup hasn't finished, which is
+# guarded by a lock inside embeddings.py so we never double-load.
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    import logging
+    log = logging.getLogger(__name__)
     loop = asyncio.get_event_loop()
-    try:
-        from app.services.synthesis.embeddings import warm_up_model
-        await loop.run_in_executor(None, warm_up_model)
-    except Exception as exc:
-        import logging
-        logging.getLogger(__name__).warning("Embedding warm-up failed: %s", exc)
+
+    def _bg_warmup():
+        try:
+            from app.services.synthesis.embeddings import warm_up_model
+            warm_up_model()
+        except Exception as exc:
+            log.warning("Embedding warm-up failed: %s", exc)
+
+    loop.run_in_executor(None, _bg_warmup)
+    log.info("Embedding warm-up scheduled in background; server is ready.")
     yield
 
 app = FastAPI(
@@ -69,6 +78,7 @@ app.include_router(synthesis.router)
 app.include_router(citations.router)
 app.include_router(admin.router)
 app.include_router(user.router)
+app.include_router(user.users_router)
 app.include_router(chat.router)
 
 
@@ -76,10 +86,16 @@ app.include_router(chat.router)
 async def _bootstrap_db() -> None:
     import logging
 
+    from app.core.config import settings
     from app.db.session import init_indexes, ping
     from app.services.citations.cache import ensure_indexes
 
     log = logging.getLogger(__name__)
+    if settings.AUTH_DEV_BYPASS:
+        log.warning(
+            "AUTH_DEV_BYPASS=1 — unauthenticated requests resolve to a synthetic admin. "
+            "Set AUTH_DEV_BYPASS=0 in any non-local environment."
+        )
     if await ping():
         log.info("MongoDB reachable; bootstrapping indexes")
     else:

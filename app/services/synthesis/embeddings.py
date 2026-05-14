@@ -4,6 +4,7 @@ import hashlib
 import logging
 import os
 import re
+import threading
 from pathlib import Path
 
 import numpy as np
@@ -32,14 +33,25 @@ def _paper_fingerprint(texts: list[str]) -> str:
 
 #Model registry
 _model_cache: dict[str, object] = {}
+# Serializes get_model() calls so a concurrent background warmup and a
+# first-request synthesis don't both trigger a download/load.
+_model_load_lock = threading.Lock()
 
 
 def get_model(model_name: str):
     from sentence_transformers import SentenceTransformer
-    if model_name not in _model_cache:
+    # Fast path: cache hit without taking the lock.
+    cached = _model_cache.get(model_name)
+    if cached is not None:
+        return cached
+    with _model_load_lock:
+        cached = _model_cache.get(model_name)
+        if cached is not None:
+            return cached
         logger.info("Loading SentenceTransformer model: %s", model_name)
-        _model_cache[model_name] = SentenceTransformer(model_name)
-    return _model_cache[model_name]
+        model = SentenceTransformer(model_name)
+        _model_cache[model_name] = model
+        return model
 
 
 def warm_up_model() -> None:
