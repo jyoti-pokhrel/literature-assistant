@@ -19,7 +19,7 @@
   <link rel="stylesheet" href="/css/tokens.css?v=20260506n" />
   <link rel="stylesheet" href="/css/style.css?v=20260516a" />
   <link rel="stylesheet" href="/css/workspace.css?v=20260506n" />
-  <link rel="stylesheet" href="/css/dashboard.css?v=20260516b" />
+  <link rel="stylesheet" href="/css/dashboard.css?v=20260516c" />
   <link rel="stylesheet" href="/css/citations.css?v=20260512c" />
 </head>
 <body class="landing-state" x-data="appShell()" x-init="init()" :class="$store.app.mode === 'workspace' ? 'workspace-state' : 'landing-state'">
@@ -543,6 +543,14 @@
                   <input id="year-filter" type="text" inputmode="text" placeholder="any" x-model="$store.app.form.year" />
                 </label>
                 <button type="button" class="dw-command-more" :class="{ 'is-open': moreFilters }" @click="moreFilters = !moreFilters" :aria-expanded="moreFilters ? 'true' : 'false'">
+                  <svg class="dw-command-more-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <line x1="4" y1="6" x2="20" y2="6"></line>
+                    <line x1="4" y1="12" x2="20" y2="12"></line>
+                    <line x1="4" y1="18" x2="20" y2="18"></line>
+                    <circle cx="14" cy="6" r="2.4" fill="currentColor" stroke="none"/>
+                    <circle cx="9" cy="12" r="2.4" fill="currentColor" stroke="none"/>
+                    <circle cx="16" cy="18" r="2.4" fill="currentColor" stroke="none"/>
+                  </svg>
                   <span x-text="moreFilters ? 'Hide filters' : 'Filters'"></span>
                 </button>
                 <button id="run-px-query" class="dw-command-submit" type="submit" :class="{ 'is-loading': $store.app.isLoading }" :disabled="$store.app.isLoading" aria-label="Run search">
@@ -570,6 +578,16 @@
               </div>
             </form>
             <p id="search-error" class="search-error" x-cloak x-show="$store.app.error" x-text="$store.app.error"></p>
+          </section>
+
+          <!-- Suggested topics for active researchers (only when history exists) -->
+          <section class="dw-prompts" x-data="searchForm()" x-show="$store.app.history.length > 0" aria-label="Suggested research topics">
+            <span class="dw-prompts-label">Or jump into</span>
+            <div class="dw-prompts-chips">
+              <template x-for="t in ['Mechanistic interpretability', 'Long-context evaluation', 'Diffusion models', 'Constitutional AI', 'Retrieval-augmented generation']" :key="t">
+                <button type="button" class="dw-prompts-chip" @click="$store.app.form.topic = t; submit()" x-text="t"></button>
+              </template>
+            </div>
           </section>
 
           <!-- Earlier log — denser list of past threads -->
