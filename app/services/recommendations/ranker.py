@@ -19,6 +19,7 @@ from app.services.recommendations.scoring import (
     citation_score,
     composite_score,
     cosine,
+    interleave_by_weight,
     recency_score,
 )
 
@@ -28,6 +29,7 @@ VECTOR_INDEX_NAME = "papers_vector_index"
 NUM_CANDIDATES = 200
 VECTOR_LIMIT = 120
 MMR_LAMBDA = 0.7
+TOP_COMPONENTS_FOR_RETRIEVAL = 5
 
 
 def _format_search_date(iso: str | None) -> str:
@@ -158,33 +160,65 @@ async def rank_for_profile(
     page_size: int,
     embed_lookup,
 ) -> list[dict]:
-    """Return up to `page_size` ranked candidate papers."""
-    raw = await _vector_search(profile_vector)
-    if not raw:
+    """Return up to `page_size` ranked candidate papers.
+
+    Issues one `$vectorSearch` per top profile component (plus the centroid
+    as a fallback), interleaves the per-component lists by weight, then
+    composite-scores the union and applies MMR for diversity.
+    """
+    seen = set(seen_paper_ids or [])
+
+    hydrated = _hydrate_components(profile_components, embed_lookup)
+    positives = [c for c in hydrated if c.get("weight", 0) > 0]
+    positives.sort(key=lambda c: c["weight"], reverse=True)
+
+    queries: list[tuple[list[float], float, dict | None]] = []
+    if positives:
+        for component in positives[:TOP_COMPONENTS_FOR_RETRIEVAL]:
+            queries.append((component["_vector"], float(component["weight"]), component))
+    if profile_vector:
+        queries.append((profile_vector, max(0.5, sum(c["weight"] for c in positives) * 0.3), None))
+
+    if not queries:
         return []
 
-    seen = set(seen_paper_ids or [])
-    filtered = []
-    for doc in raw:
-        external_id = doc.get("external_id")
-        if external_id and external_id in seen:
-            continue
+    per_query_raw: list[list[dict]] = []
+    for vector, _w, _comp in queries:
+        results = await _vector_search(vector)
+        per_query_raw.append(results)
+
+    per_query_filtered: list[list[dict]] = []
+    for results in per_query_raw:
+        kept = []
+        for doc in results:
+            external_id = doc.get("external_id")
+            if external_id and external_id in seen:
+                continue
+            kept.append(doc)
+        per_query_filtered.append(kept)
+
+    interleaved = interleave_by_weight(
+        lists=per_query_filtered,
+        weights=[w for _v, w, _c in queries],
+        limit=max(page_size * 4, page_size),
+        key=lambda d: d.get("external_id") or id(d),
+    )
+
+    if not interleaved:
+        return []
+
+    for doc in interleaved:
         vector_score = float(doc.get("vector_score") or 0.0)
         recency = recency_score(doc.get("year"))
         citations = citation_score(doc.get("citation_count"))
-        final = composite_score(vector_score, recency, citations, affinity=0.0)
-        doc["_final_score"] = final
-        filtered.append(doc)
+        affinity = float(doc.get("_affinity_score") or 0.0)
+        doc["_final_score"] = composite_score(vector_score, recency, citations, affinity)
 
-    filtered.sort(key=lambda d: d["_final_score"], reverse=True)
-    top = filtered[: max(page_size * 4, page_size)]
-
-    selected = _mmr_select(top, page_size)
-
-    hydrated_components = _hydrate_components(profile_components, embed_lookup)
+    interleaved.sort(key=lambda d: d["_final_score"], reverse=True)
+    selected = _mmr_select(interleaved, page_size)
 
     for item in selected:
-        item["reason"] = _build_reason(item.get("embedding") or [], hydrated_components)
+        item["reason"] = _build_reason(item.get("embedding") or [], hydrated)
         item["score"] = round(float(item.get("_final_score", 0.0)), 4)
 
     return selected
