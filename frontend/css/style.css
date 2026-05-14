@@ -10059,3 +10059,144 @@ body.landing-state #landing-page {
         stroke-dashoffset: 0 !important;
     }
 }
+
+
+/* ============================================================
+   Hero — centered, confident, atmospheric (sketch removed)
+   ============================================================ */
+
+.lp-hero--split .lp-hero-layout {
+    grid-template-columns: minmax(0, 1fr);
+    max-width: 940px;
+    column-gap: 0;
+    text-align: center;
+}
+
+.lp-hero--split .lp-hero-copy {
+    max-width: 100%;
+    text-align: center;
+}
+
+.lp-hero--split .lp-hero-folio {
+    text-align: center;
+    width: max-content;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.lp-hero--split .lp-hero-title {
+    max-width: 22ch;
+    margin-left: auto;
+    margin-right: auto;
+    text-align: center;
+    font-size: clamp(3.5rem, 8.4vw, 6.75rem);
+    line-height: 1.02;
+    letter-spacing: -0.04em;
+    font-weight: 600;
+}
+
+/* Italic emphasis word (research): serif italic, lighter weight,
+   creates rhythm against the bold sans surrounding text */
+.lp-hero-accent-italic {
+    font-family: 'Instrument Serif', serif;
+    font-style: italic;
+    font-weight: 400;
+    color: rgba(5, 6, 8, 0.96);
+    padding-right: 0.04em;
+    letter-spacing: -0.005em;
+}
+
+:root[data-theme='dark'] .lp-hero-accent-italic {
+    color: rgba(246, 248, 252, 0.96);
+}
+
+/* Main accent (missing.): bold sans with squiggle underline
+   already styled; keep but ensure it sits inline cleanly */
+.lp-hero--split .lp-hero-accent {
+    display: inline-block;
+    position: relative;
+    font-family: var(--font-sans);
+    font-style: normal;
+    font-weight: 700;
+}
+
+.lp-hero--split .lp-hero-subtitle {
+    max-width: 56ch;
+    margin-left: auto;
+    margin-right: auto;
+    text-align: center;
+    font-size: clamp(1.05rem, 1.45vw, 1.2rem);
+}
+
+.lp-hero--split .lp-search-container {
+    margin-left: auto;
+    margin-right: auto;
+    max-width: 620px;
+}
+
+.lp-hero--split .lp-hero-proof {
+    grid-template-columns: repeat(3, minmax(0, auto));
+    justify-content: center;
+    gap: clamp(1.6rem, 4vw, 3rem);
+    margin: 1.8rem auto 0;
+    max-width: 720px;
+    padding-top: 1.4rem;
+}
+
+.lp-hero--split .lp-hero-proof-item {
+    align-items: center;
+    text-align: center;
+}
+
+/* Atmospheric note — a single very soft warm-neutral blob far in the
+   background. Subtle enough not to break the monochrome register, but
+   gives the hero a sense of depth and warmth. */
+.lp-hero::after {
+    content: '';
+    position: absolute;
+    top: 12%;
+    right: -12%;
+    width: 65vw;
+    max-width: 720px;
+    height: 65vw;
+    max-height: 720px;
+    z-index: -1;
+    pointer-events: none;
+    background:
+        radial-gradient(closest-side,
+            oklch(0.92 0.022 38) 0%,
+            oklch(0.94 0.01 38 / 0.4) 40%,
+            transparent 75%);
+    opacity: 0.55;
+    filter: blur(40px);
+    animation: lp-hero-atmos 22s cubic-bezier(0.45, 0, 0.55, 1) infinite alternate;
+}
+
+@keyframes lp-hero-atmos {
+    0%   { transform: translate3d(0, 0, 0)        scale(1);    }
+    50%  { transform: translate3d(-4vw, 2vh, 0)   scale(1.06); }
+    100% { transform: translate3d(2vw, -3vh, 0)   scale(1.02); }
+}
+
+:root[data-theme='dark'] .lp-hero::after {
+    background:
+        radial-gradient(closest-side,
+            oklch(0.36 0.025 38) 0%,
+            oklch(0.30 0.012 38 / 0.5) 40%,
+            transparent 75%);
+    opacity: 0.45;
+}
+
+@media (max-width: 720px) {
+    .lp-hero::after {
+        top: 4%;
+        right: -28%;
+        width: 100vw;
+        height: 100vw;
+        opacity: 0.4;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .lp-hero::after { animation: none; }
+}
