@@ -1,4 +1,4 @@
-# Research Agent
+# Literature Assistant
 
 An AI-assisted literature review and research-gap detection platform. Researchers describe a topic, and the agent fans out across multiple paper sources, clusters the results into thematic regions, scores the gaps between them, and renders the landscape as an interactive map alongside a synthesised report.
 
