@@ -350,5 +350,14 @@ document.addEventListener('alpine:init', () => {
             };
             return map[stage] || stage || '';
         },
+
+        stageOrder: ['cache_lookup', 'resolve_seed', 'fetch_refs', 'fetch_citers', 'merge', 'cache_write'],
+
+        progressPercent() {
+            if (this.progress?.stage === 'cache_hit') return 100;
+            const idx = this.stageOrder.indexOf(this.progress?.stage);
+            if (idx < 0) return 6;
+            return Math.round(((idx + 1) / this.stageOrder.length) * 100);
+        },
     }));
 });

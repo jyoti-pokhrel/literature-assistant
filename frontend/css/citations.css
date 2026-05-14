@@ -1737,3 +1737,253 @@
     background: rgba(246, 248, 252, 0.52);
     background-clip: padding-box;
 }
+
+
+/* ============================================================
+   Build progress panel — stage label + animated fill bar +
+   tabular counts + refined cancel
+   ============================================================ */
+
+.cit-view .cit-progress {
+    max-width: 720px;
+    margin: clamp(1.6rem, 3.4vw, 2.4rem) auto 0;
+    padding: clamp(1.05rem, 2vw, 1.4rem) clamp(1.1rem, 2.4vw, 1.5rem);
+    background: rgba(5, 6, 8, 0.028);
+    border: 1px solid rgba(5, 6, 8, 0.09);
+    border-radius: 12px;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    box-shadow: none;
+}
+
+.cit-view .cit-progress-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+    margin: 0 0 0.85rem;
+}
+
+.cit-view .cit-progress-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.cit-view .cit-progress-stage {
+    margin: 0 0 0.18rem;
+    font-family: var(--font-sans);
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: rgba(5, 6, 8, 0.96);
+    letter-spacing: -0.012em;
+    line-height: 1.35;
+}
+
+.cit-view .cit-progress-msg {
+    margin: 0;
+    font-family: var(--font-sans);
+    font-size: 0.82rem;
+    font-weight: 400;
+    color: rgba(74, 85, 100, 0.74);
+    line-height: 1.4;
+    letter-spacing: -0.005em;
+}
+
+.cit-view .cit-progress-cancel {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.4rem 0.75rem;
+    background: transparent;
+    border: 1px solid rgba(5, 6, 8, 0.12);
+    border-radius: 7px;
+    font-family: var(--font-sans);
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: rgba(5, 6, 8, 0.74);
+    letter-spacing: -0.005em;
+    cursor: pointer;
+    transition: background 180ms ease, color 180ms ease, border-color 180ms ease;
+}
+
+.cit-view .cit-progress-cancel:hover {
+    background: rgba(5, 6, 8, 0.05);
+    color: rgba(5, 6, 8, 0.96);
+    border-color: rgba(5, 6, 8, 0.24);
+}
+
+/* Progress bar — track + fill with subtle internal shimmer */
+.cit-view .cit-progress-track {
+    height: 3px;
+    background: rgba(5, 6, 8, 0.08);
+    border-radius: 999px;
+    overflow: hidden;
+    position: relative;
+}
+
+.cit-view .cit-progress-track-fill {
+    height: 100%;
+    width: 0%;
+    border-radius: 999px;
+    background-image: linear-gradient(
+        90deg,
+        rgba(5, 6, 8, 0.95) 0%,
+        rgba(5, 6, 8, 0.5) 35%,
+        rgba(5, 6, 8, 0.95) 70%,
+        rgba(5, 6, 8, 0.5) 100%
+    );
+    background-size: 200% 100%;
+    background-repeat: repeat-x;
+    animation: cit-progress-shimmer 2.4s linear infinite;
+    transition: width 520ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes cit-progress-shimmer {
+    0%   { background-position: 0% 0%; }
+    100% { background-position: -200% 0%; }
+}
+
+/* Counts: tabular-nums big, mono caps small label */
+.cit-view .cit-progress-counts {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.4rem 2rem;
+    margin: 1rem 0 0;
+}
+
+.cit-view .cit-progress-count {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 0.4rem;
+}
+
+.cit-view .cit-progress-count-num {
+    font-family: var(--font-sans);
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: rgba(5, 6, 8, 0.96);
+    letter-spacing: -0.025em;
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+}
+
+.cit-view .cit-progress-count-label {
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: rgba(74, 85, 100, 0.66);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+}
+
+/* Warnings: a quieter inline list */
+.cit-view .cit-warnings {
+    list-style: none;
+    margin: 1rem 0 0;
+    padding: 0.65rem 0.85rem;
+    background: rgba(5, 6, 8, 0.03);
+    border: 1px solid rgba(5, 6, 8, 0.06);
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+}
+
+.cit-view .cit-warnings li {
+    position: relative;
+    padding-left: 1.1rem;
+    font-family: var(--font-sans);
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: rgba(5, 6, 8, 0.78);
+    letter-spacing: -0.005em;
+    line-height: 1.5;
+}
+
+.cit-view .cit-warnings li::before {
+    content: '!';
+    position: absolute;
+    left: 0;
+    top: 0.05em;
+    width: 14px;
+    height: 14px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(5, 6, 8, 0.88);
+    color: rgba(246, 248, 252, 0.96);
+    font-family: var(--font-mono);
+    font-size: 0.62rem;
+    font-weight: 700;
+    border-radius: 999px;
+    margin-right: 0;
+}
+
+/* Dark theme */
+:root[data-theme='dark'] .cit-view .cit-progress {
+    background: rgba(255, 255, 255, 0.035);
+    border-color: rgba(255, 255, 255, 0.09);
+}
+
+:root[data-theme='dark'] .cit-view .cit-progress-stage {
+    color: rgba(246, 248, 252, 0.96);
+}
+
+:root[data-theme='dark'] .cit-view .cit-progress-msg {
+    color: rgba(174, 182, 196, 0.74);
+}
+
+:root[data-theme='dark'] .cit-view .cit-progress-cancel {
+    border-color: rgba(255, 255, 255, 0.14);
+    color: rgba(246, 248, 252, 0.78);
+}
+
+:root[data-theme='dark'] .cit-view .cit-progress-cancel:hover {
+    background: rgba(255, 255, 255, 0.06);
+    color: rgba(246, 248, 252, 0.98);
+    border-color: rgba(255, 255, 255, 0.24);
+}
+
+:root[data-theme='dark'] .cit-view .cit-progress-track {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+:root[data-theme='dark'] .cit-view .cit-progress-track-fill {
+    background-image: linear-gradient(
+        90deg,
+        rgba(246, 248, 252, 0.95) 0%,
+        rgba(246, 248, 252, 0.5) 35%,
+        rgba(246, 248, 252, 0.95) 70%,
+        rgba(246, 248, 252, 0.5) 100%
+    );
+}
+
+:root[data-theme='dark'] .cit-view .cit-progress-count-num {
+    color: rgba(246, 248, 252, 0.96);
+}
+
+:root[data-theme='dark'] .cit-view .cit-progress-count-label {
+    color: rgba(174, 182, 196, 0.66);
+}
+
+:root[data-theme='dark'] .cit-view .cit-warnings {
+    background: rgba(255, 255, 255, 0.04);
+    border-color: rgba(255, 255, 255, 0.08);
+}
+
+:root[data-theme='dark'] .cit-view .cit-warnings li {
+    color: rgba(246, 248, 252, 0.82);
+}
+
+:root[data-theme='dark'] .cit-view .cit-warnings li::before {
+    background: rgba(246, 248, 252, 0.88);
+    color: rgba(5, 6, 8, 0.96);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .cit-view .cit-progress-track-fill {
+        animation: none;
+    }
+}

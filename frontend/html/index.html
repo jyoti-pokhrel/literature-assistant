@@ -20,7 +20,7 @@
   <link rel="stylesheet" href="/css/style.css?v=20260516a" />
   <link rel="stylesheet" href="/css/workspace.css?v=20260506n" />
   <link rel="stylesheet" href="/css/dashboard.css?v=20260516d" />
-  <link rel="stylesheet" href="/css/citations.css?v=20260516f" />
+  <link rel="stylesheet" href="/css/citations.css?v=20260516g" />
 </head>
 <body class="landing-state" x-data="appShell()" x-init="init()" :class="$store.app.mode === 'workspace' ? 'workspace-state' : 'landing-state'">
   <div class="bg-grid"></div>
@@ -1103,18 +1103,33 @@
             </template>
           </section>
 
-          <div class="cit-progress glass" x-cloak x-show="building">
-            <div class="cit-progress-row">
-              <span class="cit-progress-dots" aria-hidden="true"><i></i><i></i><i></i></span>
-              <span class="cit-progress-stage" x-text="stageLabel(progress.stage)"></span>
-              <span class="cit-progress-msg" x-text="progress.message"></span>
-              <button type="button" class="btn-glass cit-btn-ghost cit-progress-cancel"
-                      @click="cancel()" title="Cancel build">Cancel</button>
+          <div class="cit-progress" x-cloak x-show="building">
+            <header class="cit-progress-head">
+              <div class="cit-progress-info">
+                <p class="cit-progress-stage" x-text="stageLabel(progress.stage) || 'Working…'"></p>
+                <p class="cit-progress-msg" x-text="progress.message || 'One moment'"></p>
+              </div>
+              <button type="button" class="cit-progress-cancel" @click="cancel()" title="Cancel build">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                <span>Cancel</span>
+              </button>
+            </header>
+
+            <div class="cit-progress-track" role="progressbar" :aria-valuenow="progressPercent()" aria-valuemin="0" aria-valuemax="100">
+              <div class="cit-progress-track-fill" :style="{ width: progressPercent() + '%' }"></div>
             </div>
+
             <div class="cit-progress-counts">
-              <span><strong x-text="progress.nodes"></strong> nodes</span>
-              <span><strong x-text="progress.edges"></strong> edges</span>
+              <div class="cit-progress-count">
+                <span class="cit-progress-count-num" x-text="progress.nodes"></span>
+                <span class="cit-progress-count-label">nodes</span>
+              </div>
+              <div class="cit-progress-count">
+                <span class="cit-progress-count-num" x-text="progress.edges"></span>
+                <span class="cit-progress-count-label">edges</span>
+              </div>
             </div>
+
             <template x-if="warnings.length">
               <ul class="cit-warnings">
                 <template x-for="(w, i) in warnings" :key="i">
