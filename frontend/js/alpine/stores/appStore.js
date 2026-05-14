@@ -21,7 +21,7 @@ window.ResearchAgent.defaults = Object.freeze({
 });
 
 window.ResearchAgent.searchHistoryKey = 'research-agent-search-history-v2';
-window.ResearchAgent.sidebarStateKey = 'research-agent-sidebar-collapsed-v2';
+window.ResearchAgent.sidebarStateKey = 'research-agent-sidebar-collapsed-v3';
 
 window.ResearchAgent.cloneSearchValues = function cloneSearchValues(values = {}) {
     const maxResults = Number.parseInt(values.maxResults, 10);
