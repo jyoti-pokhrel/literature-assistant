@@ -15,7 +15,7 @@ from __future__ import annotations
 import logging
 import math
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 
 import numpy as np
@@ -36,6 +36,42 @@ SEED_DECAY_THRESHOLD = 5  # searches needed before seeds fully decay
 SEARCH_HALF_LIFE_DAYS = 14.0
 GAP_POSITIVE_WEIGHT = 1.0
 GAP_NEGATIVE_WEIGHT = -0.6
+
+SEEN_EXPIRY_DAYS = 21
+SEEN_MAX_KEEP = 1000
+
+
+def _decayed_seen_ids(doc: dict) -> list[str]:
+    """Materialize the active seen-paper set from a user_profiles doc.
+
+    Honors the new timestamped `seen_impressions` array (filtered to last
+    SEEN_EXPIRY_DAYS) and the legacy bare `seen_paper_ids` list (always
+    included — those entries predate the timestamp schema, so we keep them
+    until they age out via the ring buffer trim).
+    """
+    impressions = doc.get("seen_impressions") or []
+    cutoff = datetime.now(timezone.utc) - timedelta(days=SEEN_EXPIRY_DAYS)
+    ids: list[str] = []
+    for entry in impressions:
+        if not isinstance(entry, dict):
+            continue
+        ts = entry.get("ts")
+        if isinstance(ts, datetime):
+            if ts.tzinfo is None:
+                ts = ts.replace(tzinfo=timezone.utc)
+            if ts >= cutoff:
+                eid = entry.get("id")
+                if eid:
+                    ids.append(eid)
+        else:
+            # entries without ts are treated as fresh to avoid forever-block
+            eid = entry.get("id")
+            if eid:
+                ids.append(eid)
+    for legacy in (doc.get("seen_paper_ids") or []):
+        if legacy:
+            ids.append(legacy)
+    return ids
 
 
 @dataclass
@@ -233,7 +269,7 @@ async def build_profile(username: str) -> Profile:
     doc = await _load_doc(username)
     seed_topics = list(doc.get("seed_topics") or [])
     seed_vectors = [list(v) for v in (doc.get("seed_topic_embeddings") or []) if v]
-    seen_paper_ids = list(doc.get("seen_paper_ids") or [])
+    seen_paper_ids = _decayed_seen_ids(doc)
 
     if len(seed_vectors) < len(seed_topics):
         seed_vectors = await embed_texts(seed_topics)
@@ -256,7 +292,7 @@ async def load_profile(username: str) -> Profile:
     """
     doc = await _load_doc(username)
     seed_topics = list(doc.get("seed_topics") or [])
-    seen_paper_ids = list(doc.get("seen_paper_ids") or [])
+    seen_paper_ids = _decayed_seen_ids(doc)
     vector = doc.get("profile_vector")
     is_dirty = bool(doc.get("dirty"))
 
@@ -323,21 +359,30 @@ async def invalidate(username: str) -> None:
         logger.exception("Failed to invalidate profile for %s", username)
 
 
-async def record_impressions(username: str, external_ids: list[str], max_keep: int = 500) -> None:
-    """Append shown paper ids to the per-user ring buffer of seen impressions."""
+async def record_impressions(username: str, external_ids: list[str], max_keep: int = SEEN_MAX_KEEP) -> None:
+    """Append timestamped impressions; trim to `max_keep`.
+
+    Stores `seen_impressions = [{id, ts}, ...]` rather than a bare id list so
+    `load_profile` can filter out impressions older than SEEN_EXPIRY_DAYS,
+    letting old papers resurface.
+    """
     if user_profiles_collection is None or not username or not external_ids:
+        return
+    now = datetime.now(timezone.utc)
+    entries = [{"id": eid, "ts": now} for eid in external_ids if eid]
+    if not entries:
         return
     try:
         await user_profiles_collection.update_one(
             {"username": username},
             {
                 "$push": {
-                    "seen_paper_ids": {
-                        "$each": external_ids,
+                    "seen_impressions": {
+                        "$each": entries,
                         "$slice": -max_keep,
                     }
                 },
-                "$set": {"seen_paper_ids_updated_at": datetime.now(timezone.utc)},
+                "$set": {"seen_impressions_updated_at": now},
             },
             upsert=True,
         )
