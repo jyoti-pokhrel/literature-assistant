@@ -10059,3 +10059,74 @@ body.landing-state #landing-page {
         stroke-dashoffset: 0 !important;
     }
 }
+
+
+/* ============================================================
+   Hero — status pill (top-left of copy column)
+   ============================================================ */
+
+.lp-hero-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.55rem;
+    padding: 0.34rem 0.95rem 0.34rem 0.75rem;
+    margin: 0 0 clamp(1.2rem, 2.4vw, 1.7rem);
+    background: rgba(5, 6, 8, 0.038);
+    border: 1px solid rgba(5, 6, 8, 0.08);
+    border-radius: 999px;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+}
+
+.lp-hero-status-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 999px;
+    background: rgba(5, 6, 8, 0.62);
+    box-shadow: 0 0 0 3px rgba(5, 6, 8, 0.06);
+    animation: lp-hero-status-pulse 2.4s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+}
+
+.lp-hero-status-text {
+    font-family: var(--font-sans);
+    font-size: 0.78rem;
+    font-weight: 500;
+    color: rgba(5, 6, 8, 0.82);
+    letter-spacing: -0.002em;
+    line-height: 1;
+}
+
+@keyframes lp-hero-status-pulse {
+    0%, 100% { transform: scale(1);    opacity: 0.7; box-shadow: 0 0 0 3px rgba(5, 6, 8, 0.06); }
+    50%      { transform: scale(1.18); opacity: 1;   box-shadow: 0 0 0 5px rgba(5, 6, 8, 0.04); }
+}
+
+:root[data-theme='dark'] .lp-hero-status {
+    background: rgba(255, 255, 255, 0.04);
+    border-color: rgba(255, 255, 255, 0.08);
+}
+
+:root[data-theme='dark'] .lp-hero-status-dot {
+    background: rgba(246, 248, 252, 0.72);
+    box-shadow: 0 0 0 3px rgba(246, 248, 252, 0.06);
+}
+
+:root[data-theme='dark'] .lp-hero-status-text {
+    color: rgba(246, 248, 252, 0.86);
+}
+
+@keyframes lp-hero-status-pulse-dark {
+    0%, 100% { transform: scale(1);    opacity: 0.72; box-shadow: 0 0 0 3px rgba(246, 248, 252, 0.06); }
+    50%      { transform: scale(1.18); opacity: 1;    box-shadow: 0 0 0 5px rgba(246, 248, 252, 0.04); }
+}
+
+:root[data-theme='dark'] .lp-hero-status-dot {
+    animation-name: lp-hero-status-pulse-dark;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .lp-hero-status-dot {
+        animation: none;
+        opacity: 0.85;
+    }
+}
