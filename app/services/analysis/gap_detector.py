@@ -2,9 +2,13 @@ from collections import Counter, defaultdict
 from datetime import datetime, timezone, timedelta
 import re
 
-NEPAL_TZ = timezone(timedelta(hours=5, minutes=45))
-
-from app.schemas.gap_analysis import CandidateGap, EvidenceSummary, GapAnalysisResponse, GapEvidence, SupportingPaperRef
+from app.schemas.gap_analysis import (
+    CandidateGap,
+    EvidenceSummary,
+    GapAnalysisResponse,
+    GapEvidence,
+    SupportingPaperRef,
+)
 from app.services.analysis.normalization import normalize_analysis_paper, top_terms
 from app.services.analysis.scoring import (
     citation_weight,
@@ -17,8 +21,15 @@ from app.services.analysis.scoring import (
 )
 
 
+NEPAL_TZ = timezone(timedelta(hours=5, minutes=45))
+
+
 def _supporting_refs(papers: list[dict]) -> list[SupportingPaperRef]:
-    ranked = sorted(papers, key=lambda item: ((item.get("citation_count") or 0), (item.get("year") or 0)), reverse=True)
+    ranked = sorted(
+        papers,
+        key=lambda item: ((item.get("citation_count") or 0), (item.get("year") or 0)),
+        reverse=True,
+    )
     return [
         SupportingPaperRef(
             paper_id=item.get("paper_id"),
@@ -34,16 +45,44 @@ def _supporting_refs(papers: list[dict]) -> list[SupportingPaperRef]:
 
 def _counts(papers: list[dict], current_year: int) -> tuple[int, int, int]:
     support = len(papers)
-    recent = sum(1 for item in papers if item.get("year") and item["year"] >= current_year - 2)
-    influential = sum(1 for item in papers if citation_weight(item.get("citation_count"), item.get("year"), current_year) >= 1.0)
+    recent = sum(
+        1 for item in papers if item.get("year") and item["year"] >= current_year - 2
+    )
+    influential = sum(
+        1
+        for item in papers
+        if citation_weight(item.get("citation_count"), item.get("year"), current_year)
+        >= 1.0
+    )
     return support, recent, influential
 
 
 def _category_from_text(text: str, default: str = "methodology") -> str:
     lowered = text.lower()
-    if any(term in lowered for term in ["robust", "metric", "benchmark", "baseline", "evaluation", "reward", "transfer"]):
+    if any(
+        term in lowered
+        for term in [
+            "robust",
+            "metric",
+            "benchmark",
+            "baseline",
+            "evaluation",
+            "reward",
+            "transfer",
+        ]
+    ):
         return "evaluation"
-    if any(term in lowered for term in ["deploy", "real world", "scal", "sensor", "partial observability", "communication"]):
+    if any(
+        term in lowered
+        for term in [
+            "deploy",
+            "real world",
+            "scal",
+            "sensor",
+            "partial observability",
+            "communication",
+        ]
+    ):
         return "deployment"
     return default
 
@@ -90,7 +129,9 @@ def _build_gap(
     why_it_matters: str,
     actionable_opportunity: str,
 ) -> CandidateGap:
-    support_count, recent_support_count, influential_support_count = _counts(papers, current_year)
+    support_count, recent_support_count, influential_support_count = _counts(
+        papers, current_year
+    )
     evidence_dict = {
         "recurring_limitations": recurring_limitations or [],
         "recurring_future_work": recurring_future_work or [],
@@ -139,7 +180,9 @@ def _build_gap(
     )
 
 
-def detect_recurring_limitation_gaps(papers: list[dict], current_year: int) -> list[CandidateGap]:
+def detect_recurring_limitation_gaps(
+    papers: list[dict], current_year: int
+) -> list[CandidateGap]:
     groups: dict[str, list[dict]] = defaultdict(list)
     for paper in papers:
         for limitation in paper.get("normalized_limitations", []):
@@ -149,7 +192,10 @@ def detect_recurring_limitation_gaps(papers: list[dict], current_year: int) -> l
     for limitation, supporting in groups.items():
         if len(supporting) < 2:
             continue
-        if limitation in {"baseline comparison is limited", "evaluation mostly focuses on reward"}:
+        if limitation in {
+            "baseline comparison is limited",
+            "evaluation mostly focuses on reward",
+        }:
             continue
         category = _category_from_text(limitation)
         gaps.append(
@@ -167,7 +213,9 @@ def detect_recurring_limitation_gaps(papers: list[dict], current_year: int) -> l
     return gaps
 
 
-def detect_future_work_convergence_gaps(papers: list[dict], current_year: int) -> list[CandidateGap]:
+def detect_future_work_convergence_gaps(
+    papers: list[dict], current_year: int
+) -> list[CandidateGap]:
     groups: dict[str, list[dict]] = defaultdict(list)
     for paper in papers:
         for item in paper.get("normalized_future_work", []):
@@ -193,7 +241,9 @@ def detect_future_work_convergence_gaps(papers: list[dict], current_year: int) -
     return gaps
 
 
-def detect_assumption_concentration_gaps(papers: list[dict], current_year: int) -> list[CandidateGap]:
+def detect_assumption_concentration_gaps(
+    papers: list[dict], current_year: int
+) -> list[CandidateGap]:
     groups: dict[str, list[dict]] = defaultdict(list)
     for paper in papers:
         for assumption in paper.get("normalized_assumptions", []):
@@ -204,7 +254,11 @@ def detect_assumption_concentration_gaps(papers: list[dict], current_year: int) 
     for assumption, supporting in groups.items():
         if len(supporting) < threshold:
             continue
-        category = "deployment" if "observability" in assumption or "stationary" in assumption else "methodology"
+        category = (
+            "deployment"
+            if "observability" in assumption or "stationary" in assumption
+            else "methodology"
+        )
         gaps.append(
             _build_gap(
                 text=f"over reliance on {assumption.replace('_', ' ')}",
@@ -224,9 +278,15 @@ def detect_evaluation_gaps(papers: list[dict], current_year: int) -> list[Candid
     if not papers:
         return []
 
-    metric_counter = Counter(metric for paper in papers for metric in paper.get("normalized_metrics", []))
-    dataset_counter = Counter(dataset for paper in papers for dataset in paper.get("normalized_datasets", []))
-    baseline_counter = Counter(b for paper in papers for b in paper.get("normalized_baselines", []))
+    metric_counter = Counter(
+        metric for paper in papers for metric in paper.get("normalized_metrics", [])
+    )
+    dataset_counter = Counter(
+        dataset for paper in papers for dataset in paper.get("normalized_datasets", [])
+    )
+    baseline_counter = Counter(
+        b for paper in papers for b in paper.get("normalized_baselines", [])
+    )
     gaps: list[CandidateGap] = []
 
     total_metric_mentions = sum(metric_counter.values())
@@ -270,7 +330,12 @@ def detect_evaluation_gaps(papers: list[dict], current_year: int) -> list[Candid
         weak = list(baseline_counter.keys()) or ["sparse baselines"]
         missing_strong_baselines = [
             baseline
-            for baseline in ["independent learners", "value decomposition", "centralized critic", "transformer coordination"]
+            for baseline in [
+                "independent learners",
+                "value decomposition",
+                "centralized critic",
+                "transformer coordination",
+            ]
             if baseline not in baseline_counter
         ]
         baseline_context = _format_list(weak)
@@ -335,11 +400,29 @@ def merge_overlapping_gaps(candidates: list[CandidateGap]) -> list[CandidateGap]
 def build_evidence_summary(papers: list[dict]) -> EvidenceSummary:
     return EvidenceSummary(
         top_methods=top_terms(paper.get("normalized_method") for paper in papers),
-        top_datasets=top_terms(dataset for paper in papers for dataset in paper.get("normalized_datasets", [])),
-        top_metrics=top_terms(metric for paper in papers for metric in paper.get("normalized_metrics", [])),
-        top_assumptions=top_terms(assumption for paper in papers for assumption in paper.get("normalized_assumptions", [])),
-        top_limitations=top_terms(limitation for paper in papers for limitation in paper.get("normalized_limitations", [])),
-        top_future_work_themes=top_terms(theme for paper in papers for theme in paper.get("normalized_future_work", [])),
+        top_datasets=top_terms(
+            dataset
+            for paper in papers
+            for dataset in paper.get("normalized_datasets", [])
+        ),
+        top_metrics=top_terms(
+            metric for paper in papers for metric in paper.get("normalized_metrics", [])
+        ),
+        top_assumptions=top_terms(
+            assumption
+            for paper in papers
+            for assumption in paper.get("normalized_assumptions", [])
+        ),
+        top_limitations=top_terms(
+            limitation
+            for paper in papers
+            for limitation in paper.get("normalized_limitations", [])
+        ),
+        top_future_work_themes=top_terms(
+            theme
+            for paper in papers
+            for theme in paper.get("normalized_future_work", [])
+        ),
     )
 
 
@@ -356,11 +439,19 @@ def analyze_gaps(
 
     candidates: list[CandidateGap] = []
     candidates.extend(detect_recurring_limitation_gaps(normalized_papers, current_year))
-    candidates.extend(detect_future_work_convergence_gaps(normalized_papers, current_year))
-    candidates.extend(detect_assumption_concentration_gaps(normalized_papers, current_year))
+    candidates.extend(
+        detect_future_work_convergence_gaps(normalized_papers, current_year)
+    )
+    candidates.extend(
+        detect_assumption_concentration_gaps(normalized_papers, current_year)
+    )
     candidates.extend(detect_evaluation_gaps(normalized_papers, current_year))
 
-    ranked = sorted(merge_overlapping_gaps(candidates), key=lambda gap: gap.overall_score, reverse=True)
+    ranked = sorted(
+        merge_overlapping_gaps(candidates),
+        key=lambda gap: gap.overall_score,
+        reverse=True,
+    )
     return GapAnalysisResponse(
         topic=topic,
         filters=filters,

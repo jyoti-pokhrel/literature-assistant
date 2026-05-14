@@ -1,5 +1,3 @@
-import pytest
-
 from app.services.recommendations.affinity import (
     AffinityProfile,
     affinity_score_for_paper,
@@ -8,7 +6,10 @@ from app.services.recommendations.affinity import (
 
 def test_affinity_score_zero_when_empty():
     prof = AffinityProfile(authors={}, venues={})
-    assert affinity_score_for_paper({"authors": ["Alice"], "venue": "NeurIPS"}, prof) == 0.0
+    assert (
+        affinity_score_for_paper({"authors": ["Alice"], "venue": "NeurIPS"}, prof)
+        == 0.0
+    )
 
 
 def test_affinity_score_author_match():

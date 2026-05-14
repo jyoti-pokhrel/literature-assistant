@@ -10,7 +10,7 @@ window.ResearchAgent.routes = {
 };
 
 window.ResearchAgent.exploreDefaults = Object.freeze({
-    pageSize: 20,
+    pageSize: 40,
 });
 
 window.ResearchAgent.defaults = Object.freeze({
@@ -27,7 +27,7 @@ window.ResearchAgent.sidebarStateKey = 'research-agent-sidebar-collapsed-v3';
 window.ResearchAgent.cloneSearchValues = function cloneSearchValues(values = {}) {
     const maxResults = Number.parseInt(values.maxResults, 10);
     return {
-        topic: typeof values.topic === 'string' ? values.topic : '',
+        topic: typeof values.topic === 'string' ? values.topic : (typeof values.query === 'string' ? values.query : ''),
         year: typeof values.year === 'string' ? values.year : '',
         venue: typeof values.venue === 'string' ? values.venue : '',
         strictVenue: values.strictVenue === true || values.strictVenue === 'true',
@@ -243,6 +243,7 @@ document.addEventListener('alpine:init', () => {
         sidebarCollapsed: storedSidebarState === null ? false : storedSidebarState === 'true',
         techPanelOpen: false,
         isLoading: false,
+        activeHistoryMenuId: null,
         error: '',
         progressEvents: [],
         form: window.ResearchAgent.cloneSearchValues(window.ResearchAgent.defaults),
@@ -343,7 +344,8 @@ document.addEventListener('alpine:init', () => {
                 ]);
                 this.history = searchHistory.map(item => ({
                     ...item,
-                    summary: item.summary || `${item.results_count || 0} results`
+                    topic: item.topic || item.query || '',
+                    summary: item.summary || `${item.result_count || item.results_count || 0} results`
                 }));
                 this.chatHistory = chatHistory;
                 

@@ -9,6 +9,7 @@ refreshes `ts`.
 `profile_builder`. Embedding lookup is done from `papers_collection`
 because the candidate paper has already been embedded for vector search.
 """
+
 from __future__ import annotations
 
 import logging

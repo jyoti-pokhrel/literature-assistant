@@ -143,7 +143,9 @@ async def _load_local_pool(seen_ids: set[str], limit: int) -> list[dict]:
         return []
 
     async def _fetch(query: dict) -> list[dict]:
-        cursor = papers_collection.find(query, projection=_LOCAL_PROJECTION).limit(limit)
+        cursor = papers_collection.find(query, projection=_LOCAL_PROJECTION).limit(
+            limit
+        )
         return [doc async for doc in cursor]
 
     if seen_ids:
@@ -213,11 +215,7 @@ async def _highly_cited_papers(seen_ids: set[str], page_size: int) -> list[dict]
         return cited_pool
 
     async def _fetch_recent(query: dict) -> list[dict]:
-        cursor = (
-            papers_collection.find(query)
-            .sort("year", -1)
-            .limit(page_size * 3)
-        )
+        cursor = papers_collection.find(query).sort("year", -1).limit(page_size * 3)
         return [doc async for doc in cursor]
 
     recent: list[dict] = []
@@ -254,7 +252,7 @@ def _tfidf_rank(topics: list[str], candidates: list[dict]) -> list[dict]:
     except ValueError:
         return []
     doc_matrix = matrix[: len(candidates)]
-    topic_matrix = matrix[len(candidates):]
+    topic_matrix = matrix[len(candidates) :]
 
     sims = cosine_similarity(doc_matrix, topic_matrix)
     if sims.size == 0:
@@ -337,7 +335,9 @@ async def recommend_for_user(
         ranked = _tfidf_rank(topics, candidates)
         approach = "tfidf"
         if not ranked:
-            ranked = await _highly_cited_papers(seen_ids, page_size * OVERFETCH_MULTIPLIER)
+            ranked = await _highly_cited_papers(
+                seen_ids, page_size * OVERFETCH_MULTIPLIER
+            )
             approach = "highly_cited_fallback"
 
     start = max(0, cursor)

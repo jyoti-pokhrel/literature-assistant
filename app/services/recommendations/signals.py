@@ -93,7 +93,11 @@ async def fetch_gap_signals(username: str, user_id: str | None = None) -> list[G
             continue
         title = (doc.get("gap_title") or "").strip()
         description = (doc.get("gap_description") or "").strip()
-        gap_text = ". ".join(part for part in (title, description) if part) or title or description
+        gap_text = (
+            ". ".join(part for part in (title, description) if part)
+            or title
+            or description
+        )
         if not gap_text:
             continue
         results.append(

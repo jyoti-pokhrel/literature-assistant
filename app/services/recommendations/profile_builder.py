@@ -29,7 +29,6 @@ from app.services.recommendations.signals import (
     fetch_search_signals,
 )
 from app.services.recommendations.interactions import (
-    INTERACTION_WEIGHTS,
     fetch_interaction_signals,
 )
 
@@ -73,7 +72,7 @@ def _decayed_seen_ids(doc: dict) -> list[str]:
             eid = entry.get("id")
             if eid:
                 ids.append(eid)
-    for legacy in (doc.get("seen_paper_ids") or []):
+    for legacy in doc.get("seen_paper_ids") or []:
         if legacy:
             ids.append(legacy)
     return ids
@@ -192,11 +191,7 @@ async def _compose_profile(
             continue
         components.append(
             ProfileComponent(
-                kind=(
-                    "interaction_positive"
-                    if weight > 0
-                    else "interaction_negative"
-                ),
+                kind=("interaction_positive" if weight > 0 else "interaction_negative"),
                 label=signal.external_id,
                 weight=weight,
                 vector=list(signal.embedding),

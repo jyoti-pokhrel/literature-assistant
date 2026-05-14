@@ -4,16 +4,17 @@ from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 
+
 async def send_otp_email(email: str, otp: str):
     """Send an OTP email using Resend API via httpx."""
     if not settings.RESEND_API_KEY:
         logger.warning(f"No Resend API Key. Would have sent OTP {otp} to {email}")
         return
-        
+
     url = "https://api.resend.com/emails"
     headers = {
         "Authorization": f"Bearer {settings.RESEND_API_KEY}",
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
     }
     data = {
         "from": settings.EMAIL_FROM,
@@ -28,9 +29,9 @@ async def send_otp_email(email: str, otp: str):
             </div>
             <p style="color: #71717a; font-size: 14px;">This code will expire in 5 minutes.</p>
         </div>
-        """
+        """,
     }
-    
+
     try:
         async with httpx.AsyncClient() as client:
             response = await client.post(url, headers=headers, json=data)
@@ -41,21 +42,24 @@ async def send_otp_email(email: str, otp: str):
     except Exception as e:
         logger.error(f"Error sending OTP email: {str(e)}")
 
+
 async def send_reset_email(email: str, token: str):
     """Send a password reset email using Resend API via httpx."""
     if not settings.RESEND_API_KEY:
-        logger.warning(f"No Resend API Key. Would have sent reset token {token} to {email}")
+        logger.warning(
+            f"No Resend API Key. Would have sent reset token {token} to {email}"
+        )
         return
-        
+
     url = "https://api.resend.com/emails"
     headers = {
         "Authorization": f"Bearer {settings.RESEND_API_KEY}",
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
     }
-    
+
     # Use BACKEND_URL since FastAPI serves the frontend
     reset_link = f"{settings.BACKEND_URL}/html/reset-password.html?token={token}"
-    
+
     data = {
         "from": settings.EMAIL_FROM,
         "to": [email],
@@ -71,9 +75,9 @@ async def send_reset_email(email: str, token: str):
             <hr style="border: none; border-top: 1px solid #e4e4e7; margin: 24px 0;" />
             <p style="color: #a1a1aa; font-size: 12px; word-break: break-all;">If the button doesn't work, copy and paste this URL into your browser:<br>{reset_link}</p>
         </div>
-        """
+        """,
     }
-    
+
     try:
         async with httpx.AsyncClient() as client:
             response = await client.post(url, headers=headers, json=data)

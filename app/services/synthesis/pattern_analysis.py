@@ -4,9 +4,9 @@ from collections import Counter, defaultdict
 from datetime import datetime, timezone, timedelta
 from typing import Dict, List
 
-NEPAL_TZ = timezone(timedelta(hours=5, minutes=45))
-
 from app.schemas.synthesis import PatternAnalysis
+
+NEPAL_TZ = timezone(timedelta(hours=5, minutes=45))
 
 
 def _collect_terms(papers: list[dict], key: str) -> list[str]:
@@ -82,18 +82,53 @@ def _emerging_opportunities(
 def _shorten_theme(text: str, max_words: int = 4) -> str:
     """Extract a short 2-4 word label from a limitation/future-work phrase."""
     import re
+
     # Strip leading filler words common in academic text
     filler = re.compile(
-        r'^(in addition|furthermore|however|additionally|moreover|we|our|this|the|'
-        r'after|although|since|as a result|due to|based on|given that|'
-        r'it is|there is|there are|which|that)\b[,\s]*',
+        r"^(in addition|furthermore|however|additionally|moreover|we|our|this|the|"
+        r"after|although|since|as a result|due to|based on|given that|"
+        r"it is|there is|there are|which|that)\b[,\s]*",
         re.IGNORECASE,
     )
-    cleaned = filler.sub('', text).strip(' .,;:')
+    cleaned = filler.sub("", text).strip(" .,;:")
     # Take the first max_words words
     words = cleaned.split()
-    short = ' '.join(words[:max_words])
+    short = " ".join(words[:max_words])
     return short.capitalize() if short else text[:40].capitalize()
+
+
+def calculate_cluster_trend(papers: list[dict]) -> str:
+    """
+    Categorizes a cluster's temporal trend.
+    - Emerging: >60% papers in the last 2 years.
+    - Saturated: High volume (>10 papers) but <20% in the last 2 years.
+    - Stagnant: No papers in the last 3 years.
+    - Established: High volume and steady recent activity.
+    - Active: Recent papers but not yet "Emerging" volume.
+    """
+    if not papers:
+        return "Unknown"
+
+    current_year = datetime.now(NEPAL_TZ).year
+    years = [p.get("year") for p in papers if isinstance(p.get("year"), (int, float))]
+    if not years:
+        return "Established"
+
+    count = len(years)
+    recent_count = sum(1 for y in years if y >= current_year - 2)
+
+    recent_ratio = recent_count / count
+
+    if recent_ratio > 0.6 and count >= 3:
+        return "Emerging"
+    if recent_count == 0 and any(y >= current_year - 3 for y in years) is False:
+        return "Stagnant"
+    if count >= 10 and recent_ratio < 0.2:
+        return "Saturated"
+    if recent_ratio > 0.3:
+        return "Active"
+
+    return "Established"
 
 
 def extract_cluster_themes(cluster_papers: list[dict]) -> dict:
@@ -119,7 +154,12 @@ def extract_cluster_themes(cluster_papers: list[dict]) -> dict:
         raw_label = top_fw[0]
     elif cluster_papers:
         # Fallback to common words in titles
-        title_words = [w.lower() for p in cluster_papers for w in (p.get("title") or "").split() if len(w) > 3]
+        title_words = [
+            w.lower()
+            for p in cluster_papers
+            for w in (p.get("title") or "").split()
+            if len(w) > 3
+        ]
         common_titles = Counter(title_words).most_common(2)
         if common_titles:
             raw_label = f"Study of {' '.join(w for w, _ in common_titles)}"
@@ -129,6 +169,7 @@ def extract_cluster_themes(cluster_papers: list[dict]) -> dict:
         raw_label = "unspecified gap"
 
     theme_label = _shorten_theme(raw_label)
+    trend_status = calculate_cluster_trend(cluster_papers)
 
     return {
         "top_limitations": top_lims,
@@ -136,7 +177,38 @@ def extract_cluster_themes(cluster_papers: list[dict]) -> dict:
         "theme_label": theme_label,
         "paper_count": len(cluster_papers),
         "limitation_freq": dict(lim_counter.most_common(10)),
+        "trend_status": trend_status,
     }
+
+
+def _saturated_areas(
+    papers: list[dict],
+    current_year: int,
+) -> List[str]:
+    """Identifies topics/methods that are highly frequent but have declining recent activity."""
+    all_methods = _collect_terms(papers, "normalized_method")
+    if not all_methods:
+        return []
+
+    method_counts = Counter(all_methods)
+    saturated = []
+    for method, count in method_counts.most_common(8):
+        if count < 3:
+            continue
+        method_papers = [
+            p
+            for p in papers
+            if (p.get("normalized_method") or p.get("method")) == method
+        ]
+        if not method_papers:
+            continue
+        recent_ratio = sum(
+            1 for p in method_papers if (p.get("year") or 0) >= current_year - 2
+        ) / len(method_papers)
+        if recent_ratio < 0.2:
+            saturated.append(method.capitalize())
+
+    return saturated
 
 
 def run_pattern_analysis(papers: list[dict]) -> PatternAnalysis:
@@ -160,4 +232,5 @@ def run_pattern_analysis(papers: list[dict]) -> PatternAnalysis:
         metric_frequency=_metric_frequency(papers),
         baseline_stagnation=_baseline_stagnation(papers),
         emerging_opportunities=_emerging_opportunities(papers, current_year),
+        saturated_areas=_saturated_areas(papers, current_year),
     )

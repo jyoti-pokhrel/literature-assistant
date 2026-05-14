@@ -10,7 +10,8 @@ def _current_year() -> int:
     return datetime.now(NEPAL_TZ).year
 
 
-#Sub-score functions
+# Sub-score functions
+
 
 def _recurrence_score(cluster_papers: list[dict], all_papers: list[dict]) -> float:
 
@@ -98,7 +99,7 @@ def _novelty_score(cluster_papers: list[dict]) -> float:
     return sum(novelty_values) / len(novelty_values)
 
 
-#Main scoring function
+# Main scoring function
 def compute_gap_score(
     cluster_papers: list[dict],
     all_papers: list[dict],

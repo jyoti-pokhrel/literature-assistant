@@ -28,7 +28,9 @@ def _strip_mongo(doc: dict) -> dict:
 
 async def ensure_indexes() -> None:
     if citation_cache_collection is None:
-        logger.info("citation_cache_collection is not configured; skipping index creation")
+        logger.info(
+            "citation_cache_collection is not configured; skipping index creation"
+        )
         return
     try:
         await asyncio.wait_for(
@@ -40,7 +42,9 @@ async def ensure_indexes() -> None:
             timeout=CACHE_OP_TIMEOUT_SECONDS,
         )
     except Exception:
-        logger.warning("citation_cache index creation failed; cache will run without indexes")
+        logger.warning(
+            "citation_cache index creation failed; cache will run without indexes"
+        )
 
 
 async def get_cached(paper_id: str) -> Optional[dict]:
@@ -52,7 +56,10 @@ async def get_cached(paper_id: str) -> Optional[dict]:
             timeout=CACHE_OP_TIMEOUT_SECONDS,
         )
     except asyncio.TimeoutError:
-        logger.warning("citation_cache get_cached timed out after %.1fs; treating as miss", CACHE_OP_TIMEOUT_SECONDS)
+        logger.warning(
+            "citation_cache get_cached timed out after %.1fs; treating as miss",
+            CACHE_OP_TIMEOUT_SECONDS,
+        )
         return None
     except Exception:
         logger.warning("citation_cache get_cached failed; treating as miss")
@@ -88,11 +95,16 @@ async def put_cached(
     }
     try:
         await asyncio.wait_for(
-            citation_cache_collection.replace_one({"_id": paper_id}, document, upsert=True),
+            citation_cache_collection.replace_one(
+                {"_id": paper_id}, document, upsert=True
+            ),
             timeout=CACHE_OP_TIMEOUT_SECONDS,
         )
     except asyncio.TimeoutError:
-        logger.warning("citation_cache put_cached timed out after %.1fs; skipping write", CACHE_OP_TIMEOUT_SECONDS)
+        logger.warning(
+            "citation_cache put_cached timed out after %.1fs; skipping write",
+            CACHE_OP_TIMEOUT_SECONDS,
+        )
     except Exception:
         logger.warning("citation_cache put_cached failed; skipping write")
 

@@ -101,6 +101,7 @@ class ExploreInteractionEvent(BaseModel):
     @classmethod
     def validate_kind(cls, value: str) -> str:
         from app.services.recommendations.interactions import INTERACTION_WEIGHTS
+
         v = value.strip().lower()
         if v not in INTERACTION_WEIGHTS:
             raise ValueError(f"unknown interaction kind: {value}")

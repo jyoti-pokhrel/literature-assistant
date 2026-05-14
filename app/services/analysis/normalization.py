@@ -80,9 +80,17 @@ def normalize_analysis_paper(item: dict) -> dict:
     paper: Paper = item["paper"]
     method = normalize_text_token(paper.method)
     domain = normalize_text_token(paper.domain)
-    limitations = [canonicalize_limitation_or_future_work(v) for v in normalize_phrase_list(paper.limitations)]
-    future_work = [canonicalize_limitation_or_future_work(v) for v in normalize_phrase_list(paper.future_work)]
-    assumptions = [canonicalize_assumption(v) for v in normalize_phrase_list(paper.assumptions)]
+    limitations = [
+        canonicalize_limitation_or_future_work(v)
+        for v in normalize_phrase_list(paper.limitations)
+    ]
+    future_work = [
+        canonicalize_limitation_or_future_work(v)
+        for v in normalize_phrase_list(paper.future_work)
+    ]
+    assumptions = [
+        canonicalize_assumption(v) for v in normalize_phrase_list(paper.assumptions)
+    ]
     datasets = normalize_phrase_list(paper.datasets)
     metrics = [canonicalize_metric(v) for v in normalize_phrase_list(paper.metrics)]
     baselines = normalize_phrase_list(paper.baselines)

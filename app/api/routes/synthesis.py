@@ -3,7 +3,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import json
-import os
+import datetime
 from pathlib import Path
 from typing import Dict, List
 
@@ -22,7 +22,6 @@ from app.schemas.synthesis import (
     SynthesisJobStatus,
     JobStatusEnum,
 )
-import datetime
 from app.services.retrieval.history import save_search_history
 
 load_dotenv(dotenv_path=Path(__file__).resolve().parent.parent.parent.parent / ".env")
@@ -30,7 +29,6 @@ load_dotenv(dotenv_path=Path(__file__).resolve().parent.parent.parent.parent / "
 logger = logging.getLogger(__name__)
 
 # Global job store for tracking background tasks
-# In production, this could be moved to Redis or MongoDB TTL collection
 job_store: Dict[str, SynthesisJobStatus] = {}
 
 router = APIRouter(prefix="/synthesis", tags=["Synthesis"])
@@ -38,19 +36,21 @@ router = APIRouter(prefix="/synthesis", tags=["Synthesis"])
 
 def _generate_search_hash(request: SynthesisRequest) -> str:
     import hashlib
+
     params = {
         "topic": request.topic.strip().lower(),
         "year": request.year or "",
         "venue": request.venue.strip().lower() if request.venue else "",
         "strict": request.strict_venue,
         "max_results": request.max_results,
-        "top_k_gaps": request.top_k_gaps
+        "top_k_gaps": request.top_k_gaps,
     }
     param_str = json.dumps(params, sort_keys=True)
     return hashlib.md5(param_str.encode()).hexdigest()
 
 
-#Helpers
+# Helpers
+
 
 def _is_valid_object_id(id_str: str) -> bool:
     return ObjectId.is_valid(id_str)
@@ -82,11 +82,13 @@ def _hydrate_report(doc: dict) -> dict:
 
     if "visualizations" not in doc:
         from app.schemas.synthesis import VisualizationData
+
         doc["visualizations"] = VisualizationData().model_dump()
 
     if not doc.get("copy_text"):
         from app.services.synthesis.report_pipeline import _generate_copy_text
         from app.schemas.synthesis import SynthesisGap
+
         gaps = [SynthesisGap(**g) for g in (doc.get("gaps") or [])]
         doc["copy_text"] = _generate_copy_text(doc.get("topic", ""), gaps)
 
@@ -106,7 +108,7 @@ def _hydrate_report(doc: dict) -> dict:
     return doc
 
 
-#Routes
+# Routes
 @router.post(
     "/gaps",
     response_model=SynthesisResponse,
@@ -118,12 +120,13 @@ async def detect_gaps(
     current_user: dict = Depends(get_current_user),
 ) -> SynthesisResponse:
     from app.services.synthesis.report_pipeline import run_synthesis_pipeline
-    import datetime
-    
+
     search_hash = _generate_search_hash(payload)
 
     if not payload.regenerate and cached_searches_collection is not None:
-        cached_report = await cached_searches_collection.find_one({"search_hash": search_hash})
+        cached_report = await cached_searches_collection.find_one(
+            {"search_hash": search_hash}
+        )
         if cached_report and "data" in cached_report:
             logger.info("Serving synthesis report from cache for hash: %s", search_hash)
             cached_data = cached_report["data"]
@@ -131,6 +134,7 @@ async def detect_gaps(
             response = SynthesisResponse(**cached_data)
             response.is_cached = True
             response.generated_at = cached_report.get("created_at", datetime.datetime.utcnow().isoformat())
+            
             # Save search to history even if cached
             filters = {
                 "year": payload.year,
@@ -150,26 +154,28 @@ async def detect_gaps(
             return response
 
     try:
-        result = await run_synthesis_pipeline(payload, username=current_user["username"])
+        result = await run_synthesis_pipeline(payload, username=current_user["username"], user_id=str(current_user["_id"]))
         
         # Save to cache asynchronously if DB is configured
         if cached_searches_collection is not None:
             # Dump to JSON first to ensure all dictionary keys (like ints) become strings for MongoDB
             result_dict = json.loads(result.model_dump_json())
-            
+
             async def _save_cache():
                 try:
                     await cached_searches_collection.update_one(
                         {"search_hash": search_hash},
-                        {"$set": {
-                            "data": result_dict,
-                            "created_at": datetime.datetime.utcnow().isoformat()
-                        }},
-                        upsert=True
+                        {
+                            "$set": {
+                                "data": result_dict,
+                                "created_at": datetime.datetime.utcnow().isoformat(),
+                            }
+                        },
+                        upsert=True,
                     )
                 except Exception as e:
                     logger.error("Failed to cache search: %s", e)
-                    
+
             asyncio.create_task(_save_cache())
             
         # Save search to history
@@ -195,6 +201,7 @@ async def detect_gaps(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Synthesis failed: {exc}",
         )
+
 
 @router.post(
     "/gaps/async",
@@ -231,7 +238,7 @@ async def detect_gaps_async(
 
     async def run_task():
         try:
-            result = await run_synthesis_pipeline(payload, username=current_user["username"], progress_callback=progress_callback)
+            result = await run_synthesis_pipeline(payload, username=current_user["username"], progress_callback=progress_callback, user_id=str(current_user["_id"]))
             job = job_store.get(job_id)
             if job:
                 job.status = JobStatusEnum.COMPLETED
@@ -239,6 +246,23 @@ async def detect_gaps_async(
                 job.detail = "Synthesis complete"
                 job.result = result
                 job.updated_at = datetime.datetime.now().isoformat()
+                
+                # Save search to history automatically on completion
+                filters = {
+                    "year": payload.year,
+                    "venue": payload.venue,
+                    "strict_venue": payload.strict_venue,
+                    "max_results": payload.max_results,
+                    "type": "synthesis"
+                }
+                await save_search_history(
+                    current_user["username"], 
+                    payload.topic, 
+                    filters, 
+                    result.papers_analyzed,
+                    report_id=result.report_id,
+                    user_id=str(current_user["_id"])
+                )
         except Exception as exc:
             logger.exception("Background synthesis failed for job %s: %s", job_id, exc)
             job = job_store.get(job_id)
@@ -249,6 +273,7 @@ async def detect_gaps_async(
 
     asyncio.create_task(run_task())
     return {"job_id": job_id, "status": "accepted"}
+
 
 @router.get(
     "/status/{job_id}",
@@ -263,7 +288,6 @@ async def get_job_status(job_id: str):
             detail=f"Job {job_id} not found"
         )
     return job
-
 
 
 # BATCH GAP DETECTION
@@ -311,6 +335,7 @@ async def detect_gaps_batch(
             detail=f"Batch synthesis failed: {exc}",
         )
 
+
 # STREAM GAP DETECTION
 @router.post(
     "/gaps/stream",
@@ -329,18 +354,23 @@ async def stream_detect_gaps(
         await queue.put({"type": "progress", **event})
 
     async def run_pipeline() -> None:
-        import datetime
         search_hash = _generate_search_hash(payload)
-        
+
         try:
             # 1. Check cache first
             if not payload.regenerate and cached_searches_collection is not None:
-                cached_report = await cached_searches_collection.find_one({"search_hash": search_hash})
+                cached_report = await cached_searches_collection.find_one(
+                    {"search_hash": search_hash}
+                )
                 if cached_report and "data" in cached_report:
-                    logger.info("Serving streaming synthesis from cache for hash: %s", search_hash)
+                    logger.info(
+                        "Serving streaming synthesis from cache for hash: %s",
+                        search_hash,
+                    )
                     cached_data = cached_report["data"]
                     cached_data["is_cached"] = True
                     cached_data["generated_at"] = cached_report.get("created_at", datetime.datetime.utcnow().isoformat())
+                    
                     # Save search to history even if cached
                     filters = {
                         "year": payload.year,
@@ -364,7 +394,8 @@ async def stream_detect_gaps(
             result = await run_synthesis_pipeline(
                 payload,
                 username=current_user["username"],
-                progress_callback=progress_callback
+                progress_callback=progress_callback,
+                user_id=str(current_user["_id"])
             )
             
             # 3. Save search to history automatically
@@ -387,23 +418,27 @@ async def stream_detect_gaps(
             # 4. Save to cache asynchronously
             if cached_searches_collection is not None:
                 result_dict = json.loads(result.model_dump_json())
-                
+
                 async def _save_cache_stream():
                     try:
                         await cached_searches_collection.update_one(
                             {"search_hash": search_hash},
-                            {"$set": {
-                                "data": result_dict,
-                                "created_at": datetime.datetime.utcnow().isoformat()
-                            }},
-                            upsert=True
+                            {
+                                "$set": {
+                                    "data": result_dict,
+                                    "created_at": datetime.datetime.utcnow().isoformat(),
+                                }
+                            },
+                            upsert=True,
                         )
                     except Exception as e:
                         logger.error("Failed to cache stream search: %s", e)
-                        
+
                 asyncio.create_task(_save_cache_stream())
 
-            await queue.put({"type": "result", "data": json.loads(result.model_dump_json())})
+            await queue.put(
+                {"type": "result", "data": json.loads(result.model_dump_json())}
+            )
 
         except Exception as exc:
             logger.exception("Synthesis stream error: %s", exc)
@@ -427,10 +462,8 @@ async def stream_detect_gaps(
             if not task.done():
                 task.cancel()
 
-    return StreamingResponse(
-        event_stream(),
-        media_type="application/x-ndjson"
-    )
+    return StreamingResponse(event_stream(), media_type="application/x-ndjson")
+
 
 @router.get(
     "/history",
@@ -445,18 +478,24 @@ async def get_synthesis_history(
     if gap_reports_collection is None:
         return SynthesisHistoryResponse(total=0, items=[])
 
-    cursor = gap_reports_collection.find(
-        {}, {"topic": 1, "papers_analyzed": 1, "gaps": 1, "created_at": 1}
-    ).sort("created_at", -1).limit(limit)
+    cursor = (
+        gap_reports_collection.find(
+            {"user_id": str(current_user["_id"])}, {"topic": 1, "papers_analyzed": 1, "gaps": 1, "created_at": 1}
+        )
+        .sort("created_at", -1)
+        .limit(limit)
+    )
     items: list[SynthesisHistoryItem] = []
     async for doc in cursor:
-        items.append(SynthesisHistoryItem(
-            report_id=str(doc["_id"]),
-            topic=doc.get("topic", ""),
-            papers_analyzed=doc.get("papers_analyzed", 0),
-            gap_count=len(doc.get("gaps", [])),
-            created_at=doc.get("created_at", ""),
-        ))
+        items.append(
+            SynthesisHistoryItem(
+                report_id=str(doc["_id"]),
+                topic=doc.get("topic", ""),
+                papers_analyzed=doc.get("papers_analyzed", 0),
+                gap_count=len(doc.get("gaps", [])),
+                created_at=doc.get("created_at", ""),
+            )
+        )
     return SynthesisHistoryResponse(total=len(items), items=items)
 
 
@@ -497,11 +536,25 @@ async def download_synthesis_report(
 ):
     doc = _hydrate_report(await _fetch_report(report_id))
 
-    from app.schemas.synthesis import ClusterSummary, PatternAnalysis, SynthesisGap, VisualizationData
+    from app.schemas.synthesis import (
+        ClusterSummary,
+        PatternAnalysis,
+        SynthesisGap,
+        VisualizationData,
+    )
     from app.services.synthesis.pdf import generate_pdf_report
 
     pattern = PatternAnalysis(**(doc.get("pattern_analysis") or {}))
-    gaps = [SynthesisGap(**g) for g in (doc.get("gaps") or [])]
+
+    # Filter out hallucinated gaps for the PDF report
+    all_gaps = [SynthesisGap(**g) for g in (doc.get("gaps") or [])]
+    gaps = [
+        g
+        for g in all_gaps
+        if g.llm_verification.get("status", "").lower() != "hallucinated"
+        and g.citation_validation.get("status", "").lower() != "hallucinated"
+    ]
+
     clusters = [ClusterSummary(**c) for c in (doc.get("clusters") or [])]
 
     viz_raw = doc.get("visualizations") or {}
@@ -532,7 +585,6 @@ async def download_synthesis_report(
     )
 
 
-
 @router.get(
     "/report/{report_id}/markdown",
     status_code=status.HTTP_200_OK,
@@ -544,8 +596,11 @@ async def download_synthesis_report_markdown(
     current_user: dict = Depends(get_current_user),
 ):
     doc = _hydrate_report(await _fetch_report(report_id))
-    md_content = doc.get("copy_text") or f"# Synthesis Report\n\nNo content available for report {report_id}."
-    
+    md_content = (
+        doc.get("copy_text")
+        or f"# Synthesis Report\n\nNo content available for report {report_id}."
+    )
+
     safe_topic = (doc.get("topic") or "report").replace(" ", "_")[:40]
     filename = f"synthesis_{safe_topic}_{report_id[:8]}.md"
 

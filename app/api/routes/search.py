@@ -30,28 +30,23 @@ async def _record_search(
     result: PaperSearchResponse,
     current_user: dict,
 ) -> None:
-    if search_history_collection is None or not username:
-        return
-    try:
-        await search_history_collection.insert_one(
-            {
-                "user_id": str(current_user["_id"]),
-                "username": username,
-                "query": payload.topic,
-                "year": payload.year,
-                "venue": payload.venue,
-                "strict_venue": payload.strict_venue,
-                "max_results": payload.max_results,
-                "result_count": result.count,
-                "results": [p.dict() for p in result.papers] if hasattr(result, "papers") else [],
-                "created_at": datetime.now(timezone.utc),
-            }
-        )
-    except Exception:
-        logger.exception("Failed to persist search_history for %s", username)
+    await save_search_history(
+        username,
+        payload.topic,
+        {
+            "year": payload.year,
+            "venue": payload.venue,
+            "strict_venue": payload.strict_venue,
+            "max_results": payload.max_results
+        },
+        results_count=result.count,
+        user_id=str(current_user["_id"])
+    )
 
 
-@router.post("/search/papers", response_model=PaperSearchResponse, status_code=status.HTTP_200_OK)
+@router.post(
+    "/search/papers", response_model=PaperSearchResponse, status_code=status.HTTP_200_OK
+)
 async def search_papers(
     payload: PaperSearchRequest,
     current_user: dict = Depends(get_current_user),
@@ -69,7 +64,9 @@ async def search_papers(
     return result
 
 
-@router.post("/analysis/gaps", response_model=GapAnalysisResponse, status_code=status.HTTP_200_OK)
+@router.post(
+    "/analysis/gaps", response_model=GapAnalysisResponse, status_code=status.HTTP_200_OK
+)
 async def analyze_gaps_for_topic(
     payload: GapAnalysisRequest,
     current_user: dict = Depends(get_current_user),
@@ -83,25 +80,19 @@ async def analyze_gaps_for_topic(
         top_k_gaps=payload.top_k_gaps,
     )
     username = _username(current_user)
-    if search_history_collection is not None and username:
-        try:
-            await search_history_collection.insert_one(
-                {
-                    "user_id": str(current_user["_id"]),
-                    "username": username,
-                    "query": payload.topic,
-                    "year": payload.year,
-                    "venue": payload.venue,
-                    "strict_venue": payload.strict_venue,
-                    "max_results": payload.max_results,
-                    "result_count": getattr(result, "papers_analyzed", None),
-                    "results": [p.dict() for p in result.papers] if hasattr(result, "papers") else [],
-                    "created_at": datetime.now(timezone.utc),
-                    "source": "gap_analysis",
-                }
-            )
-        except Exception:
-            logger.exception("Failed to persist gap-analysis history for %s", username)
+    await save_search_history(
+        username,
+        payload.topic,
+        {
+            "year": payload.year,
+            "venue": payload.venue,
+            "strict_venue": payload.strict_venue,
+            "max_results": payload.max_results,
+            "top_k_gaps": payload.top_k_gaps
+        },
+        results_count=getattr(result, "papers_analyzed", 0),
+        user_id=str(current_user["_id"])
+    )
     asyncio.create_task(profile_builder.invalidate(username, user_id=str(current_user["_id"])))
     return result
 

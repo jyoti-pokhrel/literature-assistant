@@ -34,7 +34,15 @@ def _make_client() -> AsyncIOMotorClient | None:
     try:
         return AsyncIOMotorClient(MONGO_URL, **CLIENT_OPTIONS)
     except Exception:
-        logger.exception("Mongo client init failed")
+        logger.exception(
+            "Mongo client init failed with certifi; retrying with permissive TLS"
+        )
+    try:
+        fallback = {**CLIENT_OPTIONS, "tlsAllowInvalidCertificates": True}
+        fallback.pop("tlsCAFile", None)
+        return AsyncIOMotorClient(MONGO_URL, **fallback)
+    except Exception:
+        logger.exception("Mongo client init failed in fallback path")
         return None
 
 
@@ -91,13 +99,21 @@ async def init_indexes() -> None:
     # Core indexes
     await _safe_create_index(users_collection, "email", unique=True)
     await _safe_create_index(users_collection, "username", unique=True)
+    await _safe_create_index(users_collection, "role")
+
     await _safe_create_index(otps_collection, "expires_at", expireAfterSeconds=0)
+    await _safe_create_index(otps_collection, "email")
+
     await _safe_create_index(reset_tokens_collection, "expires_at", expireAfterSeconds=0)
-    
+    await _safe_create_index(reset_tokens_collection, "email")
+    await _safe_create_index(reset_tokens_collection, "token", unique=True)
+
     # History and Profile indexes
     await _safe_create_index(search_history_collection, "user_id")
+    await _safe_create_index(search_history_collection, "username")
     await _safe_create_index(search_history_collection, "created_at")
     await _safe_create_index(chat_history_collection, "user_id")
+    await _safe_create_index(chat_history_collection, "created_at")
     await _safe_create_index(user_profiles_collection, "user_id", unique=True)
 
 

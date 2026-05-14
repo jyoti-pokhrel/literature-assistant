@@ -39,9 +39,7 @@ def _extract_venue(item: dict) -> str | None:
     publication_venue = item.get("publicationVenue") or {}
     journal = item.get("journal") or {}
     return clean_text(
-        item.get("venue")
-        or publication_venue.get("name")
-        or journal.get("name")
+        item.get("venue") or publication_venue.get("name") or journal.get("name")
     )
 
 
@@ -51,7 +49,11 @@ def _parse_items(payload: dict) -> List[RetrievedPaper]:
         title = clean_text(item.get("title"))
         if not title:
             continue
-        authors = [author.get("name", "").strip() for author in item.get("authors", []) if author.get("name")]
+        authors = [
+            author.get("name", "").strip()
+            for author in item.get("authors", [])
+            if author.get("name")
+        ]
         pdf = item.get("openAccessPdf") or {}
         papers.append(
             RetrievedPaper(
@@ -99,7 +101,9 @@ async def _fetch_page(
     if year is not None:
         params["year"] = str(year)
     try:
-        response = await client.get(SEMANTIC_SCHOLAR_URL, params=params, headers=headers)
+        response = await client.get(
+            SEMANTIC_SCHOLAR_URL, params=params, headers=headers
+        )
         response.raise_for_status()
         results = _parse_items(response.json())
         await semantic_scholar_cache.set(cache_key, results)
