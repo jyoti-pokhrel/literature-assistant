@@ -2861,3 +2861,114 @@
         font-size: 0.82rem;
     }
 }
+
+
+/* ============================================================
+   Dashboard log rows — show paper preview below each topic
+   ============================================================ */
+
+/* Reshape rows to flex-column: head row, then papers list */
+#initial-view .dw-log-row {
+    display: block;
+    align-items: initial;
+    padding: 1rem 0;
+}
+
+#initial-view .dw-log-row-head {
+    display: flex;
+    align-items: baseline;
+    gap: 1.2rem;
+}
+
+#initial-view .dw-log-row-head .dw-log-title {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+#initial-view .dw-log-row-head .dw-log-meta {
+    flex-shrink: 0;
+    font-family: var(--font-mono);
+    font-size: 0.74rem;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    color: rgba(74, 85, 100, 0.66);
+    text-transform: uppercase;
+}
+
+/* Paper preview list */
+#initial-view .dw-log-row-papers {
+    list-style: none;
+    margin: 0.55rem 0 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.22rem;
+}
+
+#initial-view .dw-log-row-paper {
+    position: relative;
+    padding-left: 1.05rem;
+    font-family: var(--font-sans);
+    font-size: 0.84rem;
+    font-weight: 400;
+    line-height: 1.45;
+    color: rgba(74, 85, 100, 0.78);
+    letter-spacing: -0.005em;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 100%;
+}
+
+#initial-view .dw-log-row-paper::before {
+    content: '·';
+    position: absolute;
+    left: 0.35rem;
+    color: rgba(5, 6, 8, 0.32);
+    font-weight: 600;
+}
+
+#initial-view .dw-log-row-paper--more {
+    color: rgba(5, 6, 8, 0.6);
+    font-weight: 500;
+    font-style: italic;
+}
+
+#initial-view .dw-log-row-paper--more::before {
+    content: '';
+}
+
+#initial-view .dw-log-row:hover .dw-log-row-paper {
+    color: rgba(5, 6, 8, 0.92);
+}
+
+#initial-view .dw-log-row:hover .dw-log-row-paper::before {
+    color: rgba(5, 6, 8, 0.55);
+}
+
+:root[data-theme='dark'] #initial-view .dw-log-row-head .dw-log-meta {
+    color: rgba(174, 182, 196, 0.66);
+}
+
+:root[data-theme='dark'] #initial-view .dw-log-row-paper {
+    color: rgba(174, 182, 196, 0.78);
+}
+
+:root[data-theme='dark'] #initial-view .dw-log-row-paper::before {
+    color: rgba(255, 255, 255, 0.32);
+}
+
+:root[data-theme='dark'] #initial-view .dw-log-row-paper--more {
+    color: rgba(246, 248, 252, 0.6);
+}
+
+:root[data-theme='dark'] #initial-view .dw-log-row:hover .dw-log-row-paper {
+    color: rgba(246, 248, 252, 0.92);
+}
+
+:root[data-theme='dark'] #initial-view .dw-log-row:hover .dw-log-row-paper::before {
+    color: rgba(255, 255, 255, 0.55);
+}
