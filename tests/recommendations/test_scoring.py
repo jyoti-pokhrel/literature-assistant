@@ -39,3 +39,36 @@ def test_composite_score_affinity_adds():
     no_aff = scoring.composite_score(0.5, 0.5, 0.5, affinity=0.0)
     with_aff = scoring.composite_score(0.5, 0.5, 0.5, affinity=1.0)
     assert with_aff > no_aff
+
+
+def test_interleave_balanced_by_weight():
+    a = [{"id": "a1"}, {"id": "a2"}, {"id": "a3"}, {"id": "a4"}]
+    b = [{"id": "b1"}, {"id": "b2"}]
+    result = scoring.interleave_by_weight(
+        lists=[a, b], weights=[2.0, 1.0], limit=6, key=lambda d: d["id"]
+    )
+    ids = [d["id"] for d in result]
+    # heavier list contributes ~2/3, lighter ~1/3 — with limit 6, expect 4 a's, 2 b's
+    assert ids.count("a1") + ids.count("a2") + ids.count("a3") + ids.count("a4") == 4
+    assert ids.count("b1") + ids.count("b2") == 2
+    # no duplicates
+    assert len(set(ids)) == 6
+
+
+def test_interleave_dedups_across_lists():
+    a = [{"id": "x"}, {"id": "a2"}]
+    b = [{"id": "x"}, {"id": "b2"}]
+    result = scoring.interleave_by_weight(
+        lists=[a, b], weights=[1.0, 1.0], limit=4, key=lambda d: d["id"]
+    )
+    ids = [d["id"] for d in result]
+    assert ids.count("x") == 1
+    assert set(ids) == {"x", "a2", "b2"}
+
+
+def test_interleave_respects_limit():
+    a = [{"id": f"a{i}"} for i in range(10)]
+    result = scoring.interleave_by_weight(
+        lists=[a], weights=[1.0], limit=3, key=lambda d: d["id"]
+    )
+    assert len(result) == 3

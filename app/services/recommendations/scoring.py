@@ -57,3 +57,49 @@ def composite_score(
         + CITATION_WEIGHT * citations
         + AFFINITY_WEIGHT * affinity
     )
+
+
+def interleave_by_weight(
+    lists: list[list[dict]],
+    weights: list[float],
+    limit: int,
+    key,
+) -> list[dict]:
+    """Round-robin pick items from ranked lists in proportion to weights.
+
+    Each list is consumed front-to-back. The next list picked is the one with
+    the highest `weight / (1 + picks_so_far)` value (deficit round-robin).
+    `key` is a callable returning a hashable id for dedup across lists.
+    """
+    if not lists or limit <= 0:
+        return []
+    cursors = [0] * len(lists)
+    picks = [0] * len(lists)
+    seen: set = set()
+    out: list[dict] = []
+
+    while len(out) < limit:
+        # pick the list with highest weight/(1+picks) that still has items
+        best_idx = -1
+        best_priority = -math.inf
+        for i, lst in enumerate(lists):
+            if cursors[i] >= len(lst):
+                continue
+            priority = weights[i] / (1.0 + picks[i])
+            if priority > best_priority:
+                best_priority = priority
+                best_idx = i
+        if best_idx == -1:
+            break  # all lists exhausted
+        # advance cursor on the chosen list until we find a fresh item
+        while cursors[best_idx] < len(lists[best_idx]):
+            candidate = lists[best_idx][cursors[best_idx]]
+            cursors[best_idx] += 1
+            cid = key(candidate)
+            if cid in seen:
+                continue
+            seen.add(cid)
+            out.append(candidate)
+            picks[best_idx] += 1
+            break
+    return out
