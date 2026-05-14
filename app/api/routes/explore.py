@@ -19,11 +19,11 @@ from pydantic import BaseModel, Field, field_validator
 
 from app.api.dependencies import get_current_user
 from app.services.recommendations import profile_builder
-from app.services.recommendations.pipeline import (
-    ColdStartRequired,
+from app.services.recommendations.keyword_recommender import (
     DEFAULT_PAGE_SIZE,
-    get_feed_page,
+    recommend_for_user,
 )
+from app.services.recommendations.pipeline import ColdStartRequired  # noqa: F401
 
 router = APIRouter(tags=["Explore"])
 
@@ -58,6 +58,7 @@ class ExploreSeedRequest(BaseModel):
 class ExploreFeedRequest(BaseModel):
     cursor: int = Field(default=0, ge=0, le=10000)
     page_size: int = Field(default=DEFAULT_PAGE_SIZE, ge=1, le=50)
+    recent_topics: List[str] = Field(default_factory=list, max_length=10)
 
 
 class ExplorePaper(BaseModel):
@@ -168,16 +169,17 @@ async def explore_feed(
     current_user: dict = Depends(get_current_user),
 ):
     _ensure_enabled()
-    page = await get_feed_page(
+    papers, next_cursor, has_more, summary = await recommend_for_user(
         _username(current_user),
         cursor=payload.cursor,
         page_size=payload.page_size,
+        client_topics=payload.recent_topics,
     )
     return ExploreFeedResponse(
-        papers=page.papers,
-        next_cursor=page.next_cursor,
-        has_more=page.has_more,
-        profile_summary=page.profile_summary,
+        papers=papers,
+        next_cursor=next_cursor,
+        has_more=has_more,
+        profile_summary=summary,
     )
 
 

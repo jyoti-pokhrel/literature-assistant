@@ -397,3 +397,440 @@
     margin: 4px 4px;
     background: var(--rule);
 }
+
+/* =========================================================================
+   Explore — editorial reading list, sticky header, page-level scroll
+   ========================================================================= */
+
+.px-content.is-explore-active {
+    /* The workspace flex chain has no viewport-height anchor (body has
+       overflow: hidden and no explicit height), so `flex: 1` collapses
+       to content-height and nothing ever overflows. Pin a definite
+       height here, then `overflow-y: scroll` works. `scroll` (not
+       `auto`) keeps the scrollbar track visible even when content is
+       short, so the affordance is always present. */
+    height: calc(100vh - 60px);
+    min-height: calc(100vh - 60px);
+    max-height: calc(100vh - 60px);
+    padding: 0;
+    align-items: stretch;
+    overflow-y: scroll;
+}
+
+.explore-shell {
+    width: 100%;
+    display: block;
+    background: var(--bg);
+}
+
+.explore-shell-header {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    padding: 1.75rem 2.5rem 1.25rem;
+    background: linear-gradient(
+        to bottom,
+        rgba(245, 247, 250, 0.92) 0%,
+        rgba(245, 247, 250, 0.78) 80%,
+        rgba(245, 247, 250, 0) 100%
+    );
+    backdrop-filter: saturate(1.6) blur(20px);
+    -webkit-backdrop-filter: saturate(1.6) blur(20px);
+}
+:root[data-theme='dark'] .explore-shell-header {
+    background: linear-gradient(
+        to bottom,
+        rgba(7, 9, 14, 0.92) 0%,
+        rgba(7, 9, 14, 0.78) 80%,
+        rgba(7, 9, 14, 0) 100%
+    );
+}
+
+.explore-eyebrow {
+    font-family: var(--font-mono);
+    font-size: var(--t-mono-xs);
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    color: var(--ink-3);
+    margin: 0 0 0.4rem;
+}
+
+.explore-shell-title-row {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 2rem;
+    flex-wrap: wrap;
+}
+
+.explore-shell-title {
+    font-family: var(--font-sans);
+    font-weight: 600;
+    font-size: clamp(1.45rem, 2.3vw, 2rem);
+    letter-spacing: -0.025em;
+    color: var(--ink);
+    line-height: 1.15;
+    margin: 0;
+    max-width: 48ch;
+}
+
+.explore-shell-actions {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.explore-chiprow {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem 0.5rem;
+    margin-top: 1rem;
+    align-items: center;
+}
+
+.explore-chiprow-label {
+    font-size: var(--t-xs);
+    color: var(--ink-3);
+    margin-right: 0.25rem;
+}
+
+.explore-chip {
+    font-size: var(--t-xs);
+    font-weight: 500;
+    color: var(--ink-2);
+    background: var(--accent-soft);
+    border: 1px solid var(--rule);
+    border-radius: var(--radius-pill);
+    padding: 0.28rem 0.7rem;
+    line-height: 1;
+}
+
+.explore-shell-meta {
+    margin-top: 0.85rem;
+    font-size: var(--t-xs);
+    color: var(--ink-3);
+    display: flex;
+    gap: 0.85rem;
+    align-items: center;
+}
+
+.explore-shell-meta-dot {
+    width: 3px;
+    height: 3px;
+    border-radius: 50%;
+    background: var(--ink-3);
+    opacity: 0.6;
+}
+
+/* --- Content region (page-level scroll on .px-content) ---------------- */
+
+.explore-scroll {
+    padding: 0 2.5rem 6rem;
+}
+
+/* Visible, ink-on-paper scrollbar on the workspace scroll while Explore
+   is active. WebKit + Firefox. */
+.px-content.is-explore-active {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(5, 6, 8, 0.4) transparent;
+}
+.px-content.is-explore-active::-webkit-scrollbar {
+    width: 12px;
+}
+.px-content.is-explore-active::-webkit-scrollbar-track {
+    background: rgba(5, 6, 8, 0.04);
+}
+.px-content.is-explore-active::-webkit-scrollbar-thumb {
+    background: rgba(5, 6, 8, 0.36);
+    border-radius: var(--radius-pill);
+    border: 3px solid transparent;
+    background-clip: padding-box;
+    min-height: 48px;
+}
+.px-content.is-explore-active::-webkit-scrollbar-thumb:hover {
+    background: rgba(5, 6, 8, 0.52);
+    background-clip: padding-box;
+    border: 3px solid transparent;
+}
+:root[data-theme='dark'] .px-content.is-explore-active {
+    scrollbar-color: rgba(246, 248, 252, 0.38) transparent;
+}
+:root[data-theme='dark'] .px-content.is-explore-active::-webkit-scrollbar-track {
+    background: rgba(246, 248, 252, 0.04);
+}
+:root[data-theme='dark'] .px-content.is-explore-active::-webkit-scrollbar-thumb {
+    background: rgba(246, 248, 252, 0.34);
+    background-clip: padding-box;
+    border: 3px solid transparent;
+}
+:root[data-theme='dark'] .px-content.is-explore-active::-webkit-scrollbar-thumb:hover {
+    background: rgba(246, 248, 252, 0.52);
+    background-clip: padding-box;
+    border: 3px solid transparent;
+}
+
+/* --- Paper list ------------------------------------------------------ */
+
+.explore-papers {
+    list-style: none;
+    margin: 0;
+    padding: 0.5rem 0 0;
+    counter-reset: paper;
+    max-width: 880px;
+}
+
+.explore-paper {
+    counter-increment: paper;
+    display: grid;
+    grid-template-columns: 3.5rem 1fr;
+    gap: 1.5rem;
+    padding: 1.75rem 0;
+    border-top: 1px solid var(--rule);
+    transition: opacity var(--t-fast) var(--ease-out);
+}
+.explore-paper:first-child {
+    border-top: none;
+    padding-top: 1rem;
+}
+
+.explore-paper-rank {
+    font-family: var(--font-mono);
+    font-size: var(--t-mono-xs);
+    color: var(--ink-3);
+    letter-spacing: 0.04em;
+    padding-top: 0.4rem;
+}
+.explore-paper-rank::before {
+    content: counter(paper, decimal-leading-zero);
+}
+
+.explore-paper-content {
+    min-width: 0;
+}
+
+.explore-paper-reason {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: var(--t-xs);
+    font-weight: 500;
+    color: var(--ink-2);
+    margin-bottom: 0.45rem;
+}
+.explore-paper-reason::before {
+    content: "";
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: var(--ink);
+    opacity: 0.6;
+}
+
+.explore-paper-title {
+    font-family: var(--font-sans);
+    font-size: 1.15rem;
+    font-weight: 600;
+    letter-spacing: -0.015em;
+    color: var(--ink);
+    line-height: 1.3;
+    margin: 0 0 0.5rem;
+}
+
+.explore-paper:first-child .explore-paper-title {
+    font-size: 1.45rem;
+    letter-spacing: -0.02em;
+    line-height: 1.2;
+}
+
+.explore-paper-meta {
+    font-size: var(--t-xs);
+    color: var(--ink-3);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+    align-items: center;
+    margin-bottom: 0.65rem;
+}
+.explore-paper-meta-sep {
+    width: 3px;
+    height: 3px;
+    border-radius: 50%;
+    background: var(--ink-3);
+    opacity: 0.5;
+}
+
+.explore-paper-abstract {
+    font-size: 0.95rem;
+    color: var(--ink-2);
+    line-height: 1.55;
+    margin: 0 0 1rem;
+    max-width: 68ch;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+.explore-paper:first-child .explore-paper-abstract {
+    -webkit-line-clamp: 6;
+    line-clamp: 6;
+}
+
+.explore-paper-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    flex-wrap: wrap;
+}
+
+.explore-action-text {
+    font-family: var(--font-sans);
+    font-size: var(--t-xs);
+    font-weight: 500;
+    color: var(--ink);
+    text-decoration: none;
+    padding: 0.45rem 0.75rem;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--rule-strong);
+    background: transparent;
+    transition: background var(--t-fast) var(--ease-out), border-color var(--t-fast) var(--ease-out);
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+.explore-action-text:hover {
+    background: var(--accent-soft);
+    border-color: var(--ink);
+}
+
+.explore-feedback {
+    display: inline-flex;
+    align-items: center;
+    margin-left: auto;
+    opacity: 0;
+    transition: opacity var(--t-base) var(--ease-out);
+    gap: 0;
+}
+.explore-paper:hover .explore-feedback,
+.explore-paper:focus-within .explore-feedback {
+    opacity: 1;
+}
+
+.explore-feedback-btn {
+    width: 32px;
+    height: 32px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: none;
+    color: var(--ink-3);
+    border-radius: var(--radius-pill);
+    cursor: pointer;
+    transition: color var(--t-fast) var(--ease-out), background var(--t-fast) var(--ease-out);
+    padding: 0;
+}
+.explore-feedback-btn:hover {
+    color: var(--ink);
+    background: var(--accent-soft);
+}
+.explore-feedback-btn svg {
+    width: 16px;
+    height: 16px;
+}
+
+/* --- Stateful regions ----------------------------------------------- */
+
+.explore-error {
+    margin: 1rem 0 0;
+    padding: 0.75rem 1rem;
+    background: var(--accent-soft);
+    border: 1px solid var(--rule-strong);
+    border-radius: var(--radius-md);
+    color: var(--ink);
+    font-size: var(--t-small);
+}
+
+.explore-loading {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 1.5rem 0 1rem;
+    font-size: var(--t-xs);
+    color: var(--ink-3);
+    font-family: var(--font-mono);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+.explore-loading-bar {
+    height: 1px;
+    flex: 1;
+    background: linear-gradient(
+        to right,
+        transparent 0%,
+        var(--ink-3) 50%,
+        transparent 100%
+    );
+    background-size: 240px 1px;
+    background-repeat: no-repeat;
+    animation: explore-loading-sweep 1400ms var(--ease-in-out) infinite;
+}
+@keyframes explore-loading-sweep {
+    0%   { background-position: -240px 0; }
+    100% { background-position: 100% 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+    .explore-loading-bar { animation: none; opacity: 0.6; }
+}
+
+.explore-end {
+    padding: 2rem 0 1rem;
+    font-size: var(--t-xs);
+    font-family: var(--font-mono);
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    color: var(--ink-3);
+}
+.explore-end::before {
+    content: "—  ";
+    color: var(--ink-3);
+    opacity: 0.5;
+}
+
+.explore-empty {
+    padding: 3.5rem 0 2rem;
+    max-width: 56ch;
+    color: var(--ink-2);
+}
+.explore-empty-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--ink);
+    margin: 0 0 0.5rem;
+    letter-spacing: -0.01em;
+}
+.explore-empty-body {
+    font-size: 0.95rem;
+    line-height: 1.55;
+    margin: 0 0 1rem;
+}
+.explore-empty-notes {
+    margin: 1rem 0 0;
+    padding: 1rem 1.25rem;
+    background: var(--glass-2);
+    border: 1px solid var(--rule);
+    border-radius: var(--radius-md);
+    font-size: var(--t-xs);
+    color: var(--ink-2);
+    list-style: disc;
+    padding-left: 2.25rem;
+    line-height: 1.55;
+}
+
+@media (max-width: 720px) {
+    .explore-shell-header { padding: 1.25rem 1.25rem 1rem; }
+    .explore-scroll { padding: 0 1.25rem 4rem; }
+    .explore-paper { grid-template-columns: 2.25rem 1fr; gap: 0.9rem; padding: 1.4rem 0; }
+    .explore-paper:first-child .explore-paper-title { font-size: 1.2rem; }
+}

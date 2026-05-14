@@ -71,7 +71,7 @@ async def analyze_gaps_for_topic(
     payload: GapAnalysisRequest,
     current_user: dict = Depends(get_current_user),
 ):
-    return await run_gap_analysis(
+    result = await run_gap_analysis(
         topic=payload.topic,
         year=payload.year,
         venue=payload.venue,
@@ -79,3 +79,23 @@ async def analyze_gaps_for_topic(
         max_results=payload.max_results,
         top_k_gaps=payload.top_k_gaps,
     )
+    username = _username(current_user)
+    if search_history_collection is not None and username:
+        try:
+            await search_history_collection.insert_one(
+                {
+                    "username": username,
+                    "topic": payload.topic,
+                    "year": payload.year,
+                    "venue": payload.venue,
+                    "strict_venue": payload.strict_venue,
+                    "max_results": payload.max_results,
+                    "result_count": getattr(result, "papers_analyzed", None),
+                    "created_at": datetime.now(timezone.utc),
+                    "source": "gap_analysis",
+                }
+            )
+        except Exception:
+            logger.exception("Failed to persist gap-analysis history for %s", username)
+    asyncio.create_task(profile_builder.invalidate(username))
+    return result

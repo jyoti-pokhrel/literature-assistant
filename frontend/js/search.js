@@ -100,10 +100,18 @@ async function analyzeGapsStream(payload, onEvent) {
     return finalResult;
 }
 
-async function fetchExploreFeed({ cursor = 0, pageSize = 20 } = {}) {
+async function fetchExploreFeed({ cursor = 0, pageSize = 20, recentTopics = [] } = {}) {
+    const cleanedTopics = Array.from(
+        new Set(
+            (recentTopics || [])
+                .map((topic) => (typeof topic === "string" ? topic.trim() : ""))
+                .filter((topic) => topic.length >= 2 && topic.length <= 120)
+        )
+    ).slice(0, 10);
     const payload = {
         cursor: Math.max(0, Number.parseInt(cursor, 10) || 0),
         page_size: Math.min(50, Math.max(1, Number.parseInt(pageSize, 10) || 20)),
+        recent_topics: cleanedTopics,
     };
     const response = await authenticatedFetch(`${BASE_URL}/explore/feed`, {
         method: "POST",
