@@ -10208,19 +10208,19 @@ body.landing-state #landing-page {
 
 .lp-hero-accent-underline {
     --lp-underline-c0: rgba(5, 6, 8, 0.95);
-    --lp-underline-c1: rgba(5, 6, 8, 0.22);
+    --lp-underline-c1: rgba(5, 6, 8, 0.5);
 }
 
 :root[data-theme='dark'] .lp-hero-accent-underline {
     --lp-underline-c0: rgba(246, 248, 252, 0.96);
-    --lp-underline-c1: rgba(246, 248, 252, 0.22);
+    --lp-underline-c1: rgba(246, 248, 252, 0.5);
 }
 
 /* Override the previous solid stroke with the gradient ref;
    speed up the draw (800ms delay, 600ms duration). */
 .lp-hero-accent-underline path {
     stroke: url(#lpHeroUnderlineGrad);
-    stroke-width: 2.6;
+    stroke-width: 3.6;
     animation: lp-accent-draw 600ms cubic-bezier(0.22, 1, 0.36, 1) 800ms forwards;
 }
 
