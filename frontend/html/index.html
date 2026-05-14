@@ -738,22 +738,30 @@
             </div>
           </header>
 
-          <section class="loading-quiet" x-cloak x-show="$store.app.isLoading">
-            <div class="loading-quiet-inner">
-              <p class="loading-quiet-status" x-text="currentProgressEvent().label || 'Synthesizing'"></p>
-              <span class="loading-quiet-dots" aria-hidden="true">
-                <i></i><i></i><i></i>
-              </span>
-              <p class="loading-quiet-meta" x-text="searchStatusSummary()"></p>
-              <ol class="loading-quiet-log" x-show="$store.app.progressEvents.length">
-                <template x-for="(event, index) in $store.app.progressEvents" :key="index">
-                  <li :class="{ 'is-current': index === $store.app.progressEvents.length - 1 }">
-                    <span class="loading-quiet-num" x-text="(index + 1).toString().padStart(2, '0')"></span>
-                    <span class="loading-quiet-msg" x-text="event.label"></span>
-                  </li>
-                </template>
-              </ol>
+          <section class="syn-progress" x-cloak x-show="$store.app.isLoading">
+            <header class="syn-progress-context">
+              <span class="syn-progress-context-label">Analysing</span>
+              <strong class="syn-progress-context-topic" x-text="title() || 'Your research topic'"></strong>
+            </header>
+
+            <div class="syn-progress-head">
+              <p class="syn-progress-stage" x-text="currentProgressEvent().label || 'Synthesising'"></p>
+              <p class="syn-progress-msg" x-text="currentProgressEvent().detail || 'Connecting to the pipeline'"></p>
             </div>
+
+            <div class="syn-progress-track" role="progressbar" :aria-valuenow="loadingProgress()" aria-valuemin="0" aria-valuemax="100">
+              <div class="syn-progress-track-fill" :style="{ width: loadingProgress() + '%' }"></div>
+              <span class="syn-progress-track-pct" x-text="loadingProgress() + '%'"></span>
+            </div>
+
+            <ol class="syn-progress-log" x-show="$store.app.progressEvents.length">
+              <template x-for="(event, index) in $store.app.progressEvents.slice(-5)" :key="index + event.label">
+                <li :class="{ 'is-current': index === ($store.app.progressEvents.slice(-5).length - 1) }">
+                  <span class="syn-progress-log-dot" aria-hidden="true"></span>
+                  <span class="syn-progress-log-msg" x-text="event.label"></span>
+                </li>
+              </template>
+            </ol>
           </section>
 
           <div x-data="gapExplorer()" @paper:select.window="handlePaperSelect($event)" @cluster:select.window="handleClusterSelect($event)" @map:clear.window="handleMapClear()" x-show="!$store.app.isLoading">
