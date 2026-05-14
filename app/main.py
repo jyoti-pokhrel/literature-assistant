@@ -53,7 +53,7 @@ async def api_key_middleware(request: Request, call_next):
     response = await call_next(request)
     path = request.url.path
 
-    if path in {"/", "/index.html", "/workspace", "/workspace/search"} or path.startswith("/js/") or path.startswith("/css/") or path.startswith("/html/"):
+    if path in {"/", "/index.html"} or path == "/workspace" or path.startswith("/workspace/") or path.startswith("/js/") or path.startswith("/css/") or path.startswith("/html/"):
         response.headers["Cache-Control"] = "no-store, max-age=0"
         response.headers["Pragma"] = "no-cache"
         response.headers["Expires"] = "0"
@@ -161,6 +161,13 @@ def frontend_workspace():
 
 @app.get("/workspace/search", include_in_schema=False)
 def frontend_workspace_search():
+    return FileResponse(INDEX_FILE)
+
+
+# Catch-all so every client-side `/workspace/...` route serves the SPA shell.
+# Client-side routing (syncFromLocation in appStore.js) takes over from there.
+@app.get("/workspace/{subpath:path}", include_in_schema=False)
+def frontend_workspace_subpath(subpath: str):
     return FileResponse(INDEX_FILE)
 
 
