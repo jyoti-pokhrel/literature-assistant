@@ -186,8 +186,26 @@ async def get_feed_page(
             item["score"] = round(float(item.get("_final_score", 0.0)), 4)
 
         merged = atlas_ranked + in_mem_ranked
-        merged.sort(key=lambda d: d.get("_final_score") or d.get("score") or 0.0, reverse=True)
+        merged.sort(key=lambda d: d.get("_final_score", d.get("score", 0.0)), reverse=True)
         ranked = merged[: page_size * 2]
+
+        if not ranked and fresh_candidates:
+            # Atlas returned nothing AND in-memory ranking returned nothing
+            # (e.g. no candidates carried embeddings). Surface the freshest
+            # arXiv/S2 hits unranked but flagged so the user isn't stuck.
+            fallback = []
+            seen_so_far: set[str] = set()
+            for paper in fresh_candidates[: page_size]:
+                external_id = paper.get("external_id")
+                if not external_id or external_id in seen_set or external_id in seen_so_far:
+                    continue
+                seen_so_far.add(external_id)
+                item = dict(paper)
+                item["reason"] = "New result for your seed topics"
+                item["score"] = 0.0
+                item["_final_score"] = 0.0
+                fallback.append(item)
+            ranked = fallback
     else:
         ranked = atlas_ranked
 
