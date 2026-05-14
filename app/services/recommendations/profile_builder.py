@@ -1,0 +1,345 @@
+"""Compose and cache a per-user profile vector for personalized recommendations.
+
+The profile is a weighted centroid of three signal types:
+  * Cold-start seed topics (decays as the user accumulates searches).
+  * Recent search topics (exponential half-life ~10 days).
+  * Gap-feedback embeddings (positives boost, downvotes subtract).
+
+The vector is L2-normalized and cached on `user_profiles_collection`.
+Invalidated by `invalidate()` when new signals are written; the loader
+recomputes lazily on the next read.
+"""
+
+from __future__ import annotations
+
+import logging
+import math
+from dataclasses import dataclass, field
+from datetime import datetime, timezone
+from typing import Optional
+
+import numpy as np
+
+from app.db.session import user_profiles_collection
+from app.services.recommendations.embedder import embed_texts
+from app.services.recommendations.signals import (
+    GapSignal,
+    SearchSignal,
+    fetch_gap_signals,
+    fetch_search_signals,
+)
+
+logger = logging.getLogger(__name__)
+
+SEED_WEIGHT = 0.5
+SEED_DECAY_THRESHOLD = 5  # searches needed before seeds fully decay
+SEARCH_HALF_LIFE_DAYS = 14.0
+GAP_POSITIVE_WEIGHT = 1.0
+GAP_NEGATIVE_WEIGHT = -0.6
+
+
+@dataclass
+class ProfileComponent:
+    kind: str
+    label: str
+    weight: float
+    vector: list[float]
+    meta: dict = field(default_factory=dict)
+
+
+@dataclass
+class Profile:
+    username: str
+    vector: Optional[list[float]]
+    seed_topics: list[str]
+    components: list[ProfileComponent]
+    top_topics: list[str]
+    updated_at: datetime
+    seen_paper_ids: list[str]
+
+    @property
+    def is_cold_start(self) -> bool:
+        return self.vector is None
+
+
+def _search_weight(signal: SearchSignal) -> float:
+    now = datetime.now(timezone.utc)
+    age = (now - signal.created_at).total_seconds() / 86400.0
+    return min(1.0, math.exp(-age / SEARCH_HALF_LIFE_DAYS))
+
+
+def _gap_weight(signal: GapSignal) -> float:
+    if signal.vote == "up" or signal.pursue:
+        return GAP_POSITIVE_WEIGHT
+    if signal.vote == "down":
+        return GAP_NEGATIVE_WEIGHT
+    return 0.0
+
+
+async def _embed_signal_texts(texts: list[str]) -> list[list[float]]:
+    if not texts:
+        return []
+    return await embed_texts(texts)
+
+
+async def _compose_profile(
+    username: str,
+    seed_topics: list[str],
+    seed_vectors: list[list[float]],
+    seen_paper_ids: list[str],
+) -> Profile:
+    search_signals = await fetch_search_signals(username)
+    gap_signals = await fetch_gap_signals(username)
+
+    components: list[ProfileComponent] = []
+
+    seed_decay = max(0.0, 1.0 - len(search_signals) / SEED_DECAY_THRESHOLD)
+    if seed_decay > 0:
+        for topic, vector in zip(seed_topics, seed_vectors):
+            if not vector:
+                continue
+            components.append(
+                ProfileComponent(
+                    kind="seed",
+                    label=topic,
+                    weight=SEED_WEIGHT * seed_decay,
+                    vector=vector,
+                )
+            )
+
+    search_texts = [s.topic for s in search_signals]
+    search_vectors = await _embed_signal_texts(search_texts)
+    for signal, vector in zip(search_signals, search_vectors):
+        components.append(
+            ProfileComponent(
+                kind="search",
+                label=signal.topic,
+                weight=_search_weight(signal),
+                vector=list(vector),
+                meta={"ts": signal.created_at.isoformat()},
+            )
+        )
+
+    gap_texts = [g.gap_text for g in gap_signals]
+    gap_vectors = await _embed_signal_texts(gap_texts)
+    for signal, vector in zip(gap_signals, gap_vectors):
+        weight = _gap_weight(signal)
+        if weight == 0.0:
+            continue
+        components.append(
+            ProfileComponent(
+                kind="gap_positive" if weight > 0 else "gap_negative",
+                label=signal.gap_title,
+                weight=weight,
+                vector=list(vector),
+                meta={"gap_id": signal.gap_id},
+            )
+        )
+
+    contributing = [c for c in components if c.weight != 0 and c.vector]
+    total_weight = sum(abs(c.weight) for c in contributing)
+    if total_weight <= 0 or not contributing:
+        return Profile(
+            username=username,
+            vector=None,
+            seed_topics=seed_topics,
+            components=[],
+            top_topics=[],
+            updated_at=datetime.now(timezone.utc),
+            seen_paper_ids=seen_paper_ids,
+        )
+
+    stacked = np.array([c.vector for c in contributing], dtype=np.float32)
+    weights = np.array([c.weight for c in contributing], dtype=np.float32)
+    weighted = stacked * weights[:, None]
+    centroid = weighted.sum(axis=0) / total_weight
+    norm = float(np.linalg.norm(centroid))
+    if norm < 1e-6:
+        return Profile(
+            username=username,
+            vector=None,
+            seed_topics=seed_topics,
+            components=[],
+            top_topics=[],
+            updated_at=datetime.now(timezone.utc),
+            seen_paper_ids=seen_paper_ids,
+        )
+    centroid = centroid / norm
+
+    top_topics: list[str] = []
+    seen_labels: set[str] = set()
+    for component in sorted(contributing, key=lambda c: abs(c.weight), reverse=True):
+        if component.weight <= 0:
+            continue
+        label = component.label.strip().lower()
+        if label in seen_labels:
+            continue
+        seen_labels.add(label)
+        top_topics.append(component.label)
+        if len(top_topics) >= 5:
+            break
+
+    return Profile(
+        username=username,
+        vector=centroid.astype(np.float32).tolist(),
+        seed_topics=seed_topics,
+        components=contributing,
+        top_topics=top_topics,
+        updated_at=datetime.now(timezone.utc),
+        seen_paper_ids=seen_paper_ids,
+    )
+
+
+def _serialize_components(components: list[ProfileComponent]) -> list[dict]:
+    return [
+        {
+            "kind": c.kind,
+            "label": c.label,
+            "weight": float(c.weight),
+            "meta": c.meta,
+        }
+        for c in components
+    ]
+
+
+async def _persist_profile(profile: Profile) -> None:
+    if user_profiles_collection is None:
+        return
+    update_doc = {
+        "$set": {
+            "username": profile.username,
+            "profile_vector": profile.vector,
+            "profile_components": _serialize_components(profile.components),
+            "top_topics": profile.top_topics,
+            "profile_updated_at": profile.updated_at,
+        }
+    }
+    await user_profiles_collection.update_one(
+        {"username": profile.username},
+        update_doc,
+        upsert=True,
+    )
+
+
+async def _load_doc(username: str) -> dict:
+    if user_profiles_collection is None:
+        return {}
+    doc = await user_profiles_collection.find_one({"username": username})
+    return doc or {}
+
+
+async def build_profile(username: str) -> Profile:
+    """Recompute and persist the profile vector for `username`."""
+    doc = await _load_doc(username)
+    seed_topics = list(doc.get("seed_topics") or [])
+    seed_vectors = [list(v) for v in (doc.get("seed_topic_embeddings") or []) if v]
+    seen_paper_ids = list(doc.get("seen_paper_ids") or [])
+
+    if len(seed_vectors) < len(seed_topics):
+        seed_vectors = await embed_texts(seed_topics)
+        if user_profiles_collection is not None:
+            await user_profiles_collection.update_one(
+                {"username": username},
+                {"$set": {"seed_topic_embeddings": seed_vectors}},
+                upsert=True,
+            )
+
+    profile = await _compose_profile(username, seed_topics, seed_vectors, seen_paper_ids)
+    await _persist_profile(profile)
+    return profile
+
+
+async def load_profile(username: str) -> Profile:
+    """Return cached profile if fresh; otherwise rebuild.
+
+    A cached vector is considered stale when `dirty: True` is set on the doc.
+    """
+    doc = await _load_doc(username)
+    seed_topics = list(doc.get("seed_topics") or [])
+    seen_paper_ids = list(doc.get("seen_paper_ids") or [])
+    vector = doc.get("profile_vector")
+    is_dirty = bool(doc.get("dirty"))
+
+    if not is_dirty and vector and doc.get("profile_components") is not None:
+        components = [
+            ProfileComponent(
+                kind=item.get("kind", ""),
+                label=item.get("label", ""),
+                weight=float(item.get("weight", 0.0)),
+                vector=[],
+                meta=item.get("meta") or {},
+            )
+            for item in (doc.get("profile_components") or [])
+        ]
+        return Profile(
+            username=username,
+            vector=list(vector),
+            seed_topics=seed_topics,
+            components=components,
+            top_topics=list(doc.get("top_topics") or []),
+            updated_at=doc.get("profile_updated_at") or datetime.now(timezone.utc),
+            seen_paper_ids=seen_paper_ids,
+        )
+
+    profile = await build_profile(username)
+    if user_profiles_collection is not None and is_dirty:
+        await user_profiles_collection.update_one(
+            {"username": username},
+            {"$unset": {"dirty": ""}},
+        )
+    return profile
+
+
+async def set_seed_topics(username: str, topics: list[str]) -> Profile:
+    """Save the 3 cold-start topics and compute the initial profile."""
+    cleaned = [t.strip() for t in topics if t and t.strip()]
+    seed_vectors = await embed_texts(cleaned)
+    if user_profiles_collection is not None:
+        await user_profiles_collection.update_one(
+            {"username": username},
+            {
+                "$set": {
+                    "username": username,
+                    "seed_topics": cleaned,
+                    "seed_topic_embeddings": seed_vectors,
+                }
+            },
+            upsert=True,
+        )
+    return await build_profile(username)
+
+
+async def invalidate(username: str) -> None:
+    """Mark the profile stale so the next load rebuilds it."""
+    if user_profiles_collection is None or not username:
+        return
+    try:
+        await user_profiles_collection.update_one(
+            {"username": username},
+            {"$set": {"dirty": True}},
+            upsert=True,
+        )
+    except Exception:
+        logger.exception("Failed to invalidate profile for %s", username)
+
+
+async def record_impressions(username: str, external_ids: list[str], max_keep: int = 500) -> None:
+    """Append shown paper ids to the per-user ring buffer of seen impressions."""
+    if user_profiles_collection is None or not username or not external_ids:
+        return
+    try:
+        await user_profiles_collection.update_one(
+            {"username": username},
+            {
+                "$push": {
+                    "seen_paper_ids": {
+                        "$each": external_ids,
+                        "$slice": -max_keep,
+                    }
+                },
+                "$set": {"seen_paper_ids_updated_at": datetime.now(timezone.utc)},
+            },
+            upsert=True,
+        )
+    except Exception:
+        logger.exception("Failed to record impressions for %s", username)

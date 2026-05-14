@@ -77,6 +77,8 @@ otps_collection = db["otps"] if db is not None else None
 reset_tokens_collection = db["reset_tokens"] if db is not None else None
 search_history_collection = db["search_history"] if db is not None else None
 chat_history_collection = db["chat_history"] if db is not None else None
+user_profiles_collection = db["user_profiles"] if db is not None else None
+gap_feedback_signals_collection = db["gap_feedback_signals"] if db is not None else None
 
 
 async def ping() -> bool:
@@ -158,8 +160,36 @@ async def init_indexes() -> None:
     # Search / chat history
     await _safe_create_index(search_history_collection, "username")
     await _safe_create_index(search_history_collection, "created_at")
+    await _safe_create_index(
+        search_history_collection, [("username", 1), ("created_at", -1)]
+    )
     await _safe_create_index(chat_history_collection, "username")
     await _safe_create_index(chat_history_collection, "created_at")
+
+    # Recommendation system: per-user profile vector + dedup ring buffer
+    await _safe_create_index(user_profiles_collection, "username", unique=True)
+    await _safe_create_index(user_profiles_collection, "profile_updated_at")
+
+    # Per-user gap-feedback signal log (decoupled from gap_reports because
+    # the existing gap_reports docs aren't stamped with an owner).
+    await _safe_create_index(
+        gap_feedback_signals_collection,
+        [("username", 1), ("updated_at", -1)],
+    )
+    await _safe_create_index(
+        gap_feedback_signals_collection,
+        [("username", 1), ("report_id", 1), ("gap_id", 1)],
+        unique=True,
+        name="gap_feedback_signal_uniq",
+    )
+
+    # Recommendation candidates: dedup lookup by (source, external_id) and
+    # backfill scans over freshly-embedded rows.
+    await _safe_create_index(
+        papers_collection,
+        [("source", 1), ("external_id", 1)],
+    )
+    await _safe_create_index(papers_collection, "embedded_at", sparse=True)
 
 
 async def close_db() -> None:
