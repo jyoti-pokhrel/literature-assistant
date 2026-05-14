@@ -17,10 +17,10 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/css/tokens.css?v=20260506n" />
-  <link rel="stylesheet" href="/css/style.css?v=20260516b" />
-  <link rel="stylesheet" href="/css/workspace.css?v=20260506n" />
+  <link rel="stylesheet" href="/css/style.css?v=20260516c" />
+  <link rel="stylesheet" href="/css/workspace.css?v=20260514m" />
   <link rel="stylesheet" href="/css/dashboard.css?v=20260516d" />
-  <link rel="stylesheet" href="/css/citations.css?v=20260516g" />
+  <link rel="stylesheet" href="/css/citations.css?v=20260514q" />
 </head>
 <body class="landing-state" x-data="appShell()" x-init="init()" :class="$store.app.mode === 'workspace' ? 'workspace-state' : 'landing-state'">
   <div class="bg-grid"></div>
@@ -499,7 +499,11 @@
         </div>
       </header>
 
-      <div class="px-content">
+      <div class="px-content" :class="{
+              'is-explore-active': $store.app.currentView === 'explore',
+              'is-results-active': $store.app.currentView === 'results',
+              'is-citations-active': $store.app.currentView === 'citations'
+            }">
         <section id="initial-view" class="dash-workbench" x-show="$store.app.currentView === 'form'" x-transition:enter="fade-in visible" x-data="{ get today() { try { return new Intl.DateTimeFormat('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' }).format(new Date()); } catch(e) { return ''; } }, moreFilters: false }">
 
           <!-- Resume zone — surfaces the latest thread when history exists -->
@@ -815,7 +819,7 @@
               </button>
             </div>
 
-            <div class="results-workspace-content results-twoup" :class="{ 'is-rail-hidden': activeTab === 'map' }">
+            <div class="results-workspace-content results-twoup" :class="{ 'is-rail-hidden': activeTab === 'map' || activeTab === 'papers' }">
               <div class="results-tabpanes">
                 <!-- Tab A: Gaps as entries -->
                 <div x-show="activeTab === 'gaps'" x-transition.opacity.duration.500ms>
@@ -901,8 +905,8 @@
                 </div>
               </div>
 
-              <!-- Permanent right rail: annotated note -->
-              <aside class="gap-rail" x-show="activeTab !== 'map'">
+              <!-- Right rail: annotated note (gaps tab only) -->
+              <aside class="gap-rail" x-show="activeTab === 'gaps'">
                       <template x-if="!$store.app.explorer.panelOpen || (!selectedGap() && !selectedPaper())">
                         <div class="gap-rail-placeholder">
                           <span class="t-mono">Annotated note</span>
@@ -1076,79 +1080,110 @@
           </div>
         </section>
 
-        <section id="explore-view" class="px-thread-view" x-cloak x-show="$store.app.currentView === 'explore'" x-data="exploreFeed()" x-init="init()" @show.window="init()" style="max-width: none; margin: 0; display: flex; flex-direction: column;">
-          <header class="results-header">
-            <div>
-              <div class="thread-query-kicker">Recommendations for you</div>
-              <h2 class="results-query-title" x-text="topTopicsList() || 'Personalized feed'"></h2>
-              <p class="results-query-meta">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-                <span x-text="$store.app.explore.papers.length + (($store.app.explore.hasMore) ? '+ papers · scroll for more' : ' papers · end of results')"></span>
-              </p>
+        <section id="explore-view" class="px-thread-view explore-shell" x-cloak x-show="$store.app.currentView === 'explore'" x-data="exploreFeed()" x-init="init()" @show.window="init()" style="max-width: none; margin: 0;">
+          <header class="explore-shell-header">
+            <p class="explore-eyebrow">For you</p>
+            <div class="explore-shell-title-row">
+              <h2 class="explore-shell-title" x-text="topTopicsList() || 'Recommended reading from your recent searches'"></h2>
+              <div class="explore-shell-actions">
+                <button class="explore-action-text" @click="$store.app.currentView = 'results'" x-show="$store.app.result" title="Back to research gaps">Back to results</button>
+                <button class="explore-action-text" @click="$store.app.startNewSearch()">New search</button>
+              </div>
             </div>
-            <div class="header-actions">
-              <button class="btn-glass" @click="$store.app.currentView = 'results'" x-show="$store.app.result" title="Back to research gaps">
-                ← Back to results
-              </button>
-              <button class="btn-primary-glow" @click="$store.app.startNewSearch()">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block; vertical-align:text-bottom; margin-right:4px;"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-                New Search
-              </button>
+            <div class="explore-chiprow" x-show="Array.isArray($store.app.explore.profileSummary?.top_topics) && $store.app.explore.profileSummary.top_topics.length">
+              <span class="explore-chiprow-label">Drawn from</span>
+              <template x-for="topic in ($store.app.explore.profileSummary?.top_topics || []).slice(0, 6)" :key="topic">
+                <span class="explore-chip" x-text="topic"></span>
+              </template>
             </div>
-          </header>
-
-          <div style="padding: 0 2.5rem 2.5rem;">
-            <div x-show="$store.app.explore.error" class="search-error" x-text="$store.app.explore.error" style="margin-bottom:1rem; padding:0.75rem 1rem; background:var(--glass-bg); border:1px solid var(--border-color); border-radius:8px;"></div>
-
-            <div class="results-list" style="display:grid; grid-template-columns:repeat(2, 1fr); gap:1.5rem; width: 100%; max-width: 1200px; margin: 0 auto;">
-              <template x-for="(paper, index) in $store.app.explore.papers" :key="(paper.external_id || paper.url || paper.title) + ':' + index">
-                <article class="gap-card-premium" style="display:flex; flex-direction:column; gap:0.5rem; padding:1.25rem 1.5rem;">
-                  <h3 x-text="paper.title" style="font-size:1.05rem; font-weight:700; color:var(--text-main); line-height:1.35;"></h3>
-                  <p style="font-size:0.85rem; color:var(--text-muted); display:flex; gap:0.5rem; align-items:center; flex-wrap:wrap;">
-                    <span x-text="paper.venue || (paper.source ? paper.source.replace('_', ' ') : 'Source')"></span>
-                    <span>·</span>
-                    <span x-text="paper.year || 'Unknown year'"></span>
-                    <template x-if="Array.isArray(paper.authors) && paper.authors.length">
-                      <span>· <span x-text="paper.authors.slice(0, 2).join(', ') + (paper.authors.length > 2 ? ' et al.' : '')"></span></span>
-                    </template>
-                  </p>
-                  <p x-show="paper.reason" class="reason-line" x-text="paper.reason" style="font-size:0.8rem; color:var(--accent, var(--text-main)); font-weight:600; letter-spacing:0.01em;"></p>
-                  <p x-show="paper.abstract" x-text="paper.abstract" style="font-size:0.9rem; color:var(--text-muted); line-height:1.5; max-height:6em; overflow:hidden; display:-webkit-box; -webkit-line-clamp:4; line-clamp:4; -webkit-box-orient:vertical;"></p>
-                  <div style="display:flex; gap:0.5rem; margin-top:0.25rem; align-items:center; flex-wrap:wrap;">
-                    <template x-if="paper.url">
-                      <a :href="paper.url" target="_blank" rel="noopener noreferrer" class="btn-glass" @click="window.searchAPI?.recordExploreInteractions?.([{ external_id: paper.external_id, kind: 'open' }])?.catch(() => {})" style="padding:0.4rem 0.8rem; font-size:0.85rem;">Open ↗</a>
-                    </template>
-                    <template x-if="paper.pdf_url">
-                      <a :href="paper.pdf_url" target="_blank" rel="noopener noreferrer" class="btn-glass" style="padding:0.4rem 0.8rem; font-size:0.85rem;">PDF</a>
-                    </template>
-                    <span style="flex:1;"></span>
-                    <button type="button" class="btn-glass" @click="recordInteraction(paper, 'like')" title="More like this" style="padding:0.4rem 0.7rem; font-size:0.9rem;">👍</button>
-                    <button type="button" class="btn-glass" @click="recordInteraction(paper, 'dislike')" title="Less like this" style="padding:0.4rem 0.7rem; font-size:0.9rem;">👎</button>
-                    <button type="button" class="btn-glass" @click="recordInteraction(paper, 'hide')" title="Hide this" style="padding:0.4rem 0.7rem; font-size:0.9rem;">✕</button>
-                  </div>
-                </article>
+            <div class="explore-shell-meta">
+              <span x-text="$store.app.explore.papers.length + ' papers'"></span>
+              <span class="explore-shell-meta-dot" aria-hidden="true"></span>
+              <span x-text="$store.app.explore.hasMore ? 'scroll for more' : 'end of results'"></span>
+              <template x-if="$store.app.explore.profileSummary?.approach">
+                <span style="display:inline-flex; gap:0.85rem; align-items:center;">
+                  <span class="explore-shell-meta-dot" aria-hidden="true"></span>
+                  <span x-text="$store.app.explore.profileSummary.approach === 'tfidf' ? 'keyword match' : 'highly cited'"></span>
+                </span>
               </template>
             </div>
 
-            <div x-show="$store.app.explore.isLoadingPage" style="text-align:center; padding:2rem 0; color:var(--text-muted);">
-              <span class="dash-thinking-dots"><span></span><span></span><span></span></span>
-              <p style="margin-top:0.5rem;">Ranking recommendations…</p>
+            <div x-show="$store.app.explore.error" class="explore-error" x-text="$store.app.explore.error"></div>
+          </header>
+
+          <div class="explore-scroll" x-ref="exploreScroll">
+            <ol class="explore-papers" x-show="$store.app.explore.papers.length">
+              <template x-for="(paper, index) in $store.app.explore.papers" :key="(paper.external_id || paper.url || paper.title) + ':' + index">
+                <li class="explore-paper">
+                  <span class="explore-paper-rank" aria-hidden="true"></span>
+                  <div class="explore-paper-content">
+                    <p class="explore-paper-reason" x-show="paper.reason" x-text="paper.reason"></p>
+                    <h3 class="explore-paper-title" x-text="paper.title"></h3>
+                    <p class="explore-paper-meta">
+                      <span x-text="paper.venue || (paper.source ? paper.source.replace('_', ' ') : 'Source')"></span>
+                      <span class="explore-paper-meta-sep" aria-hidden="true"></span>
+                      <span x-text="paper.year || '—'"></span>
+                      <template x-if="Array.isArray(paper.authors) && paper.authors.length">
+                        <span style="display:inline-flex; gap:0.6rem; align-items:center;">
+                          <span class="explore-paper-meta-sep" aria-hidden="true"></span>
+                          <span x-text="paper.authors.slice(0, 3).join(', ') + (paper.authors.length > 3 ? ' et al.' : '')"></span>
+                        </span>
+                      </template>
+                      <template x-if="typeof paper.citation_count === 'number' && paper.citation_count > 0">
+                        <span style="display:inline-flex; gap:0.6rem; align-items:center;">
+                          <span class="explore-paper-meta-sep" aria-hidden="true"></span>
+                          <span x-text="paper.citation_count + ' citations'"></span>
+                        </span>
+                      </template>
+                    </p>
+                    <p class="explore-paper-abstract" x-show="paper.abstract" x-text="paper.abstract"></p>
+                    <div class="explore-paper-actions">
+                      <template x-if="paper.url">
+                        <a class="explore-action-text" :href="paper.url" target="_blank" rel="noopener noreferrer"
+                           @click="window.searchAPI?.recordExploreInteractions?.([{ external_id: paper.external_id, kind: 'open' }])?.catch(() => {})">
+                          Open
+                          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17L17 7"/><path d="M8 7h9v9"/></svg>
+                        </a>
+                      </template>
+                      <template x-if="paper.pdf_url">
+                        <a class="explore-action-text" :href="paper.pdf_url" target="_blank" rel="noopener noreferrer">PDF</a>
+                      </template>
+                      <div class="explore-feedback" role="group" aria-label="Tune recommendations">
+                        <button type="button" class="explore-feedback-btn" @click="recordInteraction(paper, 'like')" title="More like this" aria-label="More like this">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 11v9"/><path d="M3 11h4v9H3z"/><path d="M7 11l4-7c1.5 0 3 1 3 3v3h5a2 2 0 0 1 2 2.3l-1.2 6A2 2 0 0 1 17.8 20H7"/></svg>
+                        </button>
+                        <button type="button" class="explore-feedback-btn" @click="recordInteraction(paper, 'dislike')" title="Less like this" aria-label="Less like this">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 13V4"/><path d="M21 13h-4V4h4z"/><path d="M17 13l-4 7c-1.5 0-3-1-3-3v-3H5a2 2 0 0 1-2-2.3l1.2-6A2 2 0 0 1 6.2 4H17"/></svg>
+                        </button>
+                        <button type="button" class="explore-feedback-btn" @click="recordInteraction(paper, 'hide')" title="Hide" aria-label="Hide this paper">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12"/><path d="M18 6L6 18"/></svg>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </li>
+              </template>
+            </ol>
+
+            <div x-show="$store.app.explore.isLoadingPage" class="explore-loading">
+              <span>Ranking</span>
+              <span class="explore-loading-bar" aria-hidden="true"></span>
             </div>
 
-            <div x-show="!$store.app.explore.hasMore && $store.app.explore.papers.length && !$store.app.explore.isLoadingPage" style="text-align:center; padding:2rem 0; color:var(--text-muted); font-size:0.9rem;">
-              That's all we have for you right now. Try a new search to expand the pool.
+            <div x-show="!$store.app.explore.hasMore && $store.app.explore.papers.length && !$store.app.explore.isLoadingPage" class="explore-end">
+              end of feed
             </div>
 
-            <div x-show="!$store.app.explore.papers.length && !$store.app.explore.isLoadingPage && !$store.app.explore.error" style="text-align:center; padding:3rem 1rem; color:var(--text-muted); max-width: 540px; margin: 0 auto;">
-              <p style="font-size: 0.95rem; margin-bottom: 1rem;">No recommendations yet.</p>
+            <div x-show="!$store.app.explore.papers.length && !$store.app.explore.isLoadingPage && !$store.app.explore.error" class="explore-empty">
+              <h3 class="explore-empty-title">Nothing to recommend yet</h3>
+              <p class="explore-empty-body">Run a search or two and we'll match papers against those terms next time you come back. Highly-cited arXiv work shows up here in the meantime.</p>
               <template x-if="diagnostics && Array.isArray(diagnostics.notes) && diagnostics.notes.length">
-                <ul style="text-align: left; font-size: 0.85rem; line-height: 1.6; background: var(--glass-bg); border: 1px solid var(--border-color); border-radius: 10px; padding: 1rem 1.25rem; list-style: disc; padding-left: 2rem;">
+                <ul class="explore-empty-notes">
                   <template x-for="note in diagnostics.notes" :key="note">
                     <li x-text="note"></li>
                   </template>
                 </ul>
               </template>
-              <p x-show="diagnostics && !diagnostics.notes?.length" style="font-size: 0.85rem;">Try a fresh search or upvote a gap to seed your profile.</p>
             </div>
 
             <div
@@ -1156,11 +1191,12 @@
               x-show="$store.app.explore.hasMore"
               x-init="
                 const sentinel = $el;
+                const scroller = document.querySelector('.px-content') || null;
                 const observer = new IntersectionObserver((entries) => {
                   if (entries.some((e) => e.isIntersecting)) {
                     loadMore();
                   }
-                }, { rootMargin: '800px' });
+                }, { root: scroller, rootMargin: '300px' });
                 observer.observe(sentinel);
                 $cleanup = () => observer.disconnect();
               "
@@ -1406,18 +1442,18 @@
   </main>
 
   <script src="/js/api.js?v=20260417a"></script>
-  <script src="/js/search.js?v=20260514a"></script>
+  <script src="/js/search.js?v=20260514f"></script>
   <script src="https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.7/dist/gsap.min.js"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/@alpinejs/collapse@3.14.9/dist/cdn.min.js"></script>
   <script defer src="/js/alpine/stores/appStore.js?v=20260514d"></script>
-  <script defer src="/js/d3/clusterMap.js?v=20260503a"></script>
+  <script defer src="/js/d3/clusterMap.js?v=20260514p"></script>
   <script defer src="/js/d3/charts.js?v=20260502b"></script>
   <script defer src="/js/d3/citationGraph.js?v=20260512c"></script>
   <script defer src="/js/alpine/components/searchForm.js?v=20260423a"></script>
   <script defer src="/js/alpine/components/resultsPage.js?v=20260502b"></script>
   <script defer src="/js/alpine/components/gapExplorer.js?v=20260506n"></script>
-  <script defer src="/js/alpine/components/exploreFeed.js?v=20260514d"></script>
+  <script defer src="/js/alpine/components/exploreFeed.js?v=20260514f"></script>
   <script defer src="/js/alpine/components/historySidebar.js?v=20260423a"></script>
   <script defer src="/js/alpine/components/citationGraph.js?v=20260512c"></script>
   <script defer src="/js/alpine/app.js?v=20260507b"></script>

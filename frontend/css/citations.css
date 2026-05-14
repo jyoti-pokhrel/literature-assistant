@@ -346,7 +346,7 @@
 }
 
 .cit-zoom {
-    bottom: var(--s-2);
+    top: var(--s-2);
     right: var(--s-2);
     display: flex;
     flex-direction: column;

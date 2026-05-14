@@ -29,10 +29,15 @@ window.exploreFeed = function exploreFeed() {
             store.explore.isLoadingPage = true;
             store.explore.error = '';
 
+            const recentTopics = (store.history || [])
+                .map((entry) => entry?.topic || entry?.query || "")
+                .filter(Boolean);
+
             try {
                 const data = await window.searchAPI.fetchExploreFeed({
                     cursor: store.explore.nextCursor,
                     pageSize: window.ResearchAgent.exploreDefaults.pageSize,
+                    recentTopics,
                 });
                 if (requestId !== store.explore.pageRequestId) return false;
 
