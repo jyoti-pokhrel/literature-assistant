@@ -987,8 +987,16 @@
               That's all we have for you right now. Try a new search to expand the pool.
             </div>
 
-            <div x-show="!$store.app.explore.coldStart && !$store.app.explore.papers.length && !$store.app.explore.isLoadingPage && !$store.app.explore.error" style="text-align:center; padding:3rem 0; color:var(--text-muted);">
-              No recommendations yet. Run a search or save some gap feedback to seed the feed.
+            <div x-show="!$store.app.explore.coldStart && !$store.app.explore.papers.length && !$store.app.explore.isLoadingPage && !$store.app.explore.error" style="text-align:center; padding:3rem 1rem; color:var(--text-muted); max-width: 540px; margin: 0 auto;">
+              <p style="font-size: 0.95rem; margin-bottom: 1rem;">No recommendations yet.</p>
+              <template x-if="diagnostics && Array.isArray(diagnostics.notes) && diagnostics.notes.length">
+                <ul style="text-align: left; font-size: 0.85rem; line-height: 1.6; background: var(--glass-bg); border: 1px solid var(--border-color); border-radius: 10px; padding: 1rem 1.25rem; list-style: disc; padding-left: 2rem;">
+                  <template x-for="note in diagnostics.notes" :key="note">
+                    <li x-text="note"></li>
+                  </template>
+                </ul>
+              </template>
+              <p x-show="diagnostics && !diagnostics.notes?.length" style="font-size: 0.85rem;">Try a fresh search or upvote a gap to seed your profile.</p>
             </div>
 
             <div
@@ -1222,7 +1230,7 @@
   <script defer src="/js/alpine/components/searchForm.js?v=20260423a"></script>
   <script defer src="/js/alpine/components/resultsPage.js?v=20260502b"></script>
   <script defer src="/js/alpine/components/gapExplorer.js?v=20260506n"></script>
-  <script defer src="/js/alpine/components/exploreFeed.js?v=20260514a"></script>
+  <script defer src="/js/alpine/components/exploreFeed.js?v=20260514b"></script>
   <script defer src="/js/alpine/components/historySidebar.js?v=20260423a"></script>
   <script defer src="/js/alpine/components/citationGraph.js?v=20260512c"></script>
   <script defer src="/js/alpine/app.js?v=20260507b"></script>

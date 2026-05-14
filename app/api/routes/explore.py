@@ -92,6 +92,19 @@ class ExploreProfileResponse(BaseModel):
     is_cold_start: bool
 
 
+class ExploreDiagnosticsResponse(BaseModel):
+    paper_count: int
+    embedded_paper_count: int
+    profile_state: str  # "cold_start" | "ready"
+    profile_vector_dim: Optional[int] = None
+    seen_count: int = 0
+    top_components: List[dict] = Field(default_factory=list)
+    affinity: dict = Field(default_factory=dict)
+    vector_search_ok: bool = False
+    vector_search_sample: int = 0
+    notes: List[str] = Field(default_factory=list)
+
+
 def _ensure_enabled() -> None:
     if not _personalization_enabled():
         raise HTTPException(
@@ -183,3 +196,98 @@ def _component_counts(components) -> dict:
             continue
         counts[kind] = counts.get(kind, 0) + 1
     return counts
+
+
+@router.get(
+    "/explore/diagnostics",
+    response_model=ExploreDiagnosticsResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Operator-facing health check for the explore feed",
+)
+async def explore_diagnostics(current_user: dict = Depends(get_current_user)):
+    _ensure_enabled()
+    from app.db.session import papers_collection
+    from app.services.recommendations.affinity import build_affinity
+    from app.services.recommendations.ranker import VECTOR_INDEX_NAME
+
+    username = _username(current_user)
+    notes: list[str] = []
+
+    paper_count = 0
+    embedded_paper_count = 0
+    if papers_collection is not None:
+        try:
+            paper_count = await papers_collection.estimated_document_count()
+        except Exception:
+            notes.append("estimated_document_count failed")
+        try:
+            embedded_paper_count = await papers_collection.count_documents(
+                {"embedding": {"$exists": True}}, limit=10001
+            )
+        except Exception:
+            notes.append("embedded count failed")
+    else:
+        notes.append("papers_collection is None")
+
+    profile = await profile_builder.load_profile(username)
+    profile_state = "cold_start" if profile.is_cold_start else "ready"
+    profile_vector_dim = len(profile.vector) if profile.vector else None
+    seen_count = len(profile.seen_paper_ids)
+    top_components = [
+        {"kind": c.kind, "label": c.label, "weight": round(c.weight, 3)}
+        for c in (profile.components or [])[:8]
+    ]
+
+    affinity = await build_affinity(username)
+    affinity_summary = {
+        "top_authors": list(affinity.authors.keys())[:5],
+        "top_venues": list(affinity.venues.keys())[:5],
+    }
+
+    vector_search_ok = False
+    vector_search_sample = 0
+    if papers_collection is not None and profile.vector:
+        try:
+            pipeline = [
+                {
+                    "$vectorSearch": {
+                        "index": VECTOR_INDEX_NAME,
+                        "path": "embedding",
+                        "queryVector": profile.vector,
+                        "numCandidates": 20,
+                        "limit": 5,
+                    }
+                },
+                {"$count": "n"},
+            ]
+            async for doc in papers_collection.aggregate(pipeline):
+                vector_search_sample = int(doc.get("n", 0))
+            vector_search_ok = True
+        except Exception as exc:
+            notes.append(f"$vectorSearch probe failed: {exc!s}")
+
+    if paper_count == 0:
+        notes.append("papers collection is empty — run a search to seed it")
+    elif embedded_paper_count == 0:
+        notes.append(
+            "no papers carry an embedding — run "
+            "`python -m scripts.backfill_paper_embeddings`"
+        )
+    elif not vector_search_ok:
+        notes.append(
+            "$vectorSearch probe failed — check the `papers_vector_index` "
+            "Atlas Search index exists and matches the embedding dimension"
+        )
+
+    return ExploreDiagnosticsResponse(
+        paper_count=paper_count,
+        embedded_paper_count=embedded_paper_count,
+        profile_state=profile_state,
+        profile_vector_dim=profile_vector_dim,
+        seen_count=seen_count,
+        top_components=top_components,
+        affinity=affinity_summary,
+        vector_search_ok=vector_search_ok,
+        vector_search_sample=vector_search_sample,
+        notes=notes,
+    )

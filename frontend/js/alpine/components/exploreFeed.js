@@ -3,6 +3,7 @@ window.exploreFeed = function exploreFeed() {
         seedDraft: ['', '', ''],
         savingSeeds: false,
         seedError: '',
+        diagnostics: null,
 
         init() {
             const store = this.$store?.app;
@@ -93,6 +94,13 @@ window.exploreFeed = function exploreFeed() {
                 if (data?.profile_summary) {
                     store.explore.profileSummary = data.profile_summary;
                 }
+                if (
+                    store.explore.papers.length === 0 &&
+                    data?.has_more !== true &&
+                    !this.diagnostics
+                ) {
+                    await this.loadDiagnostics();
+                }
                 return true;
             } catch (error) {
                 const code = error?.code || error?.detail?.error;
@@ -109,6 +117,14 @@ window.exploreFeed = function exploreFeed() {
                 if (requestId === store.explore.pageRequestId) {
                     store.explore.isLoadingPage = false;
                 }
+            }
+        },
+
+        async loadDiagnostics() {
+            try {
+                this.diagnostics = await window.searchAPI.fetchExploreDiagnostics();
+            } catch (e) {
+                this.diagnostics = { notes: ['Diagnostics endpoint failed: ' + (e?.message || e)] };
             }
         },
 

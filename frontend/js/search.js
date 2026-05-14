@@ -131,6 +131,13 @@ async function fetchExploreProfile() {
     return await parseResponse(response, "Could not load explore profile");
 }
 
+async function fetchExploreDiagnostics() {
+    const response = await authenticatedFetch(`${BASE_URL}/explore/diagnostics`, {
+        method: "GET",
+    });
+    return await parseResponse(response, "Could not load explore diagnostics");
+}
+
 async function fetchPublicReport(report_id) {
     const response = await fetch(`${BASE_URL}/synthesis/public/report/${report_id}`, {
         method: "GET",
@@ -195,6 +202,7 @@ window.searchAPI = {
     fetchExploreFeed,
     saveExploreSeeds,
     fetchExploreProfile,
+    fetchExploreDiagnostics,
     fetchPublicReport,
     buildSearchPayload,
     formatFilters,
