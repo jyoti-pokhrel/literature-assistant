@@ -20,7 +20,7 @@
   <link rel="stylesheet" href="/css/style.css?v=20260516a" />
   <link rel="stylesheet" href="/css/workspace.css?v=20260506n" />
   <link rel="stylesheet" href="/css/dashboard.css?v=20260516d" />
-  <link rel="stylesheet" href="/css/citations.css?v=20260516e" />
+  <link rel="stylesheet" href="/css/citations.css?v=20260516f" />
 </head>
 <body class="landing-state" x-data="appShell()" x-init="init()" :class="$store.app.mode === 'workspace' ? 'workspace-state' : 'landing-state'">
   <div class="bg-grid"></div>
@@ -1126,19 +1126,6 @@
 
           <div class="cit-shell" x-cloak x-show="graph.nodes.length">
             <main class="cit-canvas glass" id="cit-graph-mount" x-ref="graphMount">
-                </div>
-                <div class="cit-legend-row">
-                  <span class="cit-legend-row-label">role</span>
-                  <div class="cit-legend-roles">
-                    <span class="cit-legend-role"><span class="cit-legend-glyph cit-legend-glyph--seed"></span>seed</span>
-                    <span class="cit-legend-role"><span class="cit-legend-glyph cit-legend-glyph--ref"></span>reference</span>
-                    <span class="cit-legend-role"><span class="cit-legend-glyph cit-legend-glyph--cite"></span>citer</span>
-                  </div>
-                </div>
-                <div class="cit-legend-row">
-                  <span class="cit-legend-row-label">size = citations · refs ◀ seed ▶ citers</span>
-                </div>
-              </div>
               <div class="cit-canvas-overlay cit-zoom" role="group" aria-label="Zoom controls">
                 <button type="button" title="Zoom in"  @click="$nextTick(() => window.CitationGraph?.zoomBy?.(1.4))">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
