@@ -5,6 +5,7 @@ window.ResearchAgent.routes = {
     workspace: '/workspace',
     search: '/workspace/search',
     explore: '/workspace/explore',
+    citations: '/workspace/citations',
     share: '/synthesis/share',
 };
 
@@ -405,6 +406,13 @@ document.addEventListener('alpine:init', () => {
             return true;
         },
 
+        openCitations({ replace = false } = {}) {
+            this.setMode('workspace');
+            this.currentView = 'citations';
+            this.error = '';
+            this.goToPath(window.ResearchAgent.routes.citations, { replace });
+        },
+
         async loadMoreExplore() {
             // Delegates to the active exploreFeed Alpine component, which holds
             // the cold-start state and the seed-onboarding form.
@@ -621,6 +629,13 @@ document.addEventListener('alpine:init', () => {
                 this.error = '';
                 this.resetExplore();
                 // exploreFeed's init() handles profile + first page on view show
+                return;
+            }
+
+            if (pathname === window.ResearchAgent.routes.citations) {
+                this.setMode('workspace');
+                this.currentView = 'citations';
+                this.error = '';
                 return;
             }
 

@@ -46,6 +46,23 @@ async def get_current_user(
     return user
 
 
+async def get_optional_user(
+    token: Optional[str] = Depends(oauth2_scheme),
+    x_api_key: Optional[str] = Header(default=None),
+):
+    """Like get_current_user, but returns None when no credentials are
+    provided instead of raising 401. Use for endpoints that work for both
+    authenticated and anonymous callers (read-only public-ish surfaces)."""
+    if not token and not x_api_key:
+        if settings.AUTH_DEV_BYPASS:
+            return {"username": "local-test-user", "role": "admin", "is_verified": True}
+        return None
+    try:
+        return await get_current_user(token=token, x_api_key=x_api_key)
+    except HTTPException:
+        return None
+
+
 async def require_admin(current_user: dict = Depends(get_current_user)):
     if current_user.get("role") != "admin":
         raise HTTPException(status_code=403, detail="Admin privileges required")

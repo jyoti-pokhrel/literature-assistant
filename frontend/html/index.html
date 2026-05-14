@@ -17,10 +17,10 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/css/tokens.css?v=20260506n" />
-  <link rel="stylesheet" href="/css/style.css?v=20260515v" />
+  <link rel="stylesheet" href="/css/style.css?v=20260516b" />
   <link rel="stylesheet" href="/css/workspace.css?v=20260506n" />
-  <link rel="stylesheet" href="/css/dashboard.css?v=20260514x" />
-  <link rel="stylesheet" href="/css/citations.css?v=20260512c" />
+  <link rel="stylesheet" href="/css/dashboard.css?v=20260516d" />
+  <link rel="stylesheet" href="/css/citations.css?v=20260516g" />
 </head>
 <body class="landing-state" x-data="appShell()" x-init="init()" :class="$store.app.mode === 'workspace' ? 'workspace-state' : 'landing-state'">
   <div class="bg-grid"></div>
@@ -61,7 +61,7 @@
         <div class="lp-hero-copy">
           <p class="lp-hero-folio reveal">001 · Literature workbench</p>
           <h1 class="lp-hero-title reveal reveal-d1">
-            Find what research is <span class="lp-hero-accent">missing.<svg class="lp-hero-accent-underline" viewBox="0 0 220 18" preserveAspectRatio="none" aria-hidden="true" focusable="false"><defs><linearGradient id="lpHeroUnderlineGrad" x1="0" y1="0" x2="220" y2="0" gradientUnits="userSpaceOnUse" spreadMethod="repeat"><stop offset="0%"   stop-color="var(--lp-underline-c0)"/><stop offset="42%"  stop-color="var(--lp-underline-c0)"/><stop offset="50%"  stop-color="var(--lp-underline-c1)"/><stop offset="58%"  stop-color="var(--lp-underline-c0)"/><stop offset="100%" stop-color="var(--lp-underline-c0)"/><animateTransform attributeName="gradientTransform" type="translate" from="0 0" to="220 0" dur="3.8s" repeatCount="indefinite"/></linearGradient></defs><path d="M 4 12 C 28 4, 56 16, 92 9 C 122 4, 158 16, 196 10 C 208 8, 214 11, 218 13"/></svg></span>
+            Find what research is <span class="lp-hero-accent">missing.<svg class="lp-hero-accent-underline" viewBox="0 0 220 18" preserveAspectRatio="none" aria-hidden="true" focusable="false"><defs><linearGradient id="lpHeroUnderlineGrad" x1="0" y1="0" x2="220" y2="0" gradientUnits="userSpaceOnUse" spreadMethod="repeat"><stop offset="0%"   stop-color="var(--lp-underline-c0)"/><stop offset="18%"  stop-color="var(--lp-underline-c0)"/><stop offset="35%"  stop-color="var(--lp-underline-c1)"/><stop offset="50%"  stop-color="var(--lp-underline-c1)"/><stop offset="65%"  stop-color="var(--lp-underline-c1)"/><stop offset="82%"  stop-color="var(--lp-underline-c0)"/><stop offset="100%" stop-color="var(--lp-underline-c0)"/><animateTransform attributeName="gradientTransform" type="translate" from="0 0" to="220 0" dur="3.8s" repeatCount="indefinite"/></linearGradient></defs><path d="M 4 12 C 28 4, 56 16, 92 9 C 122 4, 158 16, 196 10 C 208 8, 214 11, 218 13"/></svg></span>
           </h1>
           <p class="lp-hero-subtitle reveal reveal-d2">
             Search trusted indexes, then surface citation-backed gaps, limitations, and underexplored directions, mapped across the literature.
@@ -414,7 +414,7 @@
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><polygon points="15.5 8.5 11 11 8.5 15.5 13 13 15.5 8.5"></polygon></svg>
           <span>Explore</span>
         </button>
-        <button type="button" class="sidebar-nav-item" :class="{ active: $store.app.currentView === 'citations' }" @click="$store.app.currentView = 'citations'; $store.app.mode = 'workspace'" title="Citation Network Analyser">
+        <button type="button" class="sidebar-nav-item" :class="{ active: $store.app.currentView === 'citations' }" @click="$store.app.openCitations()" title="Citation Network Analyser">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="6" cy="6" r="2.2"></circle><circle cx="18" cy="6" r="2.2"></circle><circle cx="6" cy="18" r="2.2"></circle><circle cx="18" cy="18" r="2.2"></circle><circle cx="12" cy="12" r="2.4"></circle><line x1="7.7" y1="7.7" x2="10.3" y2="10.3"></line><line x1="16.3" y1="7.7" x2="13.7" y2="10.3"></line><line x1="7.7" y1="16.3" x2="13.7" y2="10.3"></line><line x1="16.3" y1="16.3" x2="13.7" y2="13.7"></line></svg>
           <span>Citation Network Analyser</span>
         </button>
@@ -502,32 +502,18 @@
       <div class="px-content">
         <section id="initial-view" class="dash-workbench" x-show="$store.app.currentView === 'form'" x-transition:enter="fade-in visible" x-data="{ get today() { try { return new Intl.DateTimeFormat('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' }).format(new Date()); } catch(e) { return ''; } }, moreFilters: false }">
 
-          <!-- Identity strip — date + quiet user mark + status -->
-          <header class="dw-identity">
-            <span class="dw-identity-date" x-text="today"></span>
-            <span class="dw-identity-rule" aria-hidden="true"></span>
-            <span class="dw-identity-user" x-show="$store.app.isLoggedIn">
-              <span class="dw-identity-user-dot" aria-hidden="true"></span>
-              <span x-text="($store.app.user && $store.app.user.displayName) || 'Signed in'"></span>
-            </span>
-          </header>
-
           <!-- Resume zone — surfaces the latest thread when history exists -->
           <template x-if="$store.app.history.length > 0">
-            <section class="dw-resume" aria-labelledby="dw-resume-label">
-              <div class="dw-resume-meta">
-                <span class="dw-resume-tag" id="dw-resume-label">Last thread</span>
-                <span class="dw-resume-meta-sep" aria-hidden="true">·</span>
-                <span class="dw-resume-meta-text" x-text="$store.app.history[0].summary || 'In progress'"></span>
-              </div>
+            <section class="dw-resume">
               <h2 class="dw-resume-title" x-text="$store.app.history[0].topic"></h2>
+              <p class="dw-resume-meta-text" x-text="$store.app.history[0].summary || 'In progress'"></p>
               <div class="dw-resume-actions">
                 <button type="button" class="dw-resume-cta" @click="$store.app.useHistoryItem($store.app.history[0])">
-                  Resume thread
+                  Resume
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
                 </button>
                 <button type="button" class="dw-resume-quiet" @click="document.getElementById('main-prompt')?.focus()">
-                  Or start a new one
+                  Start a new search
                 </button>
               </div>
             </section>
@@ -536,11 +522,9 @@
           <!-- Welcome empty-state — only when no history -->
           <template x-if="$store.app.history.length === 0">
             <section class="dw-welcome">
-              <p class="dw-welcome-tag">Workbench</p>
-              <h2 class="dw-welcome-title">Begin with a question. The map will find itself.</h2>
-              <p class="dw-welcome-desc">Type a research topic below. The agent searches Semantic Scholar, arXiv, and OpenAlex, clusters the results, and surfaces the gaps.</p>
+              <h2 class="dw-welcome-title">Search a research topic to begin.</h2>
+              <p class="dw-welcome-desc">Searches Semantic Scholar, arXiv, and OpenAlex; clusters the results; surfaces the gaps.</p>
               <div class="dw-welcome-chips" x-data="searchForm()">
-                <span class="dw-welcome-chips-kicker">Try one</span>
                 <template x-for="t in ['Mechanistic interpretability', 'Diffusion models', 'Retrieval-augmented generation', 'Long-context evaluation', 'Constitutional AI']" :key="t">
                   <button type="button" class="dw-welcome-chip" @click="$store.app.form.topic = t; submit()" x-text="t"></button>
                 </template>
@@ -549,22 +533,26 @@
           </template>
 
           <!-- Command bar — the new-query path -->
-          <section class="dw-command" aria-labelledby="dw-command-label">
-            <p class="dw-command-label" id="dw-command-label">New thread</p>
+          <section class="dw-command">
             <form class="dw-command-form glass-glow" x-data="searchForm()" @submit.prevent="submit" @keydown.enter.prevent="submit">
               <div class="dw-command-main">
-                <span class="dw-command-prompt" aria-hidden="true">›</span>
                 <label class="sr-only" for="main-prompt">Topic</label>
-                <input id="main-prompt" class="dw-command-input" type="text" placeholder="A topic, a paper, a question..." x-model="$store.app.form.topic" autocomplete="off" />
+                <input id="main-prompt" class="dw-command-input" type="text" placeholder="Search a research topic" x-model="$store.app.form.topic" autocomplete="off" />
                 <label class="dw-command-year" :class="{ 'is-filled': $store.app.form.year && $store.app.form.year.toString().trim().length > 0 }">
                   <span class="dw-command-year-label">Year</span>
                   <input id="year-filter" type="text" inputmode="text" placeholder="any" x-model="$store.app.form.year" />
                 </label>
                 <button type="button" class="dw-command-more" :class="{ 'is-open': moreFilters }" @click="moreFilters = !moreFilters" :aria-expanded="moreFilters ? 'true' : 'false'">
-                  <span x-text="moreFilters ? 'Less' : 'More'"></span>
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                  <svg class="dw-command-more-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <line x1="4" y1="6" x2="20" y2="6"></line>
+                    <line x1="4" y1="12" x2="20" y2="12"></line>
+                    <line x1="4" y1="18" x2="20" y2="18"></line>
+                    <circle cx="14" cy="6" r="2.4" fill="currentColor" stroke="none"/>
+                    <circle cx="9" cy="12" r="2.4" fill="currentColor" stroke="none"/>
+                    <circle cx="16" cy="18" r="2.4" fill="currentColor" stroke="none"/>
+                  </svg>
+                  <span x-text="moreFilters ? 'Hide filters' : 'Filters'"></span>
                 </button>
-                <kbd class="dw-command-kbd" aria-hidden="true">↵</kbd>
                 <button id="run-px-query" class="dw-command-submit" type="submit" :class="{ 'is-loading': $store.app.isLoading }" :disabled="$store.app.isLoading" aria-label="Run search">
                   <span x-show="!$store.app.isLoading">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
@@ -592,25 +580,38 @@
             <p id="search-error" class="search-error" x-cloak x-show="$store.app.error" x-text="$store.app.error"></p>
           </section>
 
+          <!-- Suggested topics for active researchers (only when history exists) -->
+          <section class="dw-prompts" x-data="searchForm()" x-show="$store.app.history.length > 0" aria-label="Suggested research topics">
+            <span class="dw-prompts-label">Or jump into</span>
+            <div class="dw-prompts-chips">
+              <template x-for="t in ['Mechanistic interpretability', 'Long-context evaluation', 'Diffusion models', 'Constitutional AI', 'Retrieval-augmented generation']" :key="t">
+                <button type="button" class="dw-prompts-chip" @click="$store.app.form.topic = t; submit()" x-text="t"></button>
+              </template>
+            </div>
+          </section>
+
           <!-- Earlier log — denser list of past threads -->
           <section class="dw-log" x-show="$store.app.history.length > 1">
             <div class="dw-log-head">
-              <span class="dw-log-kicker">Earlier</span>
-              <span class="dw-log-count">
-                <span x-text="Math.max(0, $store.app.history.length - 1)"></span>
-                <span x-show="Math.max(0, $store.app.history.length - 1) === 1">thread</span>
-                <span x-show="Math.max(0, $store.app.history.length - 1) !== 1">threads</span>
-              </span>
-              <a class="dw-log-allink" href="#" x-show="$store.app.history.length > 8" @click.prevent="document.getElementById('search-history')?.scrollIntoView({ behavior: 'smooth', block: 'start' })">All searches →</a>
+              <span class="dw-log-kicker">Recent searches</span>
+              <a class="dw-log-allink" href="#" x-show="$store.app.history.length > 8" @click.prevent="document.getElementById('search-history')?.scrollIntoView({ behavior: 'smooth', block: 'start' })">All searches</a>
             </div>
 
             <ol class="dw-log-list">
               <template x-for="(item, index) in $store.app.history.slice(1, 8)" :key="item.id">
                 <li class="dw-log-row" tabindex="0" role="button" @click="$store.app.useHistoryItem(item)" @keydown.enter.prevent="$store.app.useHistoryItem(item)" @keydown.space.prevent="$store.app.useHistoryItem(item)">
-                  <span class="dw-log-idx" x-text="(index + 2).toString().padStart(2, '0')"></span>
-                  <span class="dw-log-title" x-text="item.topic"></span>
-                  <i class="dw-log-leader" aria-hidden="true"></i>
-                  <span class="dw-log-meta" x-text="item.summary"></span>
+                  <div class="dw-log-row-head">
+                    <span class="dw-log-title" x-text="item.topic"></span>
+                    <span class="dw-log-meta" x-text="item.summary"></span>
+                  </div>
+                  <ol class="dw-log-row-papers" x-show="(item.result?.searchData?.papers || item.result?.papers || []).length > 0">
+                    <template x-for="(paper, pIdx) in (item.result?.searchData?.papers || item.result?.papers || []).slice(0, 3)" :key="pIdx">
+                      <li class="dw-log-row-paper" x-text="paper.title || 'Untitled paper'"></li>
+                    </template>
+                    <li class="dw-log-row-paper dw-log-row-paper--more"
+                        x-show="(item.result?.searchData?.papers || item.result?.papers || []).length > 3"
+                        x-text="'+ ' + ((item.result?.searchData?.papers || item.result?.papers || []).length - 3) + ' more papers'"></li>
+                  </ol>
                 </li>
               </template>
             </ol>
@@ -737,22 +738,30 @@
             </div>
           </header>
 
-          <section class="loading-quiet" x-cloak x-show="$store.app.isLoading">
-            <div class="loading-quiet-inner">
-              <p class="loading-quiet-status" x-text="currentProgressEvent().label || 'Synthesizing'"></p>
-              <span class="loading-quiet-dots" aria-hidden="true">
-                <i></i><i></i><i></i>
-              </span>
-              <p class="loading-quiet-meta" x-text="searchStatusSummary()"></p>
-              <ol class="loading-quiet-log" x-show="$store.app.progressEvents.length">
-                <template x-for="(event, index) in $store.app.progressEvents" :key="index">
-                  <li :class="{ 'is-current': index === $store.app.progressEvents.length - 1 }">
-                    <span class="loading-quiet-num" x-text="(index + 1).toString().padStart(2, '0')"></span>
-                    <span class="loading-quiet-msg" x-text="event.label"></span>
-                  </li>
-                </template>
-              </ol>
+          <section class="syn-progress" x-cloak x-show="$store.app.isLoading">
+            <header class="syn-progress-context">
+              <span class="syn-progress-context-label">Analysing</span>
+              <strong class="syn-progress-context-topic" x-text="title() || 'Your research topic'"></strong>
+            </header>
+
+            <div class="syn-progress-head">
+              <p class="syn-progress-stage" x-text="currentProgressEvent().label || 'Synthesising'"></p>
+              <p class="syn-progress-msg" x-text="currentProgressEvent().detail || 'Connecting to the pipeline'"></p>
             </div>
+
+            <div class="syn-progress-track" role="progressbar" :aria-valuenow="loadingProgress()" aria-valuemin="0" aria-valuemax="100">
+              <div class="syn-progress-track-fill" :style="{ width: loadingProgress() + '%' }"></div>
+              <span class="syn-progress-track-pct" x-text="loadingProgress() + '%'"></span>
+            </div>
+
+            <ol class="syn-progress-log" x-show="$store.app.progressEvents.length">
+              <template x-for="(event, index) in $store.app.progressEvents.slice(-5)" :key="index + event.label">
+                <li :class="{ 'is-current': index === ($store.app.progressEvents.slice(-5).length - 1) }">
+                  <span class="syn-progress-log-dot" aria-hidden="true"></span>
+                  <span class="syn-progress-log-msg" x-text="event.label"></span>
+                </li>
+              </template>
+            </ol>
           </section>
 
           <div x-data="gapExplorer()" @paper:select.window="handlePaperSelect($event)" @cluster:select.window="handleClusterSelect($event)" @map:clear.window="handleMapClear()" x-show="!$store.app.isLoading">
@@ -831,6 +840,9 @@
                         </p>
                       </header>
                       <div class="d3-chart-container map-side-chart" x-ref="chartConfidence"></div>
+                      <p class="map-side-hint" x-show="selectedGap()">
+                        Each gap and cluster has its own profile across these five scores. Pick another from the gap list, or click a cluster on the map, to update this view.
+                      </p>
                     </aside>
                 </div>
 
@@ -1049,30 +1061,40 @@
                  x-data="citationGraph()" x-init="init()"
                  x-cloak x-show="$store.app.currentView === 'citations'"
                  style="display:flex; flex-direction:column;">
-          <header class="results-header cit-header">
-            <div>
-              <div class="thread-query-kicker">Citation network</div>
-              <h2 class="results-query-title">Trace a paper's references and citers</h2>
-              <p class="results-query-meta" x-show="resolved" x-cloak>
-                <span x-text="resolved?.title || resolved?.paper_id"></span>
-                <template x-if="resolved?.year"><span> · <span x-text="resolved.year"></span></span></template>
-                <template x-if="cached"><span class="cit-pill" title="Served from 30-day cache">cached</span></template>
-              </p>
+          <header class="results-header cit-header" :class="{ 'is-compact': graph.nodes.length > 0 }">
+            <div class="cit-header-inner">
+              <div class="cit-header-text">
+                <h2 class="results-query-title">Citation network</h2>
+                <p class="cit-header-sub" x-show="graph.nodes.length === 0">Trace references and citers from any DOI, arXiv ID, or paper URL.</p>
+                <p class="results-query-meta cit-header-resolved" x-show="resolved" x-cloak>
+                  <span x-text="resolved?.title || resolved?.paper_id"></span>
+                  <template x-if="resolved?.year"><span> · <span x-text="resolved.year"></span></span></template>
+                  <template x-if="cached"><span class="cit-pill" title="Served from 30-day cache">cached</span></template>
+                </p>
+              </div>
+              <button type="button" class="cit-header-reset" x-show="graph.nodes.length > 0"
+                      @click="graph = { nodes: [], edges: [] }; resolved = null; selectedNode = null; input = ''; setTimeout(() => document.getElementById('cit-input')?.focus(), 50)"
+                      title="Clear network and search a different paper">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <line x1="19" y1="12" x2="5" y2="12"></line>
+                  <polyline points="12 19 5 12 12 5"></polyline>
+                </svg>
+                <span>Search another paper</span>
+              </button>
             </div>
           </header>
 
-          <section class="cit-form-shell glass">
+          <section class="cit-form-shell" x-show="graph.nodes.length === 0">
             <form class="cit-form" @submit.prevent="build()">
               <label class="sr-only" for="cit-input">Paper URL or DOI</label>
-              <svg class="cit-form-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
               <input id="cit-input" class="cit-form-input" type="text" autocomplete="off"
-                     placeholder="Paste a DOI, arXiv ID, or paper URL (e.g. 10.1038/s41586-021-03819-2)"
+                     placeholder="Paste a DOI, arXiv ID, or paper URL"
                      x-model="input" @input="resolved = null" />
-              <button type="button" class="btn-glass" @click="resolve()" :disabled="resolving || building">
-                <span x-show="!resolving">Resolve</span>
-                <span x-show="resolving">Resolving…</span>
+              <button type="button" class="cit-form-resolve" @click="resolve()" :disabled="resolving || building || !input.trim()" title="Resolve the paper without building the network">
+                <span x-show="!resolving">Preview</span>
+                <span x-show="resolving">…</span>
               </button>
-              <button type="submit" class="btn-primary-glow" :disabled="building || resolving || !input.trim()">
+              <button type="submit" class="cit-form-submit" :disabled="building || resolving || !input.trim()">
                 <span x-show="!building">Build network</span>
                 <span x-show="building">Building…</span>
               </button>
@@ -1080,25 +1102,45 @@
             <p class="cit-form-error" x-cloak x-show="errorMsg" x-text="errorMsg"></p>
             <template x-if="resolved && !building">
               <div class="cit-resolved">
-                <span class="cit-pill cit-pill-strong" x-text="resolved.source.replace('_', ' ')"></span>
-                <strong x-text="resolved.title || resolved.paper_id"></strong>
-                <template x-if="resolved.doi"><span class="cit-resolved-doi" x-text="'DOI ' + resolved.doi"></span></template>
+                <div class="cit-resolved-head">
+                  <span class="cit-resolved-source" x-text="resolved.source.replace('_', ' ').toUpperCase()"></span>
+                  <template x-if="resolved.year"><span class="cit-resolved-year" x-text="resolved.year"></span></template>
+                </div>
+                <h3 class="cit-resolved-title" x-text="resolved.title || resolved.paper_id"></h3>
+                <template x-if="resolved.doi">
+                  <div class="cit-resolved-doi"><span class="cit-resolved-doi-label">DOI</span><span x-text="resolved.doi"></span></div>
+                </template>
               </div>
             </template>
           </section>
 
-          <div class="cit-progress glass" x-cloak x-show="building">
-            <div class="cit-progress-row">
-              <span class="cit-progress-dots" aria-hidden="true"><i></i><i></i><i></i></span>
-              <span class="cit-progress-stage" x-text="stageLabel(progress.stage)"></span>
-              <span class="cit-progress-msg" x-text="progress.message"></span>
-              <button type="button" class="btn-glass cit-btn-ghost cit-progress-cancel"
-                      @click="cancel()" title="Cancel build">Cancel</button>
+          <div class="cit-progress" x-cloak x-show="building">
+            <header class="cit-progress-head">
+              <div class="cit-progress-info">
+                <p class="cit-progress-stage" x-text="stageLabel(progress.stage) || 'Working…'"></p>
+                <p class="cit-progress-msg" x-text="progress.message || 'One moment'"></p>
+              </div>
+              <button type="button" class="cit-progress-cancel" @click="cancel()" title="Cancel build">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                <span>Cancel</span>
+              </button>
+            </header>
+
+            <div class="cit-progress-track" role="progressbar" :aria-valuenow="progressPercent()" aria-valuemin="0" aria-valuemax="100">
+              <div class="cit-progress-track-fill" :style="{ width: progressPercent() + '%' }"></div>
             </div>
+
             <div class="cit-progress-counts">
-              <span><strong x-text="progress.nodes"></strong> nodes</span>
-              <span><strong x-text="progress.edges"></strong> edges</span>
+              <div class="cit-progress-count">
+                <span class="cit-progress-count-num" x-text="progress.nodes"></span>
+                <span class="cit-progress-count-label">nodes</span>
+              </div>
+              <div class="cit-progress-count">
+                <span class="cit-progress-count-num" x-text="progress.edges"></span>
+                <span class="cit-progress-count-label">edges</span>
+              </div>
             </div>
+
             <template x-if="warnings.length">
               <ul class="cit-warnings">
                 <template x-for="(w, i) in warnings" :key="i">
@@ -1110,28 +1152,6 @@
 
           <div class="cit-shell" x-cloak x-show="graph.nodes.length">
             <main class="cit-canvas glass" id="cit-graph-mount" x-ref="graphMount">
-              <div class="cit-canvas-overlay cit-legend" aria-label="Graph legend">
-                <span class="cit-legend-title">legend</span>
-                <div class="cit-legend-row">
-                  <span class="cit-legend-row-label">year · fill</span>
-                  <div class="cit-legend-bar" role="img" aria-label="Older to newer year gradient"></div>
-                  <div class="cit-legend-bar-ticks">
-                    <span x-text="meta.yearMin || '—'"></span>
-                    <span x-text="meta.yearMax || '—'"></span>
-                  </div>
-                </div>
-                <div class="cit-legend-row">
-                  <span class="cit-legend-row-label">role</span>
-                  <div class="cit-legend-roles">
-                    <span class="cit-legend-role"><span class="cit-legend-glyph cit-legend-glyph--seed"></span>seed</span>
-                    <span class="cit-legend-role"><span class="cit-legend-glyph cit-legend-glyph--ref"></span>reference</span>
-                    <span class="cit-legend-role"><span class="cit-legend-glyph cit-legend-glyph--cite"></span>citer</span>
-                  </div>
-                </div>
-                <div class="cit-legend-row">
-                  <span class="cit-legend-row-label">size = citations · refs ◀ seed ▶ citers</span>
-                </div>
-              </div>
               <div class="cit-canvas-overlay cit-zoom" role="group" aria-label="Zoom controls">
                 <button type="button" title="Zoom in"  @click="$nextTick(() => window.CitationGraph?.zoomBy?.(1.4))">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
@@ -1146,44 +1166,26 @@
               <div class="cit-canvas-overlay cit-hint">drag to rearrange · scroll to zoom · double-click a node to expand</div>
             </main>
 
-            <aside class="cit-panel glass" aria-label="Citation network controls">
-              <section class="cit-panel-section">
-                <h4 class="cit-panel-label">Filters</h4>
-                <label class="cit-checkbox">
-                  <input type="checkbox" x-model="filters.showRefs" />
-                  <span>References (<span x-text="meta.refs"></span>)</span>
-                </label>
-                <label class="cit-checkbox">
-                  <input type="checkbox" x-model="filters.showCiters" />
-                  <span>Citers (<span x-text="meta.citers"></span>)</span>
-                </label>
-                <label class="cit-range">
-                  <span>Min citations: <strong x-text="filters.minCites"></strong></span>
-                  <input type="range" min="0" max="500" step="5" x-model.number="filters.minCites" />
-                </label>
-                <label class="cit-range">
-                  <span>Year from: <strong x-text="filters.yearMin"></strong></span>
-                  <input type="range" :min="meta.yearMin" :max="meta.yearMax" step="1" x-model.number="filters.yearMin" />
-                </label>
-                <label class="cit-range">
-                  <span>Year to: <strong x-text="filters.yearMax"></strong></span>
-                  <input type="range" :min="meta.yearMin" :max="meta.yearMax" step="1" x-model.number="filters.yearMax" />
-                </label>
-              </section>
+            <aside class="cit-panel" aria-label="Citation network controls">
+              <header class="cit-panel-meta">
+                <div class="cit-panel-meta-item">
+                  <span class="cit-panel-meta-num" x-text="meta.totalNodes"></span>
+                  <span class="cit-panel-meta-label">nodes</span>
+                </div>
+                <div class="cit-panel-meta-item">
+                  <span class="cit-panel-meta-num" x-text="meta.totalEdges"></span>
+                  <span class="cit-panel-meta-label">edges</span>
+                </div>
+                <div class="cit-panel-meta-item cit-panel-meta-item--sources" x-show="sourcesUsed.length">
+                  <span class="cit-panel-meta-label">sources</span>
+                  <span class="cit-panel-meta-sources" x-text="sourcesUsed.join(' · ') || '—'"></span>
+                </div>
+              </header>
 
-              <section class="cit-panel-section">
-                <h4 class="cit-panel-label">Stats</h4>
-                <ul class="cit-stats">
-                  <li><span>Total nodes</span><strong x-text="meta.totalNodes"></strong></li>
-                  <li><span>Total edges</span><strong x-text="meta.totalEdges"></strong></li>
-                  <li><span>Sources</span><strong x-text="sourcesUsed.join(', ') || '—'"></strong></li>
-                </ul>
-              </section>
-
-              <section class="cit-panel-section">
-                <h4 class="cit-panel-label">Selected node</h4>
+              <section class="cit-panel-section cit-panel-section--selected">
+                <h4 class="cit-panel-label">Selected paper</h4>
                 <template x-if="!selectedNode">
-                  <p class="cit-panel-empty">Click a node to inspect it. Double-click to expand it by one hop.</p>
+                  <p class="cit-panel-empty">Click a node to inspect. Double-click to expand its references and citers.</p>
                 </template>
                 <template x-if="selectedNode">
                   <div class="cit-selected">
@@ -1199,46 +1201,91 @@
                        x-text="(selectedNode.authors || []).slice(0,4).join(', ') + ((selectedNode.authors||[]).length>4 ? ' et al.' : '')"></p>
                     <div class="cit-selected-actions">
                       <template x-if="paperLink(selectedNode)">
-                        <a class="btn-glass" :href="paperLink(selectedNode)" target="_blank" rel="noopener noreferrer">Open ↗</a>
+                        <a class="cit-selected-action cit-selected-action--primary" :href="paperLink(selectedNode)" target="_blank" rel="noopener noreferrer">Open paper ↗</a>
                       </template>
-                      <button type="button" class="btn-glass" @click="expand(selectedNode.id)" :disabled="selectedNode.role==='seed'">Expand</button>
-                      <button type="button" class="btn-glass cit-btn-ghost" @click="clearSelection()">Clear</button>
+                      <button type="button" class="cit-selected-action" @click="expand(selectedNode.id)" :disabled="selectedNode.role==='seed'">Expand by one hop</button>
+                      <button type="button" class="cit-selected-action cit-selected-action--ghost" @click="clearSelection()">Clear</button>
                     </div>
                   </div>
                 </template>
               </section>
 
-              <section class="cit-panel-section" x-show="topCited.length">
-                <h4 class="cit-panel-label">Top cited in network</h4>
+              <section class="cit-panel-section cit-panel-section--top" x-show="topCited.length">
+                <h4 class="cit-panel-label">Most cited in network</h4>
                 <ol class="cit-top">
                   <template x-for="(node, idx) in topCited" :key="node.id">
                     <li @click="selectNode(node)" :class="{ 'is-selected': selectedNode && selectedNode.id === node.id }">
-                      <span class="cit-top-idx" x-text="(idx + 1).toString().padStart(2, '0')"></span>
-                      <div>
+                      <div class="cit-top-body">
                         <strong x-text="node.title"></strong>
-                        <span class="cit-top-meta">
-                          <span x-text="node.year || '—'"></span>
-                          <template x-if="Number.isFinite(node.citation_count)">
-                            <span> · <span x-text="node.citation_count.toLocaleString()"></span> cites</span>
-                          </template>
-                        </span>
+                        <span class="cit-top-meta" x-text="node.year || '—'"></span>
                       </div>
+                      <span class="cit-top-cites">
+                        <span class="cit-top-cites-num" x-text="Number.isFinite(node.citation_count) ? node.citation_count.toLocaleString() : '—'"></span>
+                        <span class="cit-top-cites-label">cites</span>
+                      </span>
                     </li>
                   </template>
                 </ol>
+              </section>
+
+              <section class="cit-panel-section cit-panel-section--filters">
+                <h4 class="cit-panel-label">Filters</h4>
+                <div class="cit-filter-toggles">
+                  <label class="cit-toggle">
+                    <input type="checkbox" x-model="filters.showRefs" />
+                    <span class="cit-toggle-text">References<span class="cit-toggle-count" x-text="meta.refs"></span></span>
+                  </label>
+                  <label class="cit-toggle">
+                    <input type="checkbox" x-model="filters.showCiters" />
+                    <span class="cit-toggle-text">Citers<span class="cit-toggle-count" x-text="meta.citers"></span></span>
+                  </label>
+                </div>
+                <label class="cit-range">
+                  <span class="cit-range-head">
+                    <span>Min citations</span>
+                    <strong x-text="filters.minCites"></strong>
+                  </span>
+                  <input type="range" min="0" max="500" step="5" x-model.number="filters.minCites" />
+                </label>
+                <label class="cit-range">
+                  <span class="cit-range-head">
+                    <span>From year</span>
+                    <strong x-text="filters.yearMin"></strong>
+                  </span>
+                  <input type="range" :min="meta.yearMin" :max="meta.yearMax" step="1" x-model.number="filters.yearMin" />
+                </label>
+                <label class="cit-range">
+                  <span class="cit-range-head">
+                    <span>To year</span>
+                    <strong x-text="filters.yearMax"></strong>
+                  </span>
+                  <input type="range" :min="meta.yearMin" :max="meta.yearMax" step="1" x-model.number="filters.yearMax" />
+                </label>
               </section>
             </aside>
           </div>
 
           <template x-if="!building && !graph.nodes.length && !errorMsg">
             <div class="cit-empty">
-              <p>Paste any of the following to begin:</p>
-              <ul>
-                <li><code>10.1038/s41586-021-03819-2</code> (DOI)</li>
-                <li><code>https://arxiv.org/abs/2005.14165</code> (arXiv URL)</li>
-                <li><code>2005.14165</code> (arXiv ID)</li>
-                <li><code>W2755950973</code> (OpenAlex ID)</li>
-              </ul>
+              <p class="cit-empty-label">Try one of these</p>
+              <div class="cit-empty-examples">
+                <button type="button" class="cit-empty-chip" @click="input = '10.1038/s41586-021-03819-2'; resolved = null; document.getElementById('cit-input')?.focus()">
+                  <span class="cit-empty-chip-id">10.1038/s41586-021-03819-2</span>
+                  <span class="cit-empty-chip-kind">DOI</span>
+                </button>
+                <button type="button" class="cit-empty-chip" @click="input = 'https://arxiv.org/abs/2005.14165'; resolved = null; document.getElementById('cit-input')?.focus()">
+                  <span class="cit-empty-chip-id">arxiv.org/abs/2005.14165</span>
+                  <span class="cit-empty-chip-kind">arXiv URL</span>
+                </button>
+                <button type="button" class="cit-empty-chip" @click="input = '2005.14165'; resolved = null; document.getElementById('cit-input')?.focus()">
+                  <span class="cit-empty-chip-id">2005.14165</span>
+                  <span class="cit-empty-chip-kind">arXiv ID</span>
+                </button>
+                <button type="button" class="cit-empty-chip" @click="input = 'W2755950973'; resolved = null; document.getElementById('cit-input')?.focus()">
+                  <span class="cit-empty-chip-id">W2755950973</span>
+                  <span class="cit-empty-chip-kind">OpenAlex</span>
+                </button>
+              </div>
             </div>
           </template>
         </section>
