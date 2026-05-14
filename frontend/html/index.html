@@ -20,7 +20,7 @@
   <link rel="stylesheet" href="/css/style.css?v=20260516a" />
   <link rel="stylesheet" href="/css/workspace.css?v=20260506n" />
   <link rel="stylesheet" href="/css/dashboard.css?v=20260516d" />
-  <link rel="stylesheet" href="/css/citations.css?v=20260516d" />
+  <link rel="stylesheet" href="/css/citations.css?v=20260516e" />
 </head>
 <body class="landing-state" x-data="appShell()" x-init="init()" :class="$store.app.mode === 'workspace' ? 'workspace-state' : 'landing-state'">
   <div class="bg-grid"></div>
@@ -1126,15 +1126,6 @@
 
           <div class="cit-shell" x-cloak x-show="graph.nodes.length">
             <main class="cit-canvas glass" id="cit-graph-mount" x-ref="graphMount">
-              <div class="cit-canvas-overlay cit-legend" aria-label="Graph legend">
-                <span class="cit-legend-title">legend</span>
-                <div class="cit-legend-row">
-                  <span class="cit-legend-row-label">year · fill</span>
-                  <div class="cit-legend-bar" role="img" aria-label="Older to newer year gradient"></div>
-                  <div class="cit-legend-bar-ticks">
-                    <span x-text="meta.yearMin || '—'"></span>
-                    <span x-text="meta.yearMax || '—'"></span>
-                  </div>
                 </div>
                 <div class="cit-legend-row">
                   <span class="cit-legend-row-label">role</span>
