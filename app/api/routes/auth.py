@@ -53,6 +53,8 @@ async def signup(user: UserSignup, background_tasks: BackgroundTasks):
     - Generates and sends a verification OTP to the user's email.
     """
     db = get_db()
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database connection not available. Please check your MongoDB Atlas whitelist.")
     
     # Check if user exists
     existing_user = await db.users.find_one({"$or": [{"username": user.username}, {"email": user.email}]})
@@ -99,6 +101,8 @@ async def verify_otp(data: VerifyOTP):
     - Returns a JWT access token for immediate login.
     """
     db = get_db()
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database connection not available. Please check your MongoDB Atlas whitelist.")
     
     otp_doc = await db.otps.find_one({"email": data.email, "otp": data.otp})
     
@@ -138,6 +142,8 @@ async def resend_otp(data: ResendOTP, background_tasks: BackgroundTasks):
     - Generates and sends a new 6-digit OTP.
     """
     db = get_db()
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database connection not available. Please check your MongoDB Atlas whitelist.")
     
     user = await db.users.find_one({"email": data.email})
     if not user:
@@ -172,6 +178,8 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends()):
     - Checks if the email has been verified.
     """
     db = get_db()
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database connection not available. Please check your MongoDB Atlas whitelist.")
     
     if "@" in form_data.username:
         user = await db.users.find_one({"email": form_data.username})
@@ -201,6 +209,8 @@ async def forgot_password(data: ForgotPassword, background_tasks: BackgroundTask
     - Returns success regardless of whether the email exists (security).
     """
     db = get_db()
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database connection not available. Please check your MongoDB Atlas whitelist.")
     
     user = await db.users.find_one({"email": data.email, "auth_provider": "local"})
     
@@ -233,6 +243,8 @@ async def reset_password(data: ResetPassword):
     - Automatically logs the user in by returning a JWT token.
     """
     db = get_db()
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database connection not available. Please check your MongoDB Atlas whitelist.")
     
     token_doc = await db.reset_tokens.find_one({"token": data.token})
     
@@ -357,6 +369,8 @@ async def google_auth_callback(code: str):
             raise HTTPException(status_code=400, detail="Email not provided by Google")
             
         db = get_db()
+        if db is None:
+            raise HTTPException(status_code=503, detail="Database connection not available. Please check your MongoDB Atlas whitelist.")
         user = await db.users.find_one({"email": email})
         
         if not user:

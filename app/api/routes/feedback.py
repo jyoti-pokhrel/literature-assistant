@@ -38,14 +38,22 @@ async def _log_feedback_signal(
     gap_id: str,
     gap: dict,
     feedback: dict,
+    user_id: str | None = None,
 ) -> None:
     if gap_feedback_signals_collection is None or not username:
         return
+    query_filter = {"report_id": report_id, "gap_id": gap_id}
+    if user_id:
+        query_filter["user_id"] = user_id
+    else:
+        query_filter["username"] = username
+
     try:
         await gap_feedback_signals_collection.update_one(
-            {"username": username, "report_id": report_id, "gap_id": gap_id},
+            query_filter,
             {
                 "$set": {
+                    "user_id": user_id,
                     "username": username,
                     "report_id": report_id,
                     "gap_id": gap_id,
@@ -135,8 +143,9 @@ async def upsert_gap_feedback(
     await coll.update_one({"_id": doc["_id"]}, {"$set": {update_path: existing}})
 
     username = current_user.get("username") or "local-test-user"
-    await _log_feedback_signal(username, str(doc["_id"]), gap_id, gaps[target_idx], existing)
-    asyncio.create_task(profile_builder.invalidate(username))
+    uid = str(current_user["_id"])
+    await _log_feedback_signal(username, str(doc["_id"]), gap_id, gaps[target_idx], existing, user_id=uid)
+    asyncio.create_task(profile_builder.invalidate(username, user_id=uid))
 
     return {"gap_id": gap_id, "feedback": existing}
 

@@ -131,6 +131,22 @@ async def detect_gaps(
             response = SynthesisResponse(**cached_data)
             response.is_cached = True
             response.generated_at = cached_report.get("created_at", datetime.datetime.utcnow().isoformat())
+            # Save search to history even if cached
+            filters = {
+                "year": payload.year,
+                "venue": payload.venue,
+                "strict_venue": payload.strict_venue,
+                "max_results": payload.max_results,
+                "type": "synthesis"
+            }
+            await save_search_history(
+                current_user["username"], 
+                payload.topic, 
+                filters, 
+                cached_data.get("papers_analyzed", 0),
+                report_id=cached_data.get("report_id"),
+                user_id=str(current_user["_id"])
+            )
             return response
 
     try:
@@ -156,6 +172,22 @@ async def detect_gaps(
                     
             asyncio.create_task(_save_cache())
             
+        # Save search to history
+        filters = {
+            "year": payload.year,
+            "venue": payload.venue,
+            "strict_venue": payload.strict_venue,
+            "max_results": payload.max_results,
+            "type": "synthesis"
+        }
+        await save_search_history(
+            current_user["username"], 
+            payload.topic, 
+            filters, 
+            result.papers_analyzed,
+            report_id=result.report_id,
+            user_id=str(current_user["_id"])
+        )
         return result
     except Exception as exc:
         logger.exception("Synthesis pipeline error: %s", exc)
@@ -309,6 +341,22 @@ async def stream_detect_gaps(
                     cached_data = cached_report["data"]
                     cached_data["is_cached"] = True
                     cached_data["generated_at"] = cached_report.get("created_at", datetime.datetime.utcnow().isoformat())
+                    # Save search to history even if cached
+                    filters = {
+                        "year": payload.year,
+                        "venue": payload.venue,
+                        "strict_venue": payload.strict_venue,
+                        "max_results": payload.max_results,
+                        "type": "synthesis"
+                    }
+                    await save_search_history(
+                        current_user["username"], 
+                        payload.topic, 
+                        filters, 
+                        cached_data.get("papers_analyzed", 0),
+                        report_id=cached_data.get("report_id"),
+                        user_id=str(current_user["_id"])
+                    )
                     await queue.put({"type": "result", "data": cached_data})
                     return
 
@@ -332,7 +380,8 @@ async def stream_detect_gaps(
                 payload.topic, 
                 filters, 
                 result.papers_analyzed,
-                report_id=result.report_id
+                report_id=result.report_id,
+                user_id=str(current_user["_id"])
             )
 
             # 4. Save to cache asynchronously

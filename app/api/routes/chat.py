@@ -23,7 +23,7 @@ async def save_chat_message(chat_data: ChatSessionCreate, current_user: dict = D
         # Check if session already exists
         session = await db.chat_history.find_one({
             "session_id": chat_data.session_id,
-            "username": current_user["username"]
+            "user_id": str(current_user["_id"])
         })
         
         user_msg = ChatMessage(role="user", content=chat_data.message, timestamp=now)
@@ -42,8 +42,9 @@ async def save_chat_message(chat_data: ChatSessionCreate, current_user: dict = D
         else:
             # Create new session
             new_session = {
-                "session_id": chat_data.session_id or str(uuid.uuid4()),
+                "user_id": str(current_user["_id"]),
                 "username": current_user["username"],
+                "session_id": chat_data.session_id or str(uuid.uuid4()),
                 "title": chat_data.title or chat_data.message[:50] + "...",
                 "messages": [user_msg.dict(), ai_msg.dict()],
                 "created_at": now,
@@ -61,7 +62,7 @@ async def get_chat_history(current_user: dict = Depends(get_current_user)):
     """Retrieve all chat sessions for the current user."""
     try:
         db = get_db()
-        cursor = db.chat_history.find({"username": current_user["username"]}).sort("updated_at", -1).limit(50)
+        cursor = db.chat_history.find({"user_id": str(current_user["_id"])}).sort("updated_at", -1).limit(50)
         history = await cursor.to_list(length=50)
         
         for item in history:
@@ -79,7 +80,7 @@ async def delete_chat_session(session_id: str, current_user: dict = Depends(get_
         db = get_db()
         result = await db.chat_history.delete_one({
             "session_id": session_id,
-            "username": current_user["username"]
+            "user_id": str(current_user["_id"])
         })
         if result.deleted_count == 0:
             raise HTTPException(status_code=404, detail="Session not found")
@@ -93,7 +94,7 @@ async def clear_chat_history(current_user: dict = Depends(get_current_user)):
     try:
         db = get_db()
         result = await db.chat_history.delete_many({
-            "username": current_user["username"]
+            "user_id": str(current_user["_id"])
         })
         return {"success": True, "deleted_count": result.deleted_count}
     except Exception as e:

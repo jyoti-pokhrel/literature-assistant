@@ -72,16 +72,17 @@ def _serialize_paper(doc: dict) -> dict:
     }
 
 
-async def _load_seen_ids(username: str) -> set[str]:
+async def _load_seen_ids(username: str, user_id: str | None = None) -> set[str]:
     """Last ~SEEN_FILTER_LIMIT impression ids for the user.
 
     Returning the full history would dwarf the local paper corpus and
     filter every result out. We only deduplicate against the most-recent
     impressions and accept that older ones may resurface.
     """
-    if user_profiles_collection is None or not username:
+    if user_profiles_collection is None or (not username and not user_id):
         return set()
-    doc = await user_profiles_collection.find_one({"username": username})
+    query = {"user_id": user_id} if user_id else {"username": username}
+    doc = await user_profiles_collection.find_one(query)
     if not doc:
         return set()
 
@@ -277,7 +278,7 @@ def _tfidf_rank(topics: list[str], candidates: list[dict]) -> list[dict]:
     return ranked
 
 
-async def _recent_topics(username: str, client_topics: list[str] | None = None) -> list[str]:
+async def _recent_topics(username: str, user_id: str | None = None, client_topics: list[str] | None = None) -> list[str]:
     """Merge server-side `search_history` topics with client-supplied topics.
 
     Client-supplied topics come from the frontend's localStorage sidebar
@@ -288,7 +289,7 @@ async def _recent_topics(username: str, client_topics: list[str] | None = None) 
     seen: set[str] = set()
     topics: list[str] = []
 
-    signals = await fetch_search_signals(username)
+    signals = await fetch_search_signals(username, user_id=user_id)
     for signal in signals:
         topic = (signal.topic or "").strip()
         if not topic or topic.lower() in seen:
@@ -313,12 +314,13 @@ async def _recent_topics(username: str, client_topics: list[str] | None = None) 
 
 async def recommend_for_user(
     username: str,
+    user_id: str | None = None,
     cursor: int = 0,
     page_size: int = DEFAULT_PAGE_SIZE,
     client_topics: list[str] | None = None,
 ) -> tuple[list[dict], int, bool, dict]:
-    seen_ids = await _load_seen_ids(username)
-    topics = await _recent_topics(username, client_topics=client_topics)
+    seen_ids = await _load_seen_ids(username, user_id=user_id)
+    topics = await _recent_topics(username, user_id=user_id, client_topics=client_topics)
 
     if not topics:
         ranked = await _highly_cited_papers(seen_ids, page_size * OVERFETCH_MULTIPLIER)
@@ -345,7 +347,7 @@ async def recommend_for_user(
 
     chosen_ids = [doc.get("external_id") for doc in page if doc.get("external_id")]
     if chosen_ids:
-        await record_impressions(username, chosen_ids)
+        await record_impressions(username, chosen_ids, user_id=user_id)
 
     summary = {
         "top_topics": topics,

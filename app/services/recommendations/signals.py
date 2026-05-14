@@ -38,21 +38,30 @@ class GapSignal:
     pursue: bool
 
 
-async def fetch_search_signals(username: str) -> list[SearchSignal]:
-    if search_history_collection is None or not username:
+async def fetch_search_signals(username: str, user_id: str | None = None) -> list[SearchSignal]:
+    if search_history_collection is None or (not username and not user_id):
         return []
     cutoff = datetime.now(timezone.utc) - timedelta(days=SEARCH_WINDOW_DAYS)
+    
+    # Filter by user_id primarily, fallback to username
+    query_filter: dict = {"created_at": {"$gte": cutoff}}
+    if user_id:
+        query_filter["user_id"] = user_id
+    else:
+        query_filter["username"] = username
+
     cursor = (
         search_history_collection.find(
-            {"username": username, "created_at": {"$gte": cutoff}},
-            projection={"topic": 1, "created_at": 1},
+            query_filter,
+            projection={"topic": 1, "query": 1, "created_at": 1},
         )
         .sort("created_at", -1)
         .limit(SEARCH_LIMIT)
     )
     results: list[SearchSignal] = []
     async for doc in cursor:
-        topic = (doc.get("topic") or "").strip()
+        # Support both new 'query' and legacy 'topic' field names
+        topic = (doc.get("query") or doc.get("topic") or "").strip()
         created_at = doc.get("created_at")
         if not topic or not isinstance(created_at, datetime):
             continue
@@ -62,11 +71,18 @@ async def fetch_search_signals(username: str) -> list[SearchSignal]:
     return results
 
 
-async def fetch_gap_signals(username: str) -> list[GapSignal]:
-    if gap_feedback_signals_collection is None or not username:
+async def fetch_gap_signals(username: str, user_id: str | None = None) -> list[GapSignal]:
+    if gap_feedback_signals_collection is None or (not username and not user_id):
         return []
+    
+    query_filter: dict = {}
+    if user_id:
+        query_filter["user_id"] = user_id
+    else:
+        query_filter["username"] = username
+
     cursor = (
-        gap_feedback_signals_collection.find({"username": username})
+        gap_feedback_signals_collection.find(query_filter)
         .sort("updated_at", -1)
         .limit(GAP_SIGNAL_LIMIT)
     )

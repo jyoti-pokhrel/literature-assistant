@@ -431,8 +431,7 @@
           <template x-for="item in $store.app.history" :key="item.id">
             <div class="px-history-item-container" style="position: relative; display: block;" onmouseover="this.querySelector('.delete-history-btn').style.opacity='1'" onmouseout="this.querySelector('.delete-history-btn').style.opacity='0'">
               <button type="button" class="px-history-item history-button" @click="open(item)" style="width: 100%; text-align: left; padding-right: 2.5rem;">
-                <strong x-text="item.topic"></strong>
-                <span x-text="item.summary"></span>
+                <span x-text="item.query || item.topic"></span>
               </button>
               
               <div class="history-item-actions" style="position: absolute; right: 0.5rem; top: 50%; transform: translateY(-50%); z-index: 5;">
@@ -445,31 +444,7 @@
         </div>
       </div>
 
-      <div class="sidebar-section" style="margin-top: 2rem;">
-        <div class="sidebar-label" style="display: flex; justify-content: space-between; align-items: center;">
-          <span>Chat history</span>
-          <button type="button" x-show="$store.app.chatHistory.length > 0" @click="$store.app.clearAllChatHistory()" style="background: none; border: none; font-size: 0.75rem; color: var(--text-muted); cursor: pointer; transition: color 0.2s;" onmouseover="this.style.color='var(--danger-color)'" onmouseout="this.style.color='var(--text-muted)'">Clear All</button>
-        </div>
-        <div id="chat-history" x-data="{ activeMenu: null }">
-          <template x-if="!$store.app.chatHistory.length">
-            <div class="px-history-item">No chats yet</div>
-          </template>
-          <template x-for="chat in $store.app.chatHistory" :key="chat.session_id">
-            <div class="px-history-item-container" style="position: relative; display: block;" onmouseover="this.querySelector('.delete-history-btn').style.opacity='1'" onmouseout="this.querySelector('.delete-history-btn').style.opacity='0'">
-              <button type="button" class="px-history-item history-button" @click="openChat(chat)" style="width: 100%; text-align: left; padding-right: 2.5rem;">
-                <strong x-text="chat.title || 'Chat session'"></strong>
-                <span x-text="chat.messages.length + ' messages'"></span>
-              </button>
-              
-              <div class="history-item-actions" style="position: absolute; right: 0.5rem; top: 50%; transform: translateY(-50%); z-index: 5;">
-                <button type="button" class="delete-history-btn" @click.stop="$store.app.removeFromChatHistory(chat.session_id)" aria-label="Delete" style="width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; opacity: 0; cursor: pointer; background: transparent; border: none; color: var(--text-muted); border-radius: 4px; transition: all 0.2s;" onmouseover="this.style.color='var(--danger-color)'" onmouseout="this.style.color='var(--text-muted)'">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
-                </button>
-              </div>
-            </div>
-          </template>
-        </div>
-      </div>
+
       <div class="sidebar-bottom" x-data="{ profileMenuOpen: false }" @click.outside="profileMenuOpen = false" @keydown.escape.window="profileMenuOpen = false">
         <button type="button" class="profile-card" :class="{ 'is-open': profileMenuOpen }" @click="profileMenuOpen = !profileMenuOpen" :aria-expanded="profileMenuOpen" aria-haspopup="menu">
           <span class="profile-avatar" x-text="($store.app.user.initial || '?')"></span>
@@ -627,17 +602,8 @@
               <template x-for="(item, index) in $store.app.history.slice(1, 8)" :key="item.id">
                 <li class="dw-log-row" tabindex="0" role="button" @click="$store.app.useHistoryItem(item)" @keydown.enter.prevent="$store.app.useHistoryItem(item)" @keydown.space.prevent="$store.app.useHistoryItem(item)">
                   <div class="dw-log-row-head">
-                    <span class="dw-log-title" x-text="item.topic"></span>
-                    <span class="dw-log-meta" x-text="item.summary"></span>
+                    <span class="dw-log-title" x-text="item.query || item.topic"></span>
                   </div>
-                  <ol class="dw-log-row-papers" x-show="(item.result?.searchData?.papers || item.result?.papers || []).length > 0">
-                    <template x-for="(paper, pIdx) in (item.result?.searchData?.papers || item.result?.papers || []).slice(0, 3)" :key="pIdx">
-                      <li class="dw-log-row-paper" x-text="paper.title || 'Untitled paper'"></li>
-                    </template>
-                    <li class="dw-log-row-paper dw-log-row-paper--more"
-                        x-show="(item.result?.searchData?.papers || item.result?.papers || []).length > 3"
-                        x-text="'+ ' + ((item.result?.searchData?.papers || item.result?.papers || []).length - 3) + ' more papers'"></li>
-                  </ol>
                 </li>
               </template>
             </ol>

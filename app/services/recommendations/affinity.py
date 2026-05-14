@@ -33,18 +33,21 @@ class AffinityProfile:
     venues: dict[str, float] = field(default_factory=dict)
 
 
-async def build_affinity(username: str) -> AffinityProfile:
+async def build_affinity(username: str, user_id: str | None = None) -> AffinityProfile:
     """Aggregate venue/author counts from library_items + search_history."""
     profile = AffinityProfile()
-    if not username:
+    if not username and not user_id:
         return profile
-
+ 
     cutoff = datetime.now(timezone.utc) - timedelta(days=LOOKBACK_DAYS)
-
+ 
     if library_items_collection is not None:
         try:
+            # For library_items, we'll try user_id first if it was added there, 
+            # but legacy items use 'owner' (username).
+            query = {"user_id": user_id} if user_id else {"owner": username}
             cursor = library_items_collection.find(
-                {"owner": username},
+                query,
                 projection={"authors": 1, "venue": 1, "added_at": 1, "updated_at": 1},
             ).limit(500)
             async for item in cursor:
@@ -63,9 +66,15 @@ async def build_affinity(username: str) -> AffinityProfile:
 
     if search_history_collection is not None:
         try:
+            query = {"created_at": {"$gte": cutoff}}
+            if user_id:
+                query["user_id"] = user_id
+            else:
+                query["username"] = username
+
             cursor = (
                 search_history_collection.find(
-                    {"username": username, "created_at": {"$gte": cutoff}},
+                    query,
                     projection={"venue": 1, "created_at": 1},
                 )
                 .sort("created_at", -1)

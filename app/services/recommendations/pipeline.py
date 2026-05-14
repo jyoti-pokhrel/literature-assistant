@@ -116,10 +116,11 @@ def _serialize_paper(doc: dict) -> dict:
 
 async def get_feed_page(
     username: str,
+    user_id: str | None = None,
     cursor: int = 0,
     page_size: int = DEFAULT_PAGE_SIZE,
 ) -> FeedPage:
-    profile = await load_profile(username)
+    profile = await load_profile(username, user_id=user_id)
 
     seen_set = set(profile.seen_paper_ids or [])
 
@@ -149,7 +150,7 @@ async def get_feed_page(
 
         chosen_ids = [doc.get("external_id") for doc in popular if doc.get("external_id")]
         if chosen_ids:
-            await record_impressions(username, chosen_ids)
+            await record_impressions(username, chosen_ids, user_id=user_id)
         return FeedPage(
             papers=[_serialize_paper(doc) for doc in popular],
             next_cursor=cursor + len(popular),
@@ -166,7 +167,7 @@ async def get_feed_page(
     ]
     prepare_lookup, lookup = _make_embed_lookup(positive_labels)
     await prepare_lookup()
-    affinity_profile = await build_affinity(username)
+    affinity_profile = await build_affinity(username, user_id=user_id)
 
     topics = [
         c["label"]
@@ -253,7 +254,7 @@ async def get_feed_page(
 
     chosen_ids = [doc.get("external_id") for doc in ranked if doc.get("external_id")]
     if chosen_ids:
-        await record_impressions(username, chosen_ids)
+        await record_impressions(username, chosen_ids, user_id=user_id)
 
     serialized = [_serialize_paper(doc) for doc in ranked]
     has_more = len(ranked) >= page_size

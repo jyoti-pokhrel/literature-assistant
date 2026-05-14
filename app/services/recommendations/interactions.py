@@ -47,7 +47,7 @@ def _weight_for(kind) -> float:
 
 
 async def record_interaction(
-    username: str, external_id: str, kind: str
+    username: str, external_id: str, kind: str, user_id: str | None = None
 ) -> None:
     """Upsert one (user, paper, kind) row. Refreshes `ts` on re-fire."""
     if paper_interactions_collection is None or not username or not external_id:
@@ -55,11 +55,18 @@ async def record_interaction(
     if kind not in INTERACTION_WEIGHTS:
         return
     now = datetime.now(timezone.utc)
+    query_filter = {"external_id": external_id, "kind": kind}
+    if user_id:
+        query_filter["user_id"] = user_id
+    else:
+        query_filter["username"] = username
+
     try:
         await paper_interactions_collection.update_one(
-            {"username": username, "external_id": external_id, "kind": kind},
+            query_filter,
             {
                 "$set": {
+                    "user_id": user_id,
                     "username": username,
                     "external_id": external_id,
                     "kind": kind,
@@ -77,7 +84,7 @@ async def record_interaction(
         )
 
 
-async def fetch_interaction_signals(username: str) -> list[InteractionSignal]:
+async def fetch_interaction_signals(username: str, user_id: str | None = None) -> list[InteractionSignal]:
     """Materialize the interaction signal list for the profile builder.
 
     Joins each interaction with the paper's stored embedding so the profile
@@ -87,14 +94,20 @@ async def fetch_interaction_signals(username: str) -> list[InteractionSignal]:
     """
     if paper_interactions_collection is None or papers_collection is None:
         return []
-    if not username:
+    if not username and not user_id:
         return []
 
     cutoff = datetime.now(timezone.utc) - timedelta(days=LOOKBACK_DAYS)
+    query_filter = {"ts": {"$gte": cutoff}}
+    if user_id:
+        query_filter["user_id"] = user_id
+    else:
+        query_filter["username"] = username
+
     try:
         cursor = (
             paper_interactions_collection.find(
-                {"username": username, "ts": {"$gte": cutoff}},
+                query_filter,
                 projection={"external_id": 1, "kind": 1, "ts": 1},
             )
             .sort("ts", -1)
