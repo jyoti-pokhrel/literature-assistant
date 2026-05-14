@@ -17,10 +17,10 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/css/tokens.css?v=20260506n" />
-  <link rel="stylesheet" href="/css/style.css?v=20260516b" />
-  <link rel="stylesheet" href="/css/workspace.css?v=20260514k" />
+  <link rel="stylesheet" href="/css/style.css?v=20260516c" />
+  <link rel="stylesheet" href="/css/workspace.css?v=20260514m" />
   <link rel="stylesheet" href="/css/dashboard.css?v=20260516d" />
-  <link rel="stylesheet" href="/css/citations.css?v=20260516g" />
+  <link rel="stylesheet" href="/css/citations.css?v=20260514q" />
 </head>
 <body class="landing-state" x-data="appShell()" x-init="init()" :class="$store.app.mode === 'workspace' ? 'workspace-state' : 'landing-state'">
   <div class="bg-grid"></div>
@@ -499,7 +499,11 @@
         </div>
       </header>
 
-      <div class="px-content" :class="{ 'is-explore-active': $store.app.currentView === 'explore' }">
+      <div class="px-content" :class="{
+              'is-explore-active': $store.app.currentView === 'explore',
+              'is-results-active': $store.app.currentView === 'results',
+              'is-citations-active': $store.app.currentView === 'citations'
+            }">
         <section id="initial-view" class="dash-workbench" x-show="$store.app.currentView === 'form'" x-transition:enter="fade-in visible" x-data="{ get today() { try { return new Intl.DateTimeFormat('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' }).format(new Date()); } catch(e) { return ''; } }, moreFilters: false }">
 
           <!-- Resume zone — surfaces the latest thread when history exists -->
@@ -789,7 +793,7 @@
               </button>
             </div>
 
-            <div class="results-workspace-content results-twoup" :class="{ 'is-rail-hidden': activeTab === 'map' }">
+            <div class="results-workspace-content results-twoup" :class="{ 'is-rail-hidden': activeTab === 'map' || activeTab === 'papers' }">
               <div class="results-tabpanes">
                 <!-- Tab A: Gaps as entries -->
                 <div x-show="activeTab === 'gaps'" x-transition.opacity.duration.500ms>
@@ -869,8 +873,8 @@
                 </div>
               </div>
 
-              <!-- Permanent right rail: annotated note -->
-              <aside class="gap-rail" x-show="activeTab !== 'map'">
+              <!-- Right rail: annotated note (gaps tab only) -->
+              <aside class="gap-rail" x-show="activeTab === 'gaps'">
                       <template x-if="!$store.app.explorer.panelOpen || (!selectedGap() && !selectedPaper())">
                         <div class="gap-rail-placeholder">
                           <span class="t-mono">Annotated note</span>
@@ -1331,7 +1335,7 @@
   <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.7/dist/gsap.min.js"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/@alpinejs/collapse@3.14.9/dist/cdn.min.js"></script>
   <script defer src="/js/alpine/stores/appStore.js?v=20260514d"></script>
-  <script defer src="/js/d3/clusterMap.js?v=20260503a"></script>
+  <script defer src="/js/d3/clusterMap.js?v=20260514p"></script>
   <script defer src="/js/d3/charts.js?v=20260502b"></script>
   <script defer src="/js/d3/citationGraph.js?v=20260512c"></script>
   <script defer src="/js/alpine/components/searchForm.js?v=20260423a"></script>

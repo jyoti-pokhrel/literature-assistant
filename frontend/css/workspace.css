@@ -402,16 +402,23 @@
    Explore — editorial reading list, sticky header, page-level scroll
    ========================================================================= */
 
-.px-content.is-explore-active {
+.px-content.is-explore-active,
+.px-content.is-results-active,
+.px-content.is-citations-active {
     /* The workspace flex chain has no viewport-height anchor (body has
        overflow: hidden and no explicit height), so `flex: 1` collapses
        to content-height and nothing ever overflows. Pin a definite
-       height here, then `overflow-y: scroll` works. `scroll` (not
-       `auto`) keeps the scrollbar track visible even when content is
-       short, so the affordance is always present. */
+       height here, then `overflow-y` works. */
     height: calc(100vh - 60px);
     min-height: calc(100vh - 60px);
     max-height: calc(100vh - 60px);
+    overflow-y: auto;
+}
+
+.px-content.is-explore-active {
+    /* `scroll` (not `auto`) keeps the scrollbar track always present on
+       Explore so the right-edge affordance reads as a deliberate part
+       of the editorial layout. */
     padding: 0;
     align-items: stretch;
     overflow-y: scroll;

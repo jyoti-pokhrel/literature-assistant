@@ -6353,11 +6353,11 @@ body { font-family: var(--font-sans); }
 }
 .gap-rail-placeholder {
     color: var(--ink-3);
-    padding: var(--s-3);
-    background: var(--glass);
-    border: 1px dashed var(--rule-strong);
-    border-radius: var(--radius-lg);
-    text-align: center;
+    padding: var(--s-3) 0;
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    text-align: left;
 }
 .gap-rail-placeholder .t-mono {
     font-family: var(--font-sans);
@@ -6434,17 +6434,23 @@ body { font-family: var(--font-sans); }
     display: grid;
     grid-template-columns: 28px 1fr;
     gap: var(--s-1);
-    padding: 0.55rem 0.7rem;
-    border-bottom: 0;
-    margin-bottom: 0.45rem;
+    padding: 0.55rem 0;
+    margin: 0;
     cursor: pointer;
     align-items: baseline;
-    background: var(--glass);
-    border: 1px solid var(--glass-border);
-    border-radius: var(--radius-md);
-    transition: background var(--t-fast) var(--ease), border-color var(--t-fast) var(--ease);
+    background: transparent;
+    border: none;
+    border-top: 1px solid var(--rule);
+    border-radius: 0;
+    transition: background var(--t-fast) var(--ease);
 }
-.gap-rail-papers li:hover { background: var(--glass-strong); border-color: var(--accent-line); }
+.gap-rail-papers li:first-child { border-top: none; }
+.gap-rail-papers li:hover {
+    background: var(--accent-soft);
+    border-radius: var(--radius-sm);
+    border-top-color: transparent;
+}
+.gap-rail-papers li:hover + li { border-top-color: transparent; }
 .gap-rail-paper-idx {
     font-family: var(--font-sans);
     font-size: 0.78rem;
@@ -6557,25 +6563,31 @@ body { font-family: var(--font-sans); }
     margin-bottom: var(--s-2);
 }
 
-/* Papers tab */
+/* Papers tab — editorial reading list, hairline-divided, no glass boxes
+   so it reads as continuous content rather than stacked cards. */
 .paper-entries { list-style: none; margin: 0; padding: 0; }
 .paper-entry {
     display: grid;
-    grid-template-columns: 32px 1fr auto;
+    grid-template-columns: 36px 1fr auto;
     gap: var(--s-2);
-    padding: 0.85rem var(--s-2);
-    margin-bottom: 0.5rem;
-    background: var(--glass);
-    backdrop-filter: var(--glass-blur);
-    -webkit-backdrop-filter: var(--glass-blur);
-    border: 1px solid var(--glass-border);
-    border-radius: var(--radius-lg);
+    padding: 1rem 0;
+    margin: 0;
+    background: transparent;
+    border: none;
+    border-top: 1px solid var(--rule);
+    border-radius: 0;
+    box-shadow: none;
     cursor: pointer;
     align-items: center;
-    transition: background var(--t-fast) var(--ease), border-color var(--t-fast) var(--ease);
-    box-shadow: var(--shadow-glass);
+    transition: background var(--t-fast) var(--ease);
 }
-.paper-entry:hover { background: var(--glass-strong); border-color: var(--accent-line); }
+.paper-entry:first-child { border-top: none; }
+.paper-entry:hover {
+    background: var(--accent-soft);
+    border-radius: var(--radius-md);
+    border-top-color: transparent;
+}
+.paper-entry:hover + .paper-entry { border-top-color: transparent; }
 .paper-entry-idx {
     font-family: var(--font-sans);
     font-size: 0.78rem;
