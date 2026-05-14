@@ -1560,3 +1560,116 @@
 :root[data-theme='dark'] .cit-view .cit-range input[type="range"] {
     accent-color: rgba(246, 248, 252, 0.86);
 }
+
+
+/* ============================================================
+   Citation network — layout: compact header in exploring mode
+   ============================================================ */
+
+.cit-view .cit-header-inner {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1.5rem;
+}
+
+.cit-view .cit-header-text {
+    flex: 1;
+    min-width: 0;
+}
+
+/* Compact header when graph is loaded: tighter padding, smaller title */
+.cit-view .cit-header.is-compact {
+    padding-bottom: 0.55rem;
+}
+
+.cit-view .cit-header.is-compact .results-query-title {
+    font-size: clamp(1.1rem, 1.6vw, 1.3rem);
+    margin: 0;
+    color: rgba(5, 6, 8, 0.7);
+    letter-spacing: -0.018em;
+}
+
+.cit-view .cit-header.is-compact .cit-header-resolved {
+    margin-top: 0.4rem;
+    font-size: 0.88rem;
+    color: rgba(5, 6, 8, 0.92);
+    font-weight: 500;
+    line-height: 1.5;
+}
+
+:root[data-theme='dark'] .cit-view .cit-header.is-compact .results-query-title {
+    color: rgba(246, 248, 252, 0.7);
+}
+
+:root[data-theme='dark'] .cit-view .cit-header.is-compact .cit-header-resolved {
+    color: rgba(246, 248, 252, 0.92);
+}
+
+/* "Search another paper" return button */
+.cit-view .cit-header-reset {
+    flex-shrink: 0;
+    align-self: center;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.5rem 0.95rem;
+    background: transparent;
+    border: 1px solid rgba(5, 6, 8, 0.14);
+    border-radius: 8px;
+    font-family: var(--font-sans);
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: rgba(5, 6, 8, 0.82);
+    letter-spacing: -0.005em;
+    cursor: pointer;
+    transition:
+        background 180ms cubic-bezier(0.22, 1, 0.36, 1),
+        border-color 180ms cubic-bezier(0.22, 1, 0.36, 1),
+        color 180ms cubic-bezier(0.22, 1, 0.36, 1),
+        transform 220ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.cit-view .cit-header-reset:hover {
+    background: rgba(5, 6, 8, 0.05);
+    border-color: rgba(5, 6, 8, 0.26);
+    color: rgba(5, 6, 8, 0.96);
+}
+
+.cit-view .cit-header-reset:hover svg {
+    transform: translate3d(-2px, 0, 0);
+}
+
+.cit-view .cit-header-reset svg {
+    transition: transform 200ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+:root[data-theme='dark'] .cit-view .cit-header-reset {
+    border-color: rgba(255, 255, 255, 0.14);
+    color: rgba(246, 248, 252, 0.84);
+}
+
+:root[data-theme='dark'] .cit-view .cit-header-reset:hover {
+    background: rgba(255, 255, 255, 0.06);
+    border-color: rgba(255, 255, 255, 0.26);
+    color: rgba(246, 248, 252, 0.96);
+}
+
+/* When graph is loaded, give the shell more vertical room
+   (no form-shell above eating space) */
+.cit-view .cit-header.is-compact + .cit-form-shell + .cit-shell,
+.cit-view .cit-header.is-compact ~ .cit-shell {
+    margin-top: clamp(0.85rem, 1.6vw, 1.2rem);
+}
+
+/* Stack on narrow screens */
+@media (max-width: 720px) {
+    .cit-view .cit-header-inner {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.85rem;
+    }
+    .cit-view .cit-header-reset {
+        align-self: flex-start;
+    }
+}

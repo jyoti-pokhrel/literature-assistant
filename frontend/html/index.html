@@ -20,7 +20,7 @@
   <link rel="stylesheet" href="/css/style.css?v=20260516a" />
   <link rel="stylesheet" href="/css/workspace.css?v=20260506n" />
   <link rel="stylesheet" href="/css/dashboard.css?v=20260516d" />
-  <link rel="stylesheet" href="/css/citations.css?v=20260516b" />
+  <link rel="stylesheet" href="/css/citations.css?v=20260516c" />
 </head>
 <body class="landing-state" x-data="appShell()" x-init="init()" :class="$store.app.mode === 'workspace' ? 'workspace-state' : 'landing-state'">
   <div class="bg-grid"></div>
@@ -1050,19 +1050,30 @@
                  x-data="citationGraph()" x-init="init()"
                  x-cloak x-show="$store.app.currentView === 'citations'"
                  style="display:flex; flex-direction:column;">
-          <header class="results-header cit-header">
-            <div>
-              <h2 class="results-query-title">Citation network</h2>
-              <p class="cit-header-sub">Trace references and citers from any DOI, arXiv ID, or paper URL.</p>
-              <p class="results-query-meta cit-header-resolved" x-show="resolved" x-cloak>
-                <span x-text="resolved?.title || resolved?.paper_id"></span>
-                <template x-if="resolved?.year"><span> · <span x-text="resolved.year"></span></span></template>
-                <template x-if="cached"><span class="cit-pill" title="Served from 30-day cache">cached</span></template>
-              </p>
+          <header class="results-header cit-header" :class="{ 'is-compact': graph.nodes.length > 0 }">
+            <div class="cit-header-inner">
+              <div class="cit-header-text">
+                <h2 class="results-query-title">Citation network</h2>
+                <p class="cit-header-sub" x-show="graph.nodes.length === 0">Trace references and citers from any DOI, arXiv ID, or paper URL.</p>
+                <p class="results-query-meta cit-header-resolved" x-show="resolved" x-cloak>
+                  <span x-text="resolved?.title || resolved?.paper_id"></span>
+                  <template x-if="resolved?.year"><span> · <span x-text="resolved.year"></span></span></template>
+                  <template x-if="cached"><span class="cit-pill" title="Served from 30-day cache">cached</span></template>
+                </p>
+              </div>
+              <button type="button" class="cit-header-reset" x-show="graph.nodes.length > 0"
+                      @click="graph = { nodes: [], edges: [] }; resolved = null; selectedNode = null; input = ''; setTimeout(() => document.getElementById('cit-input')?.focus(), 50)"
+                      title="Clear network and search a different paper">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <line x1="19" y1="12" x2="5" y2="12"></line>
+                  <polyline points="12 19 5 12 12 5"></polyline>
+                </svg>
+                <span>Search another paper</span>
+              </button>
             </div>
           </header>
 
-          <section class="cit-form-shell">
+          <section class="cit-form-shell" x-show="graph.nodes.length === 0">
             <form class="cit-form" @submit.prevent="build()">
               <label class="sr-only" for="cit-input">Paper URL or DOI</label>
               <input id="cit-input" class="cit-form-input" type="text" autocomplete="off"
