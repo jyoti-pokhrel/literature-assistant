@@ -657,3 +657,326 @@
     border-radius: var(--radius-sm);
     color: var(--ink);
 }
+
+
+/* ============================================================
+   Citation network — focused redesign
+   ============================================================ */
+
+/* Header: drop the kicker, tighten the title pair */
+.cit-view .cit-header .results-query-title {
+    font-family: var(--font-sans);
+    font-size: clamp(1.4rem, 2.4vw, 1.9rem);
+    font-weight: 600;
+    letter-spacing: -0.022em;
+    color: rgba(5, 6, 8, 0.96);
+    margin: 0 0 0.35rem;
+}
+
+.cit-view .cit-header-sub {
+    margin: 0 0 0.4rem;
+    font-family: var(--font-sans);
+    font-size: 0.92rem;
+    font-weight: 400;
+    color: rgba(74, 85, 100, 0.78);
+    letter-spacing: -0.005em;
+    max-width: 56ch;
+}
+
+.cit-view .cit-header-resolved {
+    margin-top: 0.4rem;
+    font-size: 0.82rem;
+}
+
+:root[data-theme='dark'] .cit-view .cit-header .results-query-title {
+    color: rgba(246, 248, 252, 0.96);
+}
+
+:root[data-theme='dark'] .cit-view .cit-header-sub {
+    color: rgba(174, 182, 196, 0.78);
+}
+
+/* Form: no glass shell, no magnifying glass, two-line layout */
+.cit-view .cit-form-shell {
+    background: transparent;
+    border: 0;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    box-shadow: none;
+    padding: 0;
+    margin: clamp(1.5rem, 3vw, 2.2rem) auto 0;
+    max-width: 720px;
+}
+
+.cit-view .cit-form {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    background: rgba(5, 6, 8, 0.028);
+    border: 1px solid rgba(5, 6, 8, 0.1);
+    border-radius: 12px;
+    padding: 0.5rem 0.5rem 0.5rem 1.05rem;
+    transition: border-color 220ms cubic-bezier(0.22, 1, 0.36, 1),
+                background 220ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.cit-view .cit-form:focus-within {
+    border-color: rgba(5, 6, 8, 0.32);
+    background: rgba(5, 6, 8, 0.04);
+}
+
+.cit-view .cit-form-input {
+    flex: 1;
+    background: transparent;
+    border: 0;
+    outline: none;
+    font-family: var(--font-sans);
+    font-size: 1rem;
+    font-weight: 500;
+    color: rgba(5, 6, 8, 0.94);
+    letter-spacing: -0.012em;
+    min-width: 0;
+    padding: 0.45rem 0;
+}
+
+.cit-view .cit-form-input::placeholder {
+    color: rgba(139, 149, 164, 0.7);
+    font-weight: 400;
+}
+
+.cit-view .cit-form-submit {
+    flex-shrink: 0;
+    background: rgba(5, 6, 8, 0.94);
+    color: rgba(246, 248, 252, 0.96);
+    border: 0;
+    border-radius: 8px;
+    padding: 0.5rem 1.1rem;
+    font-family: var(--font-sans);
+    font-size: 0.92rem;
+    font-weight: 600;
+    letter-spacing: -0.005em;
+    cursor: pointer;
+    transition: background 200ms ease, transform 200ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.cit-view .cit-form-submit:hover:not(:disabled) {
+    background: rgba(5, 6, 8, 1);
+    transform: translate3d(0, -1px, 0);
+}
+
+.cit-view .cit-form-submit:active:not(:disabled) {
+    transform: translate3d(0, 0, 0);
+}
+
+.cit-view .cit-form-submit:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.cit-view .cit-form-foot {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 0.55rem;
+}
+
+.cit-view .cit-form-resolve {
+    background: transparent;
+    border: 0;
+    padding: 0.2rem 0.4rem;
+    font-family: var(--font-sans);
+    font-size: 0.78rem;
+    font-weight: 500;
+    color: rgba(74, 85, 100, 0.72);
+    cursor: pointer;
+    text-decoration: underline;
+    text-decoration-color: rgba(5, 6, 8, 0.2);
+    text-decoration-style: dotted;
+    text-underline-offset: 3px;
+    transition: color 200ms ease, text-decoration-color 200ms ease;
+}
+
+.cit-view .cit-form-resolve:hover:not(:disabled) {
+    color: rgba(5, 6, 8, 0.94);
+    text-decoration-color: rgba(5, 6, 8, 0.6);
+}
+
+.cit-view .cit-form-resolve:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+:root[data-theme='dark'] .cit-view .cit-form {
+    background: rgba(255, 255, 255, 0.03);
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
+:root[data-theme='dark'] .cit-view .cit-form:focus-within {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(255, 255, 255, 0.32);
+}
+
+:root[data-theme='dark'] .cit-view .cit-form-input {
+    color: rgba(246, 248, 252, 0.96);
+}
+
+:root[data-theme='dark'] .cit-view .cit-form-input::placeholder {
+    color: rgba(174, 182, 196, 0.55);
+}
+
+:root[data-theme='dark'] .cit-view .cit-form-submit {
+    background: rgba(246, 248, 252, 0.94);
+    color: rgba(5, 6, 8, 0.96);
+}
+
+:root[data-theme='dark'] .cit-view .cit-form-submit:hover:not(:disabled) {
+    background: rgba(246, 248, 252, 1);
+}
+
+:root[data-theme='dark'] .cit-view .cit-form-resolve {
+    color: rgba(174, 182, 196, 0.72);
+    text-decoration-color: rgba(255, 255, 255, 0.2);
+}
+
+:root[data-theme='dark'] .cit-view .cit-form-resolve:hover:not(:disabled) {
+    color: rgba(246, 248, 252, 0.94);
+    text-decoration-color: rgba(255, 255, 255, 0.6);
+}
+
+/* Empty state: clickable chip examples */
+.cit-view .cit-empty {
+    max-width: 720px;
+    margin: clamp(2rem, 4vw, 3rem) auto 0;
+    padding: 0;
+    background: transparent;
+    border: 0;
+    text-align: left;
+}
+
+.cit-view .cit-empty-label {
+    margin: 0 0 0.85rem;
+    font-family: var(--font-sans);
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: rgba(5, 6, 8, 0.88);
+    letter-spacing: -0.005em;
+}
+
+.cit-view .cit-empty-examples {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+}
+
+.cit-view .cit-empty-chip {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    width: 100%;
+    background: rgba(5, 6, 8, 0.022);
+    border: 1px solid rgba(5, 6, 8, 0.06);
+    border-radius: 8px;
+    padding: 0.65rem 0.95rem;
+    cursor: pointer;
+    transition: background 180ms ease, border-color 180ms ease, transform 200ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.cit-view .cit-empty-chip:hover {
+    background: rgba(5, 6, 8, 0.05);
+    border-color: rgba(5, 6, 8, 0.16);
+    transform: translate3d(0, -1px, 0);
+}
+
+.cit-view .cit-empty-chip:focus-visible {
+    outline: 2px solid rgba(5, 6, 8, 0.35);
+    outline-offset: 2px;
+}
+
+.cit-view .cit-empty-chip-id {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-family: var(--font-mono);
+    font-size: 0.86rem;
+    font-weight: 500;
+    color: rgba(5, 6, 8, 0.86);
+    letter-spacing: -0.002em;
+    text-align: left;
+}
+
+.cit-view .cit-empty-chip-kind {
+    flex-shrink: 0;
+    font-family: var(--font-sans);
+    font-size: 0.72rem;
+    font-weight: 500;
+    color: rgba(74, 85, 100, 0.7);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+:root[data-theme='dark'] .cit-view .cit-empty-label {
+    color: rgba(246, 248, 252, 0.88);
+}
+
+:root[data-theme='dark'] .cit-view .cit-empty-chip {
+    background: rgba(255, 255, 255, 0.03);
+    border-color: rgba(255, 255, 255, 0.08);
+}
+
+:root[data-theme='dark'] .cit-view .cit-empty-chip:hover {
+    background: rgba(255, 255, 255, 0.06);
+    border-color: rgba(255, 255, 255, 0.18);
+}
+
+:root[data-theme='dark'] .cit-view .cit-empty-chip-id {
+    color: rgba(246, 248, 252, 0.88);
+}
+
+:root[data-theme='dark'] .cit-view .cit-empty-chip-kind {
+    color: rgba(174, 182, 196, 0.7);
+}
+
+/* Panel section labels: sentence case, lighter weight */
+.cit-view .cit-panel-label {
+    font-family: var(--font-sans);
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: rgba(5, 6, 8, 0.94);
+    letter-spacing: -0.005em;
+    text-transform: none;
+    margin: 0 0 0.7rem;
+}
+
+:root[data-theme='dark'] .cit-view .cit-panel-label {
+    color: rgba(246, 248, 252, 0.94);
+}
+
+/* Canvas hint: tighter copy and quieter typography */
+.cit-view .cit-hint {
+    font-family: var(--font-sans);
+    font-size: 0.74rem;
+    font-weight: 500;
+    color: rgba(74, 85, 100, 0.7);
+    letter-spacing: -0.005em;
+    text-transform: none;
+}
+
+:root[data-theme='dark'] .cit-view .cit-hint {
+    color: rgba(174, 182, 196, 0.7);
+}
+
+/* Legend title: sentence case */
+.cit-view .cit-legend-title {
+    font-family: var(--font-sans);
+    font-size: 0.74rem;
+    font-weight: 600;
+    color: rgba(5, 6, 8, 0.86);
+    letter-spacing: -0.005em;
+    text-transform: none;
+}
+
+:root[data-theme='dark'] .cit-view .cit-legend-title {
+    color: rgba(246, 248, 252, 0.86);
+}
