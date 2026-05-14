@@ -1020,7 +1020,7 @@
                   <p x-show="paper.abstract" x-text="paper.abstract" style="font-size:0.9rem; color:var(--text-muted); line-height:1.5; max-height:6em; overflow:hidden; display:-webkit-box; -webkit-line-clamp:4; line-clamp:4; -webkit-box-orient:vertical;"></p>
                   <div style="display:flex; gap:0.5rem; margin-top:0.25rem; align-items:center; flex-wrap:wrap;">
                     <template x-if="paper.url">
-                      <button type="button" class="btn-glass" @click="recordInteraction(paper, 'open')" style="padding:0.4rem 0.8rem; font-size:0.85rem;">Open ↗</button>
+                      <a :href="paper.url" target="_blank" rel="noopener noreferrer" class="btn-glass" @click="window.searchAPI?.recordExploreInteractions?.([{ external_id: paper.external_id, kind: 'open' }])?.catch(() => {})" style="padding:0.4rem 0.8rem; font-size:0.85rem;">Open ↗</a>
                     </template>
                     <template x-if="paper.pdf_url">
                       <a :href="paper.pdf_url" target="_blank" rel="noopener noreferrer" class="btn-glass" style="padding:0.4rem 0.8rem; font-size:0.85rem;">PDF</a>
