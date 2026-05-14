@@ -10408,14 +10408,14 @@ body.landing-state #landing-page {
     );
     background-size: 200% 100%;
     background-repeat: repeat-x;
-    animation: lp-search-line-flow 4.2s linear infinite;
+    animation: lp-search-line-flow 7s linear infinite;
     pointer-events: none;
     transition: height 220ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .lp-hero--split .lp-search-form:focus-within::after {
-    height: 2.5px;
-    animation-duration: 2.6s;
+    height: 3px;
+    animation-duration: 4.5s;
 }
 
 @keyframes lp-search-line-flow {
@@ -10552,13 +10552,13 @@ body.landing-state #landing-page {
 
 /* Thicker, more present underline */
 .lp-hero--split .lp-search-form::after {
-    height: 3.5px;
-    border-radius: 1.75px 1.75px 0 0;
+    height: 2px;
+    border-radius: 1px 1px 0 0;
 }
 
 .lp-hero--split .lp-search-form:focus-within::after {
-    height: 5px;
-    border-radius: 2.5px 2.5px 0 0;
+    height: 3px;
+    border-radius: 1.5px 1.5px 0 0;
 }
 
 /* Input and prompt scale up substantially */
