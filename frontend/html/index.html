@@ -17,7 +17,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/css/tokens.css?v=20260506n" />
-  <link rel="stylesheet" href="/css/style.css?v=20260516a" />
+  <link rel="stylesheet" href="/css/style.css?v=20260516b" />
   <link rel="stylesheet" href="/css/workspace.css?v=20260506n" />
   <link rel="stylesheet" href="/css/dashboard.css?v=20260516d" />
   <link rel="stylesheet" href="/css/citations.css?v=20260516g" />
@@ -840,6 +840,9 @@
                         </p>
                       </header>
                       <div class="d3-chart-container map-side-chart" x-ref="chartConfidence"></div>
+                      <p class="map-side-hint" x-show="selectedGap()">
+                        Each gap and cluster has its own profile across these five scores. Pick another from the gap list, or click a cluster on the map, to update this view.
+                      </p>
                     </aside>
                 </div>
 

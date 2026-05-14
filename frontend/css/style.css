@@ -8889,9 +8889,10 @@ body.landing-state #landing-page {
 
 #thread-view .map-side-chart {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     justify-content: center;
-    min-height: 320px;
+    min-height: 280px;
+    margin-top: -0.5rem;
 }
 
 
@@ -10980,4 +10981,27 @@ body.landing-state #landing-page {
     .syn-progress-log li.is-current .syn-progress-log-dot {
         animation: none;
     }
+}
+
+
+/* ============================================================
+   Gap-profile spider — helper hint
+   ============================================================ */
+
+#thread-view .map-side-hint {
+    margin: 0.85rem 0 0;
+    padding-top: 0.85rem;
+    border-top: 1px solid rgba(5, 6, 8, 0.07);
+    font-family: var(--font-sans);
+    font-size: 0.78rem;
+    font-weight: 400;
+    color: rgba(74, 85, 100, 0.78);
+    line-height: 1.5;
+    letter-spacing: -0.005em;
+    max-width: 32ch;
+}
+
+:root[data-theme='dark'] #thread-view .map-side-hint {
+    border-top-color: rgba(255, 255, 255, 0.08);
+    color: rgba(174, 182, 196, 0.78);
 }
