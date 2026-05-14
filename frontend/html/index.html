@@ -17,7 +17,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/css/tokens.css?v=20260506n" />
-  <link rel="stylesheet" href="/css/style.css?v=20260515d" />
+  <link rel="stylesheet" href="/css/style.css?v=20260515e" />
   <link rel="stylesheet" href="/css/workspace.css?v=20260506n" />
   <link rel="stylesheet" href="/css/dashboard.css?v=20260514x" />
   <link rel="stylesheet" href="/css/citations.css?v=20260512c" />
@@ -96,72 +96,23 @@
           <svg class="lp-hero-fig" viewBox="0 0 440 360" preserveAspectRatio="xMidYMid meet" aria-hidden="true" focusable="false">
             <defs>
               <filter id="lpHeroFigShadow" x="-30%" y="-30%" width="160%" height="160%">
-                <feDropShadow dx="0" dy="3" stdDeviation="5" flood-color="rgba(5,6,8,0.08)"/>
+                <feDropShadow dx="0" dy="3" stdDeviation="6" flood-color="rgba(5,6,8,0.07)"/>
               </filter>
             </defs>
 
-            <!-- Folio -->
-            <text class="lp-hero-fig-folio" x="412" y="38" text-anchor="end">Fig. 1 / UMAP · HDBSCAN · n = 109</text>
+            <text class="lp-hero-fig-folio" x="412" y="40" text-anchor="end">Fig. 1 / UMAP · HDBSCAN</text>
 
-            <!-- Cluster A: top-left, n=42 -->
-            <g class="lp-hero-fig-cluster" data-cluster="a">
-              <path class="lp-hero-fig-hull" d="M 138 80 C 150 70, 162 62, 180 62 C 204 60, 220 70, 226 82 C 234 94, 232 110, 226 122 C 218 132, 200 134, 180 132 C 158 130, 140 122, 134 110 C 130 100, 130 88, 138 80 Z"/>
-              <g class="lp-hero-fig-points">
-                <circle cx="152" cy="88" r="3"/>
-                <circle cx="174" cy="76" r="4"/>
-                <circle cx="200" cy="84" r="3.5"/>
-                <circle cx="218" cy="102" r="3"/>
-                <circle cx="196" cy="120" r="3.5"/>
-                <circle cx="166" cy="112" r="3"/>
-              </g>
-              <line class="lp-hero-fig-tick" x1="178" y1="60" x2="178" y2="50"/>
-              <text class="lp-hero-fig-label-row" x="178" y="44" text-anchor="middle">
-                <tspan class="lp-hero-fig-label-letter">A</tspan>
-                <tspan class="lp-hero-fig-label-count" dx="6">n = 42</tspan>
-              </text>
-            </g>
+            <!-- Mass: where the literature concentrates -->
+            <path class="lp-hero-fig-mass" d="M 210 144 C 234 124, 270 116, 304 124 C 342 132, 368 152, 380 184 C 392 218, 384 254, 360 280 C 332 308, 290 314, 256 304 C 220 292, 196 264, 192 230 C 188 200, 196 168, 210 144 Z"/>
 
-            <!-- Cluster B: dominant center-right, n=58 -->
-            <g class="lp-hero-fig-cluster" data-cluster="b">
-              <path class="lp-hero-fig-hull" d="M 252 144 C 268 134, 290 128, 312 130 C 340 132, 360 140, 372 156 C 384 174, 386 200, 378 222 C 370 248, 348 268, 320 274 C 290 282, 260 274, 248 256 C 234 234, 228 208, 232 184 C 234 168, 242 154, 252 144 Z"/>
-              <g class="lp-hero-fig-points">
-                <circle cx="270" cy="158" r="3"/>
-                <circle cx="298" cy="146" r="4.5"/>
-                <circle cx="328" cy="148" r="3.5"/>
-                <circle cx="356" cy="172" r="4"/>
-                <circle cx="368" cy="200" r="3.5"/>
-                <circle cx="354" cy="232" r="4"/>
-                <circle cx="320" cy="258" r="3"/>
-                <circle cx="284" cy="252" r="3.5"/>
-                <circle cx="266" cy="220" r="3"/>
-              </g>
-              <line class="lp-hero-fig-tick" x1="388" y1="200" x2="402" y2="200"/>
-              <text class="lp-hero-fig-label-row" x="408" y="204" text-anchor="start">
-                <tspan class="lp-hero-fig-label-letter">B</tspan>
-                <tspan class="lp-hero-fig-label-count" dx="6">n = 58</tspan>
-              </text>
-            </g>
+            <!-- Void: where it doesn't -->
+            <path class="lp-hero-fig-void" d="M 88 84 C 104 72, 128 68, 148 78 C 168 92, 174 116, 168 138 C 158 156, 138 164, 116 160 C 92 154, 78 138, 76 116 C 76 100, 80 90, 88 84 Z"/>
 
-            <!-- Cluster C: gap, n=9 -->
-            <g class="lp-hero-fig-cluster lp-hero-fig-cluster--gap" data-cluster="c">
-              <path class="lp-hero-fig-hull" d="M 68 244 C 78 234, 96 228, 114 230 C 130 234, 138 246, 138 262 C 138 282, 126 296, 108 298 C 88 298, 70 290, 64 276 C 60 264, 62 252, 68 244 Z"/>
-              <path class="lp-hero-fig-hull-mark" d="M 68 244 C 78 234, 96 228, 114 230 C 130 234, 138 246, 138 262 C 138 282, 126 296, 108 298 C 88 298, 70 290, 64 276 C 60 264, 62 252, 68 244 Z"/>
-              <g class="lp-hero-fig-points">
-                <circle cx="86" cy="254" r="3"/>
-                <circle cx="112" cy="252" r="3.5"/>
-                <circle cx="100" cy="280" r="2.5"/>
-              </g>
-              <line class="lp-hero-fig-tick" x1="100" y1="302" x2="100" y2="312"/>
-              <text class="lp-hero-fig-label-row" x="100" y="322" text-anchor="middle">
-                <tspan class="lp-hero-fig-label-letter">C</tspan>
-                <tspan class="lp-hero-fig-label-count" dx="6">n = 9</tspan>
-              </text>
-              <text class="lp-hero-fig-label-gap" x="100" y="338" text-anchor="middle">Gap · novelty 0.84</text>
-            </g>
+            <text class="lp-hero-fig-note" x="124" y="196" text-anchor="middle">Gap detected · 0.84</text>
           </svg>
           <figcaption class="lp-hero-preview-caption">
             <span class="lp-hero-preview-tick">·</span>
-            Three UMAP clusters surfaced from HDBSCAN; one flagged as a gap on novelty 0.84.
+            Where the literature concentrates, and where it doesn't.
           </figcaption>
         </figure>
       </div>

@@ -9452,3 +9452,71 @@ body.landing-state #landing-page {
         transform: none !important;
     }
 }
+
+
+/* ============================================================
+   Hero figure v4 — two shapes only. Mass + void.
+   ============================================================ */
+
+.lp-hero-fig-mass {
+    fill: rgba(5, 6, 8, 0.07);
+    stroke: rgba(5, 6, 8, 0.22);
+    stroke-width: 1.1;
+    stroke-linejoin: round;
+    filter: url(#lpHeroFigShadow);
+    opacity: 0;
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: hero-fig-mass-in 1100ms cubic-bezier(0.16, 1, 0.3, 1) 300ms forwards;
+}
+
+.lp-hero-fig-void {
+    fill: none;
+    stroke: rgba(5, 6, 8, 0.6);
+    stroke-width: 1.4;
+    stroke-dasharray: 5 4;
+    stroke-linejoin: round;
+    opacity: 0;
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: hero-fig-mass-in 900ms cubic-bezier(0.16, 1, 0.3, 1) 760ms forwards;
+}
+
+.lp-hero-fig-note {
+    font-family: var(--font-sans);
+    font-style: italic;
+    font-size: 11px;
+    font-weight: 500;
+    fill: rgba(5, 6, 8, 0.72);
+    letter-spacing: -0.005em;
+    opacity: 0;
+    animation: hero-fig-fade 600ms cubic-bezier(0.22, 1, 0.36, 1) 1300ms forwards;
+}
+
+@keyframes hero-fig-mass-in {
+    0%   { opacity: 0; transform: scale(0.94); }
+    100% { opacity: 1; transform: scale(1); }
+}
+
+:root[data-theme='dark'] .lp-hero-fig-mass {
+    fill: rgba(255, 255, 255, 0.06);
+    stroke: rgba(246, 248, 252, 0.22);
+}
+
+:root[data-theme='dark'] .lp-hero-fig-void {
+    stroke: rgba(246, 248, 252, 0.68);
+}
+
+:root[data-theme='dark'] .lp-hero-fig-note {
+    fill: rgba(246, 248, 252, 0.74);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .lp-hero-fig-mass,
+    .lp-hero-fig-void,
+    .lp-hero-fig-note {
+        animation: none !important;
+        opacity: 1 !important;
+        transform: none !important;
+    }
+}
