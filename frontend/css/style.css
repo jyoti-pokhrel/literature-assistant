@@ -9520,3 +9520,127 @@ body.landing-state #landing-page {
         transform: none !important;
     }
 }
+
+
+/* ============================================================
+   Hero figure v5 — single cluster with embedded gap
+   ============================================================ */
+
+.lp-hero-fig-cluster-hull {
+    fill: rgba(5, 6, 8, 0.045);
+    stroke: rgba(5, 6, 8, 0.36);
+    stroke-width: 1.2;
+    stroke-linejoin: round;
+    filter: url(#lpHeroFigShadow);
+    opacity: 0;
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: hero-fig-mass-in 1100ms cubic-bezier(0.16, 1, 0.3, 1) 300ms forwards;
+}
+
+.lp-hero-fig-points circle {
+    fill: rgba(5, 6, 8, 0.96);
+    opacity: 0;
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: hero-fig-point-in 480ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.lp-hero-fig-points circle:nth-child(1) { animation-delay: 760ms; }
+.lp-hero-fig-points circle:nth-child(2) { animation-delay: 820ms; }
+.lp-hero-fig-points circle:nth-child(3) { animation-delay: 880ms; }
+.lp-hero-fig-points circle:nth-child(4) { animation-delay: 940ms; }
+.lp-hero-fig-points circle:nth-child(5) { animation-delay: 1000ms; }
+.lp-hero-fig-points circle:nth-child(6) { animation-delay: 1060ms; }
+
+.lp-hero-fig-gap-ring {
+    fill: none;
+    stroke: rgba(5, 6, 8, 0.62);
+    stroke-width: 1.4;
+    stroke-dasharray: 4 3;
+    opacity: 0;
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: hero-fig-mass-in 700ms cubic-bezier(0.22, 1, 0.36, 1) 1240ms forwards;
+}
+
+.lp-hero-fig-gap-dot {
+    fill: rgba(5, 6, 8, 0.55);
+    opacity: 0;
+    animation: hero-fig-fade 500ms cubic-bezier(0.22, 1, 0.36, 1) 1380ms forwards;
+}
+
+.lp-hero-fig-annotation {
+    opacity: 0;
+    animation: hero-fig-fade 600ms cubic-bezier(0.22, 1, 0.36, 1) 1520ms forwards;
+}
+
+.lp-hero-fig-annotation-tag {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 600;
+    fill: rgba(5, 6, 8, 0.94);
+    letter-spacing: 0.14em;
+}
+
+.lp-hero-fig-annotation-num {
+    font-family: var(--font-sans);
+    font-style: italic;
+    font-size: 11px;
+    font-weight: 500;
+    fill: rgba(5, 6, 8, 0.78);
+    letter-spacing: -0.005em;
+}
+
+.lp-hero-fig-annotation-sub {
+    font-family: var(--font-sans);
+    font-size: 10.5px;
+    font-weight: 400;
+    fill: rgba(74, 85, 100, 0.7);
+    letter-spacing: -0.005em;
+    opacity: 0;
+    animation: hero-fig-fade 600ms cubic-bezier(0.22, 1, 0.36, 1) 1680ms forwards;
+}
+
+/* Dark theme */
+:root[data-theme='dark'] .lp-hero-fig-cluster-hull {
+    fill: rgba(255, 255, 255, 0.05);
+    stroke: rgba(246, 248, 252, 0.38);
+}
+
+:root[data-theme='dark'] .lp-hero-fig-points circle {
+    fill: rgba(246, 248, 252, 0.96);
+}
+
+:root[data-theme='dark'] .lp-hero-fig-gap-ring {
+    stroke: rgba(246, 248, 252, 0.7);
+}
+
+:root[data-theme='dark'] .lp-hero-fig-gap-dot {
+    fill: rgba(246, 248, 252, 0.55);
+}
+
+:root[data-theme='dark'] .lp-hero-fig-annotation-tag {
+    fill: rgba(246, 248, 252, 0.96);
+}
+
+:root[data-theme='dark'] .lp-hero-fig-annotation-num {
+    fill: rgba(246, 248, 252, 0.8);
+}
+
+:root[data-theme='dark'] .lp-hero-fig-annotation-sub {
+    fill: rgba(174, 182, 196, 0.74);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .lp-hero-fig-cluster-hull,
+    .lp-hero-fig-points circle,
+    .lp-hero-fig-gap-ring,
+    .lp-hero-fig-gap-dot,
+    .lp-hero-fig-annotation,
+    .lp-hero-fig-annotation-sub {
+        animation: none !important;
+        opacity: 1 !important;
+        transform: none !important;
+    }
+}
