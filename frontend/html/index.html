@@ -19,7 +19,7 @@
   <link rel="stylesheet" href="/css/tokens.css?v=20260506n" />
   <link rel="stylesheet" href="/css/style.css?v=20260516a" />
   <link rel="stylesheet" href="/css/workspace.css?v=20260506n" />
-  <link rel="stylesheet" href="/css/dashboard.css?v=20260514x" />
+  <link rel="stylesheet" href="/css/dashboard.css?v=20260516b" />
   <link rel="stylesheet" href="/css/citations.css?v=20260512c" />
 </head>
 <body class="landing-state" x-data="appShell()" x-init="init()" :class="$store.app.mode === 'workspace' ? 'workspace-state' : 'landing-state'">
@@ -502,32 +502,18 @@
       <div class="px-content">
         <section id="initial-view" class="dash-workbench" x-show="$store.app.currentView === 'form'" x-transition:enter="fade-in visible" x-data="{ get today() { try { return new Intl.DateTimeFormat('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' }).format(new Date()); } catch(e) { return ''; } }, moreFilters: false }">
 
-          <!-- Identity strip — date + quiet user mark + status -->
-          <header class="dw-identity">
-            <span class="dw-identity-date" x-text="today"></span>
-            <span class="dw-identity-rule" aria-hidden="true"></span>
-            <span class="dw-identity-user" x-show="$store.app.isLoggedIn">
-              <span class="dw-identity-user-dot" aria-hidden="true"></span>
-              <span x-text="($store.app.user && $store.app.user.displayName) || 'Signed in'"></span>
-            </span>
-          </header>
-
           <!-- Resume zone — surfaces the latest thread when history exists -->
           <template x-if="$store.app.history.length > 0">
-            <section class="dw-resume" aria-labelledby="dw-resume-label">
-              <div class="dw-resume-meta">
-                <span class="dw-resume-tag" id="dw-resume-label">Last thread</span>
-                <span class="dw-resume-meta-sep" aria-hidden="true">·</span>
-                <span class="dw-resume-meta-text" x-text="$store.app.history[0].summary || 'In progress'"></span>
-              </div>
+            <section class="dw-resume">
               <h2 class="dw-resume-title" x-text="$store.app.history[0].topic"></h2>
+              <p class="dw-resume-meta-text" x-text="$store.app.history[0].summary || 'In progress'"></p>
               <div class="dw-resume-actions">
                 <button type="button" class="dw-resume-cta" @click="$store.app.useHistoryItem($store.app.history[0])">
-                  Resume thread
+                  Resume
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
                 </button>
                 <button type="button" class="dw-resume-quiet" @click="document.getElementById('main-prompt')?.focus()">
-                  Or start a new one
+                  Start a new search
                 </button>
               </div>
             </section>
@@ -536,11 +522,9 @@
           <!-- Welcome empty-state — only when no history -->
           <template x-if="$store.app.history.length === 0">
             <section class="dw-welcome">
-              <p class="dw-welcome-tag">Workbench</p>
-              <h2 class="dw-welcome-title">Begin with a question. The map will find itself.</h2>
-              <p class="dw-welcome-desc">Type a research topic below. The agent searches Semantic Scholar, arXiv, and OpenAlex, clusters the results, and surfaces the gaps.</p>
+              <h2 class="dw-welcome-title">Search a research topic to begin.</h2>
+              <p class="dw-welcome-desc">Searches Semantic Scholar, arXiv, and OpenAlex; clusters the results; surfaces the gaps.</p>
               <div class="dw-welcome-chips" x-data="searchForm()">
-                <span class="dw-welcome-chips-kicker">Try one</span>
                 <template x-for="t in ['Mechanistic interpretability', 'Diffusion models', 'Retrieval-augmented generation', 'Long-context evaluation', 'Constitutional AI']" :key="t">
                   <button type="button" class="dw-welcome-chip" @click="$store.app.form.topic = t; submit()" x-text="t"></button>
                 </template>
@@ -549,22 +533,18 @@
           </template>
 
           <!-- Command bar — the new-query path -->
-          <section class="dw-command" aria-labelledby="dw-command-label">
-            <p class="dw-command-label" id="dw-command-label">New thread</p>
+          <section class="dw-command">
             <form class="dw-command-form glass-glow" x-data="searchForm()" @submit.prevent="submit" @keydown.enter.prevent="submit">
               <div class="dw-command-main">
-                <span class="dw-command-prompt" aria-hidden="true">›</span>
                 <label class="sr-only" for="main-prompt">Topic</label>
-                <input id="main-prompt" class="dw-command-input" type="text" placeholder="A topic, a paper, a question..." x-model="$store.app.form.topic" autocomplete="off" />
+                <input id="main-prompt" class="dw-command-input" type="text" placeholder="Search a research topic" x-model="$store.app.form.topic" autocomplete="off" />
                 <label class="dw-command-year" :class="{ 'is-filled': $store.app.form.year && $store.app.form.year.toString().trim().length > 0 }">
                   <span class="dw-command-year-label">Year</span>
                   <input id="year-filter" type="text" inputmode="text" placeholder="any" x-model="$store.app.form.year" />
                 </label>
                 <button type="button" class="dw-command-more" :class="{ 'is-open': moreFilters }" @click="moreFilters = !moreFilters" :aria-expanded="moreFilters ? 'true' : 'false'">
-                  <span x-text="moreFilters ? 'Less' : 'More'"></span>
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                  <span x-text="moreFilters ? 'Hide filters' : 'Filters'"></span>
                 </button>
-                <kbd class="dw-command-kbd" aria-hidden="true">↵</kbd>
                 <button id="run-px-query" class="dw-command-submit" type="submit" :class="{ 'is-loading': $store.app.isLoading }" :disabled="$store.app.isLoading" aria-label="Run search">
                   <span x-show="!$store.app.isLoading">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
@@ -595,21 +575,14 @@
           <!-- Earlier log — denser list of past threads -->
           <section class="dw-log" x-show="$store.app.history.length > 1">
             <div class="dw-log-head">
-              <span class="dw-log-kicker">Earlier</span>
-              <span class="dw-log-count">
-                <span x-text="Math.max(0, $store.app.history.length - 1)"></span>
-                <span x-show="Math.max(0, $store.app.history.length - 1) === 1">thread</span>
-                <span x-show="Math.max(0, $store.app.history.length - 1) !== 1">threads</span>
-              </span>
-              <a class="dw-log-allink" href="#" x-show="$store.app.history.length > 8" @click.prevent="document.getElementById('search-history')?.scrollIntoView({ behavior: 'smooth', block: 'start' })">All searches →</a>
+              <span class="dw-log-kicker">Recent searches</span>
+              <a class="dw-log-allink" href="#" x-show="$store.app.history.length > 8" @click.prevent="document.getElementById('search-history')?.scrollIntoView({ behavior: 'smooth', block: 'start' })">All searches</a>
             </div>
 
             <ol class="dw-log-list">
               <template x-for="(item, index) in $store.app.history.slice(1, 8)" :key="item.id">
                 <li class="dw-log-row" tabindex="0" role="button" @click="$store.app.useHistoryItem(item)" @keydown.enter.prevent="$store.app.useHistoryItem(item)" @keydown.space.prevent="$store.app.useHistoryItem(item)">
-                  <span class="dw-log-idx" x-text="(index + 2).toString().padStart(2, '0')"></span>
                   <span class="dw-log-title" x-text="item.topic"></span>
-                  <i class="dw-log-leader" aria-hidden="true"></i>
                   <span class="dw-log-meta" x-text="item.summary"></span>
                 </li>
               </template>

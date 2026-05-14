@@ -2537,3 +2537,196 @@
     .dw-resume-cta:hover { transform: none; }
     .dw-command-submit:hover:not(:disabled) { transform: none; }
 }
+
+
+/* ============================================================
+   Dashboard de-slop: sentence-case labels, drop dotted leaders,
+   quieter mono-caps eyebrows. Editorial scaffolding removed.
+   ============================================================ */
+
+/* Log header: sentence case, real link styling */
+#initial-view .dw-log-kicker {
+    font-family: var(--font-sans);
+    font-size: 0.92rem;
+    font-weight: 600;
+    color: rgba(5, 6, 8, 0.94);
+    letter-spacing: -0.012em;
+    text-transform: none;
+}
+
+#initial-view .dw-log-allink {
+    font-family: var(--font-sans);
+    font-size: 0.82rem;
+    font-weight: 500;
+    color: rgba(5, 6, 8, 0.62);
+    letter-spacing: -0.005em;
+    text-transform: none;
+    text-decoration: underline;
+    text-decoration-color: rgba(5, 6, 8, 0.2);
+    text-underline-offset: 3px;
+}
+
+#initial-view .dw-log-allink:hover {
+    color: rgba(5, 6, 8, 0.96);
+    text-decoration-color: rgba(5, 6, 8, 0.6);
+}
+
+:root[data-theme='dark'] #initial-view .dw-log-kicker {
+    color: rgba(246, 248, 252, 0.94);
+}
+
+:root[data-theme='dark'] #initial-view .dw-log-allink {
+    color: rgba(174, 182, 196, 0.7);
+    text-decoration-color: rgba(255, 255, 255, 0.2);
+}
+
+:root[data-theme='dark'] #initial-view .dw-log-allink:hover {
+    color: rgba(246, 248, 252, 0.96);
+    text-decoration-color: rgba(255, 255, 255, 0.6);
+}
+
+/* Log rows: drop the dotted leader, balance the two columns */
+#initial-view .dw-log-row {
+    display: flex;
+    align-items: baseline;
+    gap: 1.2rem;
+    padding: 0.7rem 0;
+    border-bottom: 1px solid rgba(5, 6, 8, 0.06);
+}
+
+#initial-view .dw-log-row .dw-log-title {
+    flex: 1;
+    min-width: 0;
+    font-family: var(--font-sans);
+    font-weight: 500;
+    font-size: 0.98rem;
+    color: rgba(5, 6, 8, 0.94);
+    letter-spacing: -0.01em;
+}
+
+#initial-view .dw-log-row .dw-log-meta {
+    flex-shrink: 0;
+    font-family: var(--font-sans);
+    font-size: 0.82rem;
+    font-weight: 400;
+    color: rgba(74, 85, 100, 0.72);
+    text-transform: none;
+    letter-spacing: 0;
+}
+
+:root[data-theme='dark'] #initial-view .dw-log-row {
+    border-bottom-color: rgba(255, 255, 255, 0.08);
+}
+
+:root[data-theme='dark'] #initial-view .dw-log-row .dw-log-title {
+    color: rgba(246, 248, 252, 0.94);
+}
+
+:root[data-theme='dark'] #initial-view .dw-log-row .dw-log-meta {
+    color: rgba(174, 182, 196, 0.72);
+}
+
+/* Welcome: title scaled back to a tool heading, no eyebrow */
+#initial-view .dw-welcome-title {
+    margin: 0 0 0.5rem;
+    font-family: var(--font-sans);
+    font-size: clamp(1.45rem, 2vw, 1.75rem);
+    font-weight: 600;
+    line-height: 1.2;
+    letter-spacing: -0.018em;
+    color: rgba(5, 6, 8, 0.96);
+}
+
+#initial-view .dw-welcome-desc {
+    font-size: 0.95rem;
+    color: rgba(74, 85, 100, 0.78);
+    max-width: 56ch;
+}
+
+:root[data-theme='dark'] #initial-view .dw-welcome-title {
+    color: rgba(246, 248, 252, 0.96);
+}
+
+:root[data-theme='dark'] #initial-view .dw-welcome-desc {
+    color: rgba(174, 182, 196, 0.78);
+}
+
+/* Welcome chips: drop the implicit "tries" eyebrow, tighter */
+#initial-view .dw-welcome-chips {
+    margin-top: 1rem;
+    gap: 0.42rem 0.6rem;
+}
+
+/* Resume meta: now a plain sub-text under the title (no eyebrow) */
+#initial-view .dw-resume {
+    grid-template-rows: auto auto auto;
+}
+
+#initial-view .dw-resume-title {
+    margin: 0 0 0.25rem;
+}
+
+#initial-view .dw-resume-meta-text {
+    grid-column: 1 / 2;
+    margin: 0;
+    font-family: var(--font-sans);
+    font-size: 0.88rem;
+    font-weight: 400;
+    color: rgba(74, 85, 100, 0.78);
+    letter-spacing: 0;
+    text-transform: none;
+    line-height: 1.5;
+}
+
+:root[data-theme='dark'] #initial-view .dw-resume-meta-text {
+    color: rgba(174, 182, 196, 0.78);
+}
+
+/* Command bar: filters button uses sentence-case styling */
+#initial-view .dw-command-more {
+    font-family: var(--font-sans);
+    font-size: 0.82rem;
+    font-weight: 500;
+    letter-spacing: -0.005em;
+    text-transform: none;
+    color: rgba(74, 85, 100, 0.82);
+    padding: 0.35rem 0.65rem;
+}
+
+#initial-view .dw-command-more:hover {
+    color: rgba(5, 6, 8, 0.94);
+    background: rgba(5, 6, 8, 0.04);
+}
+
+:root[data-theme='dark'] #initial-view .dw-command-more {
+    color: rgba(174, 182, 196, 0.82);
+}
+
+:root[data-theme='dark'] #initial-view .dw-command-more:hover {
+    color: rgba(246, 248, 252, 0.94);
+    background: rgba(255, 255, 255, 0.05);
+}
+
+/* Field labels in expanded filter panel: sentence-case */
+#initial-view .dw-command-field-label {
+    font-family: var(--font-sans);
+    font-size: 0.78rem;
+    font-weight: 500;
+    color: rgba(74, 85, 100, 0.74);
+    text-transform: none;
+    letter-spacing: -0.002em;
+}
+
+#initial-view .dw-command-year-label {
+    font-family: var(--font-sans);
+    font-size: 0.78rem;
+    font-weight: 500;
+    color: rgba(74, 85, 100, 0.74);
+    text-transform: none;
+    letter-spacing: -0.002em;
+}
+
+:root[data-theme='dark'] #initial-view .dw-command-field-label,
+:root[data-theme='dark'] #initial-view .dw-command-year-label {
+    color: rgba(174, 182, 196, 0.74);
+}
