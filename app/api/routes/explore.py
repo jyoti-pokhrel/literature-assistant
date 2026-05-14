@@ -101,6 +101,7 @@ class ExploreInteractionEvent(BaseModel):
     @classmethod
     def validate_kind(cls, value: str) -> str:
         from app.services.recommendations.interactions import INTERACTION_WEIGHTS
+
         v = value.strip().lower()
         if v not in INTERACTION_WEIGHTS:
             raise ValueError(f"unknown interaction kind: {value}")
@@ -147,7 +148,9 @@ async def save_explore_seeds(
     current_user: dict = Depends(get_current_user),
 ):
     _ensure_enabled()
-    profile = await profile_builder.set_seed_topics(_username(current_user), payload.topics)
+    profile = await profile_builder.set_seed_topics(
+        _username(current_user), payload.topics
+    )
     summary = {
         "top_topics": profile.top_topics,
         "seed_topics": profile.seed_topics,

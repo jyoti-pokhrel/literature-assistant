@@ -9,7 +9,7 @@ import httpx
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import StreamingResponse
 
-from app.api.dependencies import get_current_user, get_optional_user
+from app.api.dependencies import get_optional_user
 from app.schemas.citation import (
     CitationEdge,
     CitationNode,
@@ -93,10 +93,18 @@ async def _build_and_stream(
         await queue.put(event)
 
     try:
-        await _emit({"type": "progress", "stage": "cache_lookup", "message": "Checking cache"})
+        await _emit(
+            {"type": "progress", "stage": "cache_lookup", "message": "Checking cache"}
+        )
         cached = await get_cached(paper_id)
         if cached and cached.get("hop1"):
-            await _emit({"type": "progress", "stage": "cache_hit", "message": "Served from cache"})
+            await _emit(
+                {
+                    "type": "progress",
+                    "stage": "cache_hit",
+                    "message": "Served from cache",
+                }
+            )
             payload = dict(cached["hop1"])
             payload["cached"] = True
             await _emit({"type": "result", "data": payload})
@@ -111,7 +119,9 @@ async def _build_and_stream(
         payload = await fetch_one_hop(ref, on_progress=_emit)
         graph_payload = _serialize_one_hop(payload)
 
-        await _emit({"type": "progress", "stage": "cache_write", "message": "Caching network"})
+        await _emit(
+            {"type": "progress", "stage": "cache_write", "message": "Caching network"}
+        )
         await put_cached(
             paper_id,
             graph_payload,
@@ -213,16 +223,29 @@ async def expand_endpoint(
     keep_edges = []
     for edge in edges_in_payload:
         kind = edge.get("kind")
-        if kind == "ref" and edge.get("source") == target and direction in ("ref", "both"):
+        if (
+            kind == "ref"
+            and edge.get("source") == target
+            and direction in ("ref", "both")
+        ):
             keep_edges.append(edge)
-        elif kind == "cite" and edge.get("target") == target and direction in ("cite", "both"):
+        elif (
+            kind == "cite"
+            and edge.get("target") == target
+            and direction in ("cite", "both")
+        ):
             keep_edges.append(edge)
 
     added_node_ids = set()
     added_nodes_payload = []
     for edge in keep_edges:
         for endpoint in (edge.get("source"), edge.get("target")):
-            if endpoint and endpoint != target and endpoint not in known and endpoint not in added_node_ids:
+            if (
+                endpoint
+                and endpoint != target
+                and endpoint not in known
+                and endpoint not in added_node_ids
+            ):
                 node_payload = nodes_by_id.get(endpoint)
                 if not node_payload:
                     continue
@@ -232,7 +255,10 @@ async def expand_endpoint(
     added_edges_payload = [
         edge
         for edge in keep_edges
-        if edge.get("source") in added_node_ids or edge.get("target") in added_node_ids or edge.get("source") == target or edge.get("target") == target
+        if edge.get("source") in added_node_ids
+        or edge.get("target") in added_node_ids
+        or edge.get("source") == target
+        or edge.get("target") == target
     ]
     # Drop edges where both endpoints are already known and identical to existing known links.
     added_edges_payload = [

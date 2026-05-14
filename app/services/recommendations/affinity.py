@@ -4,6 +4,7 @@ Counts are frequency-weighted with light recency decay. We deliberately keep
 this independent of the embedding-based profile so the signal is interpretable
 and easy to inspect via `/explore/diagnostics`.
 """
+
 from __future__ import annotations
 
 import logging
@@ -57,7 +58,9 @@ async def build_affinity(username: str) -> AffinityProfile:
                     profile.authors[key] = profile.authors.get(key, 0.0) + weight
                 venue_key = _norm(item.get("venue"))
                 if venue_key:
-                    profile.venues[venue_key] = profile.venues.get(venue_key, 0.0) + weight
+                    profile.venues[venue_key] = (
+                        profile.venues.get(venue_key, 0.0) + weight
+                    )
         except Exception:
             logger.exception("affinity: library scan failed for %s", username)
 
@@ -75,7 +78,9 @@ async def build_affinity(username: str) -> AffinityProfile:
                 venue_key = _norm(entry.get("venue"))
                 if venue_key:
                     weight = _recency_weight(entry.get("created_at"), cutoff)
-                    profile.venues[venue_key] = profile.venues.get(venue_key, 0.0) + weight * 0.5
+                    profile.venues[venue_key] = (
+                        profile.venues.get(venue_key, 0.0) + weight * 0.5
+                    )
         except Exception:
             logger.exception("affinity: search_history scan failed for %s", username)
 
@@ -104,7 +109,11 @@ def affinity_score_for_paper(paper: dict, profile: AffinityProfile) -> float:
             if known == venue:
                 venue_score = max(venue_score, w)
                 break
-            if len(known) >= 4 and len(venue) >= 4 and (known in venue or venue in known):
+            if (
+                len(known) >= 4
+                and len(venue) >= 4
+                and (known in venue or venue in known)
+            ):
                 venue_score = max(venue_score, w)
                 break
     return min(1.0, author_score * 0.6 + venue_score * 0.4)

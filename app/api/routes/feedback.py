@@ -135,7 +135,9 @@ async def upsert_gap_feedback(
     await coll.update_one({"_id": doc["_id"]}, {"$set": {update_path: existing}})
 
     username = current_user.get("username") or "local-test-user"
-    await _log_feedback_signal(username, str(doc["_id"]), gap_id, gaps[target_idx], existing)
+    await _log_feedback_signal(
+        username, str(doc["_id"]), gap_id, gaps[target_idx], existing
+    )
     asyncio.create_task(profile_builder.invalidate(username))
 
     return {"gap_id": gap_id, "feedback": existing}

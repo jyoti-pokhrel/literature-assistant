@@ -4,6 +4,7 @@ Routes and tests should import from this module rather than reaching into
 the internal submodules. Internal cross-module helpers (build_reason,
 hydrate_components, etc.) are not re-exported on purpose.
 """
+
 from app.services.recommendations.interactions import (
     INTERACTION_WEIGHTS,
     record_interaction,

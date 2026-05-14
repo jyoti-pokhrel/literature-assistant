@@ -44,7 +44,9 @@ def _parse_items(payload: dict) -> List[RetrievedPaper]:
 
         authors = []
         for authorship in item.get("authorships", []):
-            author_name = clean_text((authorship.get("author") or {}).get("display_name"))
+            author_name = clean_text(
+                (authorship.get("author") or {}).get("display_name")
+            )
             if author_name:
                 authors.append(author_name)
 

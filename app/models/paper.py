@@ -37,13 +37,17 @@ class Paper(BaseModel):
             return 0
         try:
             return int(v)
-        except:
+        except (ValueError, TypeError):
             return 0
 
     @field_validator(
-        "datasets", "metrics", "baselines",
-        "limitations", "future_work", "assumptions",
-        mode="before"
+        "datasets",
+        "metrics",
+        "baselines",
+        "limitations",
+        "future_work",
+        "assumptions",
+        mode="before",
     )
     @classmethod
     def ensure_list(cls, v):

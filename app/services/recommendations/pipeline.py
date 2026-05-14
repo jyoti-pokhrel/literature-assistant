@@ -147,7 +147,9 @@ async def get_feed_page(
                 item["_final_score"] = 0.0
                 popular.append(item)
 
-        chosen_ids = [doc.get("external_id") for doc in popular if doc.get("external_id")]
+        chosen_ids = [
+            doc.get("external_id") for doc in popular if doc.get("external_id")
+        ]
         if chosen_ids:
             await record_impressions(username, chosen_ids)
         return FeedPage(
@@ -220,7 +222,9 @@ async def get_feed_page(
             item["score"] = round(float(item.get("_final_score", 0.0)), 4)
 
         merged = atlas_ranked + in_mem_ranked
-        merged.sort(key=lambda d: d.get("_final_score", d.get("score", 0.0)), reverse=True)
+        merged.sort(
+            key=lambda d: d.get("_final_score", d.get("score", 0.0)), reverse=True
+        )
         ranked = merged[: page_size * 2]
 
         if not ranked and fresh_candidates:
@@ -229,9 +233,13 @@ async def get_feed_page(
             # arXiv/S2 hits unranked but flagged so the user isn't stuck.
             fallback = []
             seen_so_far: set[str] = set()
-            for paper in fresh_candidates[: page_size]:
+            for paper in fresh_candidates[:page_size]:
                 external_id = paper.get("external_id")
-                if not external_id or external_id in seen_set or external_id in seen_so_far:
+                if (
+                    not external_id
+                    or external_id in seen_set
+                    or external_id in seen_so_far
+                ):
                     continue
                 seen_so_far.add(external_id)
                 item = dict(paper)

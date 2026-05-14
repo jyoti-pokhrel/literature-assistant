@@ -3,19 +3,29 @@ from typing import Any, List, Optional
 
 from pydantic import BaseModel, Field, field_validator
 
+
 def sanitize_string(v: Any) -> str:
     if v is None:
         return ""
     s = str(v).strip()
     # Check for junk values commonly returned by sources or LLMs
     lower_s = s.lower()
-    junk_patterns = {"undefined", "null", "[object object]", "none", "n/a", "unknown", "string"}
+    junk_patterns = {
+        "undefined",
+        "null",
+        "[object object]",
+        "none",
+        "n/a",
+        "unknown",
+        "string",
+    }
     if not s or lower_s in junk_patterns:
         return ""
     # If it's a short string containing 'undefined' or 'null', it's likely a bug
     if len(s) < 20 and ("undefined" in lower_s or "null" in lower_s):
         return ""
     return s
+
 
 class PaperSearchRequest(BaseModel):
     topic: str = Field(..., examples=["multi agent rl"])
@@ -124,7 +134,14 @@ class ArxivExploreRequest(BaseModel):
         if value is None:
             return None
         value = value.strip()
-        if not value or value.lower() in {"string", "none", "null", "undefined", "all", "any"}:
+        if not value or value.lower() in {
+            "string",
+            "none",
+            "null",
+            "undefined",
+            "all",
+            "any",
+        }:
             return None
         exact_match = re.fullmatch(r"\d{4}", value)
         range_match = re.fullmatch(r"(\d{4})\s*-\s*(\d{4})", value)
@@ -148,7 +165,14 @@ class ArxivExploreRequest(BaseModel):
         if value is None:
             return None
         value = value.strip()
-        if not value or value.lower() in {"string", "none", "null", "undefined", "all", "any"}:
+        if not value or value.lower() in {
+            "string",
+            "none",
+            "null",
+            "undefined",
+            "all",
+            "any",
+        }:
             return None
         return value
 
