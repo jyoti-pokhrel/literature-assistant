@@ -138,6 +138,18 @@ async function fetchExploreDiagnostics() {
     return await parseResponse(response, "Could not load explore diagnostics");
 }
 
+async function recordExploreInteractions(events) {
+    if (!Array.isArray(events) || events.length === 0) {
+        return { recorded: 0 };
+    }
+    const response = await authenticatedFetch(`${BASE_URL}/explore/interactions`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ events }),
+    });
+    return await parseResponse(response, "Could not record interactions");
+}
+
 async function fetchPublicReport(report_id) {
     const response = await fetch(`${BASE_URL}/synthesis/public/report/${report_id}`, {
         method: "GET",
@@ -203,6 +215,7 @@ window.searchAPI = {
     saveExploreSeeds,
     fetchExploreProfile,
     fetchExploreDiagnostics,
+    recordExploreInteractions,
     fetchPublicReport,
     buildSearchPayload,
     formatFilters,

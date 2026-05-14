@@ -1,25 +1,31 @@
 const { test, expect } = require("@playwright/test");
 
 test.describe("explore feed", () => {
-  test("cold-start onboarding renders, accepts seeds, transitions to feed", async ({ page }) => {
+  test("first visit shows the feed directly, no onboarding form", async ({ page }) => {
     await page.goto("/workspace/explore");
 
-    // Cold-start panel should be visible at first
-    await expect(page.getByText(/Tell us what you're into/i)).toBeVisible({ timeout: 10_000 });
+    // The old cold-start onboarding heading must NOT appear.
+    await expect(page.getByText(/Tell us what you're into/i)).toHaveCount(0, {
+      timeout: 5_000,
+    });
 
-    // Type three seed topics
-    const inputs = page.locator('input[placeholder^="Topic"]');
-    await inputs.nth(0).fill("graph neural networks");
-    await inputs.nth(1).fill("attention mechanisms");
-    await inputs.nth(2).fill("self-supervised learning");
-
-    await page.getByRole("button", { name: /Build my feed/i }).click();
-
-    // Either we land on a populated feed OR the diagnostics-driven empty state
-    // (both are acceptable end states for this smoke).
+    // The page title / heading should render either way.
     await expect(async () => {
       const heading = await page.locator("h2.results-query-title").innerText();
       expect(heading.length).toBeGreaterThan(0);
-    }).toPass({ timeout: 30_000 });
+    }).toPass({ timeout: 15_000 });
+
+    // We expect either a list of papers OR the diagnostics empty-state.
+    // Both are acceptable "first visit works" outcomes.
+    const hasPapers = await page
+      .locator("article.gap-card-premium")
+      .first()
+      .isVisible()
+      .catch(() => false);
+    const emptyState = await page
+      .getByText("No recommendations yet.")
+      .isVisible()
+      .catch(() => false);
+    expect(hasPapers || emptyState).toBe(true);
   });
 });

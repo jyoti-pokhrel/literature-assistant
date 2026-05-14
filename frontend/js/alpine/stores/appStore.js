@@ -271,7 +271,6 @@ document.addEventListener('alpine:init', () => {
             error: '',
             pageRequestId: 0,
             profileSummary: null,
-            coldStart: false,
         },
 
         init() {
@@ -384,7 +383,6 @@ document.addEventListener('alpine:init', () => {
                 error: '',
                 pageRequestId: 0,
                 profileSummary: null,
-                coldStart: false,
             };
         },
 
