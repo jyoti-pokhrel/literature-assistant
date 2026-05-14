@@ -7650,24 +7650,24 @@ body.landing-state #landing-page {
 .lp-hero-accent {
     display: inline-block;
     transform-origin: 0% 80%;
-    opacity: 0;
-    animation: hero-accent-in 1300ms cubic-bezier(0.16, 1, 0.3, 1) 1300ms forwards;
-    will-change: opacity, transform, filter;
+    opacity: 1;
+    filter: blur(14px);
+    animation: hero-accent-focus 1000ms cubic-bezier(0.22, 1, 0.36, 1) 300ms forwards;
+    will-change: filter, transform;
 }
 
-@keyframes hero-accent-in {
+@keyframes hero-accent-focus {
     0% {
-        opacity: 0;
-        transform: translate3d(-10px, 6px, 0) rotate(-0.4deg);
-        filter: blur(9px);
+        filter: blur(14px);
+        transform: translate3d(-2px, 1px, 0);
     }
-    55% {
-        filter: blur(1.4px);
+    60% {
+        filter: blur(2px);
+        transform: translate3d(0, 0, 0);
     }
     100% {
-        opacity: 1;
-        transform: translate3d(0, 0, 0) rotate(0deg);
         filter: blur(0);
+        transform: translate3d(0, 0, 0);
     }
 }
 
