@@ -1673,3 +1673,67 @@
         align-self: flex-start;
     }
 }
+
+
+/* ============================================================
+   Most-cited list — scrollable
+   ============================================================ */
+
+.cit-view .cit-top {
+    max-height: 380px;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    /* Leave room so the scrollbar doesn't crash the last row's right edge */
+    padding-right: 0.35rem;
+    margin-right: -0.35rem;
+    /* Firefox */
+    scrollbar-width: thin;
+    scrollbar-color: rgba(5, 6, 8, 0.22) transparent;
+}
+
+.cit-view .cit-top::-webkit-scrollbar {
+    width: 6px;
+}
+
+.cit-view .cit-top::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.cit-view .cit-top::-webkit-scrollbar-thumb {
+    background: rgba(5, 6, 8, 0.16);
+    border-radius: 999px;
+    border: 1px solid transparent;
+    background-clip: padding-box;
+    transition: background 200ms ease;
+}
+
+.cit-view .cit-top:hover::-webkit-scrollbar-thumb,
+.cit-view .cit-top:focus-within::-webkit-scrollbar-thumb {
+    background: rgba(5, 6, 8, 0.32);
+    background-clip: padding-box;
+}
+
+.cit-view .cit-top::-webkit-scrollbar-thumb:hover {
+    background: rgba(5, 6, 8, 0.5);
+    background-clip: padding-box;
+}
+
+:root[data-theme='dark'] .cit-view .cit-top {
+    scrollbar-color: rgba(246, 248, 252, 0.22) transparent;
+}
+
+:root[data-theme='dark'] .cit-view .cit-top::-webkit-scrollbar-thumb {
+    background: rgba(246, 248, 252, 0.18);
+    background-clip: padding-box;
+}
+
+:root[data-theme='dark'] .cit-view .cit-top:hover::-webkit-scrollbar-thumb,
+:root[data-theme='dark'] .cit-view .cit-top:focus-within::-webkit-scrollbar-thumb {
+    background: rgba(246, 248, 252, 0.34);
+    background-clip: padding-box;
+}
+
+:root[data-theme='dark'] .cit-view .cit-top::-webkit-scrollbar-thumb:hover {
+    background: rgba(246, 248, 252, 0.52);
+    background-clip: padding-box;
+}
