@@ -3,7 +3,7 @@
 Pipeline:
   1. $vectorSearch over `papers.embedding` against the profile.
   2. Filter out previously-seen paper ids in Python.
-  3. Composite score = 0.70·vector + 0.20·recency + 0.10·log10(citations).
+  3. Composite score = 0.65·vector + 0.15·recency + 0.10·log10(citations) + 0.10·affinity.
   4. MMR (λ=0.7) over the top scored to diversify.
   5. Attach a `reason` string built from the nearest profile component.
 """
@@ -13,11 +13,14 @@ from __future__ import annotations
 import datetime as _dt
 import logging
 import math
-from typing import Any
-
-import numpy as np
 
 from app.db.session import papers_collection
+from app.services.recommendations.scoring import (
+    citation_score,
+    composite_score,
+    cosine,
+    recency_score,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -25,37 +28,6 @@ VECTOR_INDEX_NAME = "papers_vector_index"
 NUM_CANDIDATES = 200
 VECTOR_LIMIT = 120
 MMR_LAMBDA = 0.7
-RECENCY_FLOOR_YEAR = 2020
-VECTOR_WEIGHT = 0.70
-RECENCY_WEIGHT = 0.20
-CITATION_WEIGHT = 0.10
-
-
-def _recency_score(year: Any) -> float:
-    try:
-        year_int = int(year)
-    except (TypeError, ValueError):
-        return 0.0
-    current_year = _dt.datetime.now(_dt.timezone.utc).year
-    denom = max(1, current_year - RECENCY_FLOOR_YEAR)
-    return max(0.0, min(1.0, (year_int - RECENCY_FLOOR_YEAR) / denom))
-
-
-def _citation_score(citation_count: Any) -> float:
-    try:
-        count = max(0, int(citation_count or 0))
-    except (TypeError, ValueError):
-        return 0.0
-    return min(1.0, math.log10(1 + count) / 4.0)
-
-
-def _cosine(a: list[float] | np.ndarray, b: list[float] | np.ndarray) -> float:
-    av = np.asarray(a, dtype=np.float32)
-    bv = np.asarray(b, dtype=np.float32)
-    denom = float(np.linalg.norm(av) * np.linalg.norm(bv))
-    if denom < 1e-9:
-        return 0.0
-    return float(np.dot(av, bv) / denom)
 
 
 def _format_search_date(iso: str | None) -> str:
@@ -80,7 +52,7 @@ def _build_reason(paper_vec: list[float], profile_components: list[dict]) -> str
     best_sim = -1.0
     best = positives[0]
     for component in positives:
-        sim = _cosine(paper_vec, component["_vector"])
+        sim = cosine(paper_vec, component["_vector"])
         if sim > best_sim:
             best_sim = sim
             best = component
@@ -165,7 +137,7 @@ def _mmr_select(
         for candidate in remaining:
             relevance = candidate["_final_score"]
             redundancy = max(
-                _cosine(candidate.get("embedding") or [], s.get("embedding") or [])
+                cosine(candidate.get("embedding") or [], s.get("embedding") or [])
                 for s in selected
             )
             mmr_score = lambda_ * relevance - (1 - lambda_) * redundancy
@@ -198,13 +170,9 @@ async def rank_for_profile(
         if external_id and external_id in seen:
             continue
         vector_score = float(doc.get("vector_score") or 0.0)
-        recency = _recency_score(doc.get("year"))
-        citations = _citation_score(doc.get("citation_count"))
-        final = (
-            VECTOR_WEIGHT * vector_score
-            + RECENCY_WEIGHT * recency
-            + CITATION_WEIGHT * citations
-        )
+        recency = recency_score(doc.get("year"))
+        citations = citation_score(doc.get("citation_count"))
+        final = composite_score(vector_score, recency, citations, affinity=0.0)
         doc["_final_score"] = final
         filtered.append(doc)
 
