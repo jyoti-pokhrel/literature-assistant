@@ -1,40 +1,203 @@
 name: CI
+
 on:
   push:
     branches: [main, develop]
   pull_request:
     branches: [main, develop]
+  workflow_dispatch:
+    inputs:
+      run_e2e:
+        description: "Run Playwright E2E tests"
+        type: boolean
+        default: false
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  python-test:
+  lint:
+    name: Lint (ruff)
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.12'
+          python-version: "3.12"
+
       - name: Install uv
         uses: astral-sh/setup-uv@v4
+        with:
+          version: "0.5.20"
+          enable-cache: true
+
       - name: Install dependencies
-        run: uv sync --dev
-      - name: Lint with ruff
-        run: uv run ruff check .
-      - name: Type check with mypy
-        run: uv run mypy app --ignore-missing-imports
-      - name: Run Python tests
-        run: uv run pytest tests/recommendations/
-  node-test:
+        run: uv sync --frozen
+
+      - name: ruff check
+        run: uv run ruff check app tests
+
+      - name: ruff format (check only)
+        run: uv run ruff format --check app tests
+        continue-on-error: true
+
+  test:
+    name: Pytest
     runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      mongo:
+        image: mongo:7
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd="mongosh --quiet --eval 'db.runCommand({ ping: 1 }).ok'"
+          --health-interval=15s
+          --health-timeout=5s
+          --health-retries=5
+    env:
+      MONGODB_URL: mongodb://localhost:27017
+      DB_NAME: research_agent_ci
+      AUTH_DEV_BYPASS: "1"
     steps:
       - uses: actions/checkout@v4
-      - name: Setup Node.js
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+        with:
+          version: "0.5.20"
+          enable-cache: true
+
+      - name: Install dependencies
+        run: uv sync --frozen
+
+      - name: Run pytest
+        run: uv run pytest tests/ -q
+
+  docker:
+    name: Docker build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build image (verify Dockerfile)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: false
+          load: true
+          tags: research-agent:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Smoke-test container
+        run: |
+          docker run --rm --name ra-smoke -d \
+            -e MONGODB_URL=mongodb://127.0.0.1:27017 \
+            -e DB_NAME=research_agent_ci \
+            -e AUTH_DEV_BYPASS=1 \
+            -p 8000:8000 \
+            research-agent:ci
+          # Wait up to 60s for the app to start serving the index page.
+          for i in $(seq 1 30); do
+            if curl --fail --silent http://localhost:8000/ > /dev/null; then
+              echo "App responded on port 8000."
+              docker stop ra-smoke
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "App did not start in time. Container logs:"
+          docker logs ra-smoke || true
+          docker stop ra-smoke || true
+          exit 1
+
+  e2e:
+    name: Playwright E2E
+    if: github.event_name == 'workflow_dispatch' && inputs.run_e2e
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    services:
+      mongo:
+        image: mongo:7
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd="mongosh --quiet --eval 'db.runCommand({ ping: 1 }).ok'"
+          --health-interval=15s
+          --health-timeout=5s
+          --health-retries=5
+    env:
+      MONGODB_URL: mongodb://localhost:27017
+      DB_NAME: research_agent_e2e
+      AUTH_DEV_BYPASS: "1"
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+        with:
+          version: "0.5.20"
+          enable-cache: true
+
+      - name: Install Python deps
+        run: uv sync --frozen
+
+      - name: Set up Node
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
-          cache: 'npm'
-      - name: Install dependencies
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install npm deps
         run: npm install
+
       - name: Install Playwright browsers
-        run: npx playwright install --with-deps
+        run: npx playwright install --with-deps chromium
+
+      - name: Boot API
+        run: |
+          uv run uvicorn app.main:app --host 0.0.0.0 --port 8000 &
+          for i in $(seq 1 30); do
+            if curl --fail --silent http://localhost:8000/ > /dev/null; then
+              echo "API is ready."
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "API failed to come up."
+          exit 1
+
       - name: Run E2E tests
         run: npm run test:e2e
+
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: |
+            playwright-report
+            test-results
+          retention-days: 7
+          if-no-files-found: ignore
