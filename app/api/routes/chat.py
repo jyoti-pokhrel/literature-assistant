@@ -15,6 +15,8 @@ async def save_chat_message(chat_data: ChatSessionCreate, current_user: dict = D
     """Automatically called after each chat interaction to save/update session history."""
     try:
         db = get_db()
+        if db is None:
+            raise HTTPException(status_code=503, detail="Database connection not available. Please check your MongoDB Atlas whitelist.")
         chat_item = chat_data.model_dump()
         chat_item["username"] = current_user["username"]
         now = datetime.now(timezone.utc)
@@ -62,6 +64,8 @@ async def get_chat_history(current_user: dict = Depends(get_current_user)):
     """Retrieve all chat sessions for the current user."""
     try:
         db = get_db()
+        if db is None:
+            raise HTTPException(status_code=503, detail="Database connection not available. Please check your MongoDB Atlas whitelist.")
         cursor = db.chat_history.find({"user_id": str(current_user["_id"])}).sort("updated_at", -1).limit(50)
         history = await cursor.to_list(length=50)
         
@@ -78,6 +82,8 @@ async def delete_chat_session(session_id: str, current_user: dict = Depends(get_
     """Delete a specific chat session."""
     try:
         db = get_db()
+        if db is None:
+            raise HTTPException(status_code=503, detail="Database connection not available. Please check your MongoDB Atlas whitelist.")
         result = await db.chat_history.delete_one({
             "session_id": session_id,
             "user_id": str(current_user["_id"])
@@ -93,6 +99,8 @@ async def clear_chat_history(current_user: dict = Depends(get_current_user)):
     """Delete all chat sessions for the current user."""
     try:
         db = get_db()
+        if db is None:
+            raise HTTPException(status_code=503, detail="Database connection not available. Please check your MongoDB Atlas whitelist.")
         result = await db.chat_history.delete_many({
             "user_id": str(current_user["_id"])
         })
