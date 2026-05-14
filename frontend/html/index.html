@@ -1038,7 +1038,7 @@
                                            status() === 'potentially_addressed' ? 'rgb(59, 130, 246)' :
                                            status() === 'hallucinated' ? 'rgb(239, 68, 68)' : 'var(--text-main)'
                                   }"
-                                  x-text="selectedGap().cross_paper_validation?.reason || selectedGap().llm_verification?.reason || selectedGap().citation_validation?.reasoning || validationLabel(selectedGap())"></p>
+                                  x-text="[selectedGap().cross_paper_validation?.reason, selectedGap().llm_verification?.reason, selectedGap().citation_validation?.reasoning].filter(Boolean).join(' ') || validationLabel(selectedGap())"></p>
                              </div>
                            </section>
 
