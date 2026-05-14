@@ -9,11 +9,24 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from dotenv import load_dotenv
 
+from app.api.routes import (
+    auth,
+    admin,
+    chat,
+    citations,
+    explore,
+    feedback,
+    papers,
+    reports,
+    search,
+    synthesis,
+    user,
+)
+
 # .env loading logic
-env_path = Path(__file__).resolve().parent.parent / '.env'
+env_path = Path(__file__).resolve().parent.parent / ".env"
 load_dotenv(dotenv_path=env_path)
 
-from app.api.routes import auth, admin, chat, citations, explore, feedback, papers, reports, search, synthesis, user
 
 # Warm-up: kick off embedding model load in the background. The server
 # accepts requests immediately; the first synthesis request after boot will
@@ -22,12 +35,14 @@ from app.api.routes import auth, admin, chat, citations, explore, feedback, pape
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     import logging
+
     log = logging.getLogger(__name__)
     loop = asyncio.get_event_loop()
 
     def _bg_warmup():
         try:
             from app.services.synthesis.embeddings import warm_up_model
+
             warm_up_model()
         except Exception as exc:
             log.warning("Embedding warm-up failed: %s", exc)
@@ -35,6 +50,7 @@ async def lifespan(app: FastAPI):
     loop.run_in_executor(None, _bg_warmup)
     log.info("Embedding warm-up scheduled in background; server is ready.")
     yield
+
 
 app = FastAPI(
     title="Research Agent API",
@@ -46,19 +62,28 @@ STATIC_DIR = FRONTEND_DIR
 INDEX_FILE = FRONTEND_DIR / "html" / "index.html"
 NODE_MODULES_DIR = BASE_DIR / "node_modules"
 
+
 # Updated Middleware with Bypass for Localhost
 @app.middleware("http")
 async def api_key_middleware(request: Request, call_next):
-    
+
     response = await call_next(request)
     path = request.url.path
 
-    if path in {"/", "/index.html"} or path == "/workspace" or path.startswith("/workspace/") or path.startswith("/js/") or path.startswith("/css/") or path.startswith("/html/"):
+    if (
+        path in {"/", "/index.html"}
+        or path == "/workspace"
+        or path.startswith("/workspace/")
+        or path.startswith("/js/")
+        or path.startswith("/css/")
+        or path.startswith("/html/")
+    ):
         response.headers["Cache-Control"] = "no-store, max-age=0"
         response.headers["Pragma"] = "no-cache"
         response.headers["Expires"] = "0"
 
     return response
+
 
 # CORS
 app.add_middleware(
@@ -128,7 +153,10 @@ app.mount("/js", StaticFiles(directory=FRONTEND_DIR / "js"), name="frontend-js")
 app.mount("/html", StaticFiles(directory=FRONTEND_DIR / "html"), name="frontend-html")
 
 if NODE_MODULES_DIR.exists():
-    app.mount("/vendor", StaticFiles(directory=NODE_MODULES_DIR), name="vendor-node-modules")
+    app.mount(
+        "/vendor", StaticFiles(directory=NODE_MODULES_DIR), name="vendor-node-modules"
+    )
+
 
 # Custom OpenAPI
 def custom_openapi():
@@ -142,7 +170,9 @@ def custom_openapi():
     app.openapi_schema = openapi_schema
     return app.openapi_schema
 
+
 app.openapi = custom_openapi
+
 
 @app.get("/", include_in_schema=False)
 def frontend():
@@ -183,6 +213,7 @@ ADMIN_PAGE = FRONTEND_DIR / "html" / "admin.html"
 def frontend_admin_panel():
     if not ADMIN_PAGE.exists():
         from fastapi import HTTPException
+
         raise HTTPException(status_code=404, detail="Admin page not available")
     return FileResponse(ADMIN_PAGE)
 

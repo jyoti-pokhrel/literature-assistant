@@ -131,7 +131,9 @@ async def _s2_lookup(client: httpx.AsyncClient, prefixed_id: str) -> Optional[di
     return await _http_get_json(client, url, headers=_s2_headers())
 
 
-async def _openalex_lookup(client: httpx.AsyncClient, work_id_or_doi: str) -> Optional[dict]:
+async def _openalex_lookup(
+    client: httpx.AsyncClient, work_id_or_doi: str
+) -> Optional[dict]:
     url = f"{OPENALEX_BASE}/works/{work_id_or_doi}"
     return await _http_get_json(client, url, headers=_openalex_headers())
 
@@ -148,7 +150,9 @@ async def _arxiv_metadata(client: httpx.AsyncClient, arxiv_id: str) -> Optional[
         response = await client.get(
             ARXIV_API_URL,
             params={"id_list": arxiv_id},
-            headers={"User-Agent": "research-agent citation-network (mailto:research-agent@example.com)"},
+            headers={
+                "User-Agent": "research-agent citation-network (mailto:research-agent@example.com)"
+            },
         )
         if response.status_code != 200 or not response.content:
             return None
@@ -212,7 +216,9 @@ async def resolve_input(
         # 2) OpenAlex (URL or bare W id): look up to get DOI, try to upgrade to S2
         m = OPENALEX_URL.match(text) or OPENALEX_ID.match(text)
         if m:
-            work_id = m.group("id") if hasattr(m, "group") and "id" in m.groupdict() else text
+            work_id = (
+                m.group("id") if hasattr(m, "group") and "id" in m.groupdict() else text
+            )
             payload = await _openalex_lookup(client, work_id)
             if payload:
                 oa_ref = _ref_from_openalex(payload)
@@ -230,7 +236,9 @@ async def resolve_input(
         # 3) arXiv URL / ID — S2 supports the arXiv: prefix directly
         m = ARXIV_URL.match(text) or ARXIV_ID.match(text)
         if m:
-            arxiv_id = m.group("id") if hasattr(m, "group") and "id" in m.groupdict() else text
+            arxiv_id = (
+                m.group("id") if hasattr(m, "group") and "id" in m.groupdict() else text
+            )
             # Strip any trailing version suffix for S2 lookup
             arxiv_id_bare = re.sub(r"v\d+$", "", arxiv_id)
             payload = await _s2_lookup(client, f"arXiv:{arxiv_id_bare}")

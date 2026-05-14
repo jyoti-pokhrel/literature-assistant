@@ -2,13 +2,13 @@ import asyncio
 import logging
 
 from app.schemas.paper import PaperSearchResponse, RetrievedPaper
-
-logger = logging.getLogger(__name__)
 from app.services.extraction.normalizer import clean_text, deduplicate_papers
 from app.services.retrieval.openalex_client import search_openalex
 from app.services.retrieval.arxiv_client import search_arxiv
 from app.services.retrieval.semantic_scholar_client import search_semantic_scholar
 from app.services.retrieval.tavily_client import search_tavily
+
+logger = logging.getLogger(__name__)
 
 PRIMARY_SOURCES: tuple[str, str, str] = ("semantic_scholar", "openalex", "arxiv")
 FALLBACK_SOURCE = "tavily"

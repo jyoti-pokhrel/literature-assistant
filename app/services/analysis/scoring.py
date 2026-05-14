@@ -3,7 +3,10 @@ from datetime import datetime, timezone, timedelta
 
 NEPAL_TZ = timezone(timedelta(hours=5, minutes=45))
 
-def citation_weight(citation_count: int | None, year: int | None, current_year: int | None = None) -> float:
+
+def citation_weight(
+    citation_count: int | None, year: int | None, current_year: int | None = None
+) -> float:
     current_year = current_year or datetime.now(NEPAL_TZ).year
     citations = max(citation_count or 0, 0)
     age = max((current_year - year), 0) if year else 5
@@ -24,21 +27,48 @@ def recency_weight(year: int | None, current_year: int | None = None) -> float:
     return 0.4
 
 
-def score_support(candidate_papers: list[dict], current_year: int | None = None) -> float:
+def score_support(
+    candidate_papers: list[dict], current_year: int | None = None
+) -> float:
     current_year = current_year or datetime.now(NEPAL_TZ).year
     support_count = len(candidate_papers)
-    weighted_support = sum(citation_weight(item.get("citation_count"), item.get("year"), current_year) for item in candidate_papers)
-    recent_support = sum(1 for item in candidate_papers if recency_weight(item.get("year"), current_year) >= 1.0)
-    return round((support_count * 0.5) + (weighted_support * 0.3) + (recent_support * 0.2), 4)
+    weighted_support = sum(
+        citation_weight(item.get("citation_count"), item.get("year"), current_year)
+        for item in candidate_papers
+    )
+    recent_support = sum(
+        1
+        for item in candidate_papers
+        if recency_weight(item.get("year"), current_year) >= 1.0
+    )
+    return round(
+        (support_count * 0.5) + (weighted_support * 0.3) + (recent_support * 0.2), 4
+    )
 
 
-def score_citation_confidence(candidate_papers: list[dict], current_year: int | None = None) -> float:
+def score_citation_confidence(
+    candidate_papers: list[dict], current_year: int | None = None
+) -> float:
     current_year = current_year or datetime.now(NEPAL_TZ).year
     if not candidate_papers:
         return 0.0
-    influential_support = sum(1 for item in candidate_papers if citation_weight(item.get("citation_count"), item.get("year"), current_year) >= 1.0)
-    recent_support = sum(1 for item in candidate_papers if recency_weight(item.get("year"), current_year) >= 1.0)
-    return round((len(candidate_papers) * 0.4) + (influential_support * 0.4) + (recent_support * 0.2), 4)
+    influential_support = sum(
+        1
+        for item in candidate_papers
+        if citation_weight(item.get("citation_count"), item.get("year"), current_year)
+        >= 1.0
+    )
+    recent_support = sum(
+        1
+        for item in candidate_papers
+        if recency_weight(item.get("year"), current_year) >= 1.0
+    )
+    return round(
+        (len(candidate_papers) * 0.4)
+        + (influential_support * 0.4)
+        + (recent_support * 0.2),
+        4,
+    )
 
 
 def score_severity(category: str, evidence: dict) -> float:
@@ -49,7 +79,14 @@ def score_severity(category: str, evidence: dict) -> float:
         + evidence.get("missing_metrics", [])
     ).lower()
     score = 1.0
-    high_priority_terms = ["robust", "scal", "deploy", "partial_observability", "safety", "transfer"]
+    high_priority_terms = [
+        "robust",
+        "scal",
+        "deploy",
+        "partial_observability",
+        "safety",
+        "transfer",
+    ]
     if any(term in text for term in high_priority_terms):
         score += 1.5
     if category in {"deployment", "evaluation"}:
@@ -74,12 +111,18 @@ def score_actionability(category: str, evidence: dict) -> float:
     return round(score, 4)
 
 
-def score_novelty(candidate_papers: list[dict], current_year: int | None = None) -> float:
+def score_novelty(
+    candidate_papers: list[dict], current_year: int | None = None
+) -> float:
     current_year = current_year or datetime.now(NEPAL_TZ).year
     if not candidate_papers:
         return 0.0
-    recent_ratio = sum(recency_weight(item.get("year"), current_year) for item in candidate_papers) / len(candidate_papers)
-    low_direct_citation_ratio = sum(1 for item in candidate_papers if (item.get("citation_count") or 0) < 50) / len(candidate_papers)
+    recent_ratio = sum(
+        recency_weight(item.get("year"), current_year) for item in candidate_papers
+    ) / len(candidate_papers)
+    low_direct_citation_ratio = sum(
+        1 for item in candidate_papers if (item.get("citation_count") or 0) < 50
+    ) / len(candidate_papers)
     return round((recent_ratio * 1.2) + (low_direct_citation_ratio * 0.8), 4)
 
 

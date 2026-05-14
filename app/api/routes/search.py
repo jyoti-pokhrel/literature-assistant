@@ -48,7 +48,9 @@ async def _record_search(
         logger.exception("Failed to persist search_history for %s", username)
 
 
-@router.post("/search/papers", response_model=PaperSearchResponse, status_code=status.HTTP_200_OK)
+@router.post(
+    "/search/papers", response_model=PaperSearchResponse, status_code=status.HTTP_200_OK
+)
 async def search_papers(
     payload: PaperSearchRequest,
     current_user: dict = Depends(get_current_user),
@@ -66,7 +68,9 @@ async def search_papers(
     return result
 
 
-@router.post("/analysis/gaps", response_model=GapAnalysisResponse, status_code=status.HTTP_200_OK)
+@router.post(
+    "/analysis/gaps", response_model=GapAnalysisResponse, status_code=status.HTTP_200_OK
+)
 async def analyze_gaps_for_topic(
     payload: GapAnalysisRequest,
     current_user: dict = Depends(get_current_user),

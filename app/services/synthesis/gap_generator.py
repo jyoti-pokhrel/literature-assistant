@@ -14,7 +14,7 @@ from dotenv import load_dotenv
 
 load_dotenv(dotenv_path=Path(__file__).resolve().parent.parent.parent.parent / ".env")
 
-#Model configuration
+# Model configuration
 PRIMARY_MODEL: str = os.getenv("SYNTHESIS_MODEL_PRIMARY", "")
 if not PRIMARY_MODEL:
     raise RuntimeError("SYNTHESIS_MODEL_PRIMARY is not set in .env")
@@ -30,30 +30,37 @@ MODEL_NAME: str = os.getenv("MODEL_NAME", "google/gemini-flash-1.5")
 LLM_PROVIDER: str = os.getenv("LLM_PROVIDER", "remote").lower()
 
 LOCAL_LLM_URL: str = os.getenv("LOCAL_LLM_URL", "http://127.0.0.1:11434/api/generate")
-LOCAL_MODEL_NAME: str = os.getenv("LOCAL_MODEL_NAME", os.getenv("MODEL_NAME", "qwen2.5:7b"))
-
-logger = logging.getLogger(__name__)
-
-from app.schemas.synthesis import CitationRef, SynthesisGap
-from app.services.synthesis.gap_scorer import compute_gap_score
-from app.services.synthesis.pattern_analysis import extract_cluster_themes
-from app.services.synthesis.citation_validation import (
-    validate_gap_citations, 
-    validate_gap_against_supported_papers,
-    verify_gap_with_llm
+LOCAL_MODEL_NAME: str = os.getenv(
+    "LOCAL_MODEL_NAME", os.getenv("MODEL_NAME", "qwen2.5:7b")
 )
-from app.services.analysis.scoring import (
-    score_support, score_severity, score_actionability,
-    score_novelty, score_citation_confidence, compute_overall_score,
+
+from app.schemas.synthesis import CitationRef, SynthesisGap  # noqa: E402
+from app.services.synthesis.gap_scorer import compute_gap_score  # noqa: E402
+from app.services.synthesis.pattern_analysis import extract_cluster_themes  # noqa: E402
+from app.services.synthesis.citation_validation import (  # noqa: E402
+    validate_gap_citations,
+    validate_gap_against_supported_papers,
+    verify_gap_with_llm,
+)
+from app.services.analysis.scoring import (  # noqa: E402
+    score_support,
+    score_severity,
+    score_actionability,
+    score_novelty,
+    score_citation_confidence,
+    compute_overall_score,
     build_gap_score_breakdown,
 )
 
-#Minimum cluster size to warrant LLM gap generation
+logger = logging.getLogger(__name__)
+
+# Minimum cluster size to warrant LLM gap generation
 MIN_CLUSTER_SIZE_FOR_LLM = 2
 
 
 class GapLLMClient:
     """Simple wrapper to provide the .generate() interface for citation validation."""
+
     async def generate(self, prompt: str, response_format: dict = None) -> str:
         # Use existing routing logic
         if LLM_PROVIDER == "local" or (not OPENROUTER_API_KEY and LOCAL_LLM_URL):
@@ -68,7 +75,8 @@ class GapLLMClient:
                     last_exc = exc
             raise last_exc or RuntimeError("All LLM models failed in client.")
 
-#Shared aiohttp session (reused across all requests; avoids TLS overhead)
+
+# Shared aiohttp session (reused across all requests; avoids TLS overhead)
 _http_session: aiohttp.ClientSession | None = None
 
 
@@ -85,15 +93,16 @@ async def _get_http_session() -> aiohttp.ClientSession:
     return _http_session
 
 
-#Prompt helpers
+# Prompt helpers
+
 
 def _build_cluster_context(cluster_papers: list[dict]) -> str:
     lines: list[str] = []
     for i, p in enumerate(cluster_papers[:8], 1):
-        title       = p.get("title", "Unknown")
-        year        = p.get("year", "?")
+        title = p.get("title", "Unknown")
+        year = p.get("year", "?")
         # Abstract: first 350 chars
-        abstract    = (p.get("abstract") or "")[:350].strip()
+        abstract = (p.get("abstract") or "")[:350].strip()
         limitations = "; ".join((p.get("normalized_limitations") or [])[:5])
         future_work = "; ".join((p.get("normalized_future_work") or [])[:5])
         methods_raw = (
@@ -101,8 +110,8 @@ def _build_cluster_context(cluster_papers: list[dict]) -> str:
             or p.get("normalized_method")
             or ([p.get("method")] if p.get("method") else [])
         )
-        methods  = "; ".join((methods_raw or [])[:4])
-        metrics  = "; ".join((p.get("normalized_metrics") or [])[:4])
+        methods = "; ".join((methods_raw or [])[:4])
+        metrics = "; ".join((p.get("normalized_metrics") or [])[:4])
         datasets = "; ".join((p.get("normalized_datasets") or [])[:3])
 
         lines.append(
@@ -127,13 +136,22 @@ def _gap_prompt(
     context = _build_cluster_context(cluster_papers)
     n_papers = min(len(cluster_papers), 8)
 
-    top_methods     = ", ".join(str(m) for m in (pattern.get("top_methods") or [])[:5])     or "N/A"
-    top_limitations = ", ".join(str(l) for l in (pattern.get("top_limitations") or [])[:5]) or "N/A"
-    top_metrics     = ", ".join(str(m) for m in (pattern.get("top_metrics") or [])[:5])     or "N/A"
+    top_methods = (
+        ", ".join(str(m) for m in (pattern.get("top_methods") or [])[:5]) or "N/A"
+    )
+    top_limitations = (
+        ", ".join(str(lim) for lim in (pattern.get("top_limitations") or [])[:5])
+        or "N/A"
+    )
+    top_metrics = (
+        ", ".join(str(m) for m in (pattern.get("top_metrics") or [])[:5]) or "N/A"
+    )
 
-    cluster_lims = ", ".join(themes.get("top_limitations") or []) or "not yet identified"
-    cluster_fw   = ", ".join(themes.get("top_future_work") or []) or "not yet identified"
-    theme_label  = themes.get("theme_label", "unspecified")
+    cluster_lims = (
+        ", ".join(themes.get("top_limitations") or []) or "not yet identified"
+    )
+    cluster_fw = ", ".join(themes.get("top_future_work") or []) or "not yet identified"
+    theme_label = themes.get("theme_label", "unspecified")
 
     return f"""You are an expert Research Analyst specializing in identifying unresolved research gaps from academic literature.
 
@@ -244,7 +262,8 @@ EVERY field must be a non-empty English sentence. NEVER output null, undefined, 
 confidence_score: float 0.0–1.0 reflecting how strongly the evidence supports this gap."""
 
 
-#LLM callers
+# LLM callers
+
 
 async def _call_openrouter(prompt: str, model: str, *, _retries: int = 2) -> str:
 
@@ -255,7 +274,7 @@ async def _call_openrouter(prompt: str, model: str, *, _retries: int = 2) -> str
         "model": model,
         "messages": [{"role": "user", "content": prompt}],
         "temperature": 0.0,
-        "max_tokens": 1500,  
+        "max_tokens": 1500,
     }
     headers = {
         "Authorization": f"Bearer {OPENROUTER_API_KEY}",
@@ -279,10 +298,13 @@ async def _call_openrouter(prompt: str, model: str, *, _retries: int = 2) -> str
                 wait = min(retry_after, 15.0)
                 logger.warning(
                     "Model %s rate-limited (429). Retrying in %.1f s (attempt %d/%d).",
-                    model, wait, attempt + 1, _retries,
+                    model,
+                    wait,
+                    attempt + 1,
+                    _retries,
                 )
                 await asyncio.sleep(wait)
-                continue   # retry
+                continue  # retry
 
             if not resp.ok:
                 body = await resp.text()
@@ -305,7 +327,7 @@ async def _call_local_model(prompt: str) -> str:
         "model": LOCAL_MODEL_NAME,
         "prompt": prompt,
         "stream": False,
-        "options": {"temperature": 0.0, "num_predict": 1400},  
+        "options": {"temperature": 0.0, "num_predict": 1400},
     }
     session = await _get_http_session()
     async with session.post(
@@ -337,7 +359,6 @@ async def _call_llm(prompt: str) -> str:
     raise RuntimeError(f"All LLM models failed. Last error: {last_exc}")
 
 
-
 def _extract_json(text: str) -> dict:
     # Strip markdown code fences if present
     text = re.sub(r"^```(?:json)?|```$", "", text, flags=re.MULTILINE).strip()
@@ -353,18 +374,29 @@ def _extract_json(text: str) -> dict:
 def _clean_val(v: Any, default: str = "") -> str:
     if v is None:
         return default
-    s = re.sub(r'(?i)\bundefined\b', '', str(v)).strip()
+    s = re.sub(r"(?i)\bundefined\b", "", str(v)).strip()
     if not s:
         return default
     lower_s = s.lower()
-    junk = {"null", "[object object]", "none", "n/a", "unknown", "string", "empty",
-            "all", "any", "javascript:void(0)"}
-    if lower_s in junk or re.sub(r'[^a-z0-9]', '', lower_s) in junk:
+    junk = {
+        "null",
+        "[object object]",
+        "none",
+        "n/a",
+        "unknown",
+        "string",
+        "empty",
+        "all",
+        "any",
+        "javascript:void(0)",
+    }
+    if lower_s in junk or re.sub(r"[^a-z0-9]", "", lower_s) in junk:
         return default
     return s
 
 
-#Evidence helpers
+# Evidence helpers
+
 
 def _extract_and_verify_citations(text: str, papers: list[dict]) -> set[int]:
     valid: set[int] = set()
@@ -377,12 +409,24 @@ def _extract_and_verify_citations(text: str, papers: list[dict]) -> set[int]:
 
 def _build_evidence(cluster_papers: list[dict]) -> dict:
     return {
-        "recurring_limitations":  [l for p in cluster_papers for l in p.get("normalized_limitations", [])],
-        "recurring_future_work":  [f for p in cluster_papers for f in p.get("normalized_future_work", [])],
-        "dominant_assumptions":   [a for p in cluster_papers for a in p.get("normalized_assumptions", [])],
-        "missing_metrics":        [m for p in cluster_papers for m in p.get("normalized_metrics", [])],
-        "missing_datasets":       [d for p in cluster_papers for d in p.get("normalized_datasets", [])],
-        "weak_baselines":         [b for p in cluster_papers for b in p.get("normalized_baselines", [])],
+        "recurring_limitations": [
+            lim for p in cluster_papers for lim in p.get("normalized_limitations", [])
+        ],
+        "recurring_future_work": [
+            f for p in cluster_papers for f in p.get("normalized_future_work", [])
+        ],
+        "dominant_assumptions": [
+            a for p in cluster_papers for a in p.get("normalized_assumptions", [])
+        ],
+        "missing_metrics": [
+            m for p in cluster_papers for m in p.get("normalized_metrics", [])
+        ],
+        "missing_datasets": [
+            d for p in cluster_papers for d in p.get("normalized_datasets", [])
+        ],
+        "weak_baselines": [
+            b for p in cluster_papers for b in p.get("normalized_baselines", [])
+        ],
     }
 
 
@@ -395,46 +439,56 @@ def _gap_category(evidence: dict) -> str:
     return "methodology"
 
 
-def _score_from_evidence(cluster_papers: list[dict], cluster_id: int = -1, text: str = "") -> float:
+def _score_from_evidence(
+    cluster_papers: list[dict], cluster_id: int = -1, text: str = ""
+) -> float:
     if not cluster_papers:
         return 0.0
     evidence = _build_evidence(cluster_papers)
     category = _gap_category(evidence)
-    s_support  = score_support(cluster_papers)
+    s_support = score_support(cluster_papers)
     s_severity = score_severity(category, evidence)
-    s_action   = score_actionability(category, evidence)
-    s_novelty  = score_novelty(cluster_papers)
+    s_action = score_actionability(category, evidence)
+    s_novelty = score_novelty(cluster_papers)
     valid_cits = _extract_and_verify_citations(text, cluster_papers)
     cit_signal = len(valid_cits) / max(1, len(cluster_papers))
-    s_cite     = score_citation_confidence(cluster_papers)
-    raw_score  = compute_overall_score(s_support, s_severity, s_action, s_novelty,
-                                        s_cite * (0.7 + 0.3 * cit_signal))
+    s_cite = score_citation_confidence(cluster_papers)
+    raw_score = compute_overall_score(
+        s_support, s_severity, s_action, s_novelty, s_cite * (0.7 + 0.3 * cit_signal)
+    )
     confidence = 1 / (1 + math.exp(-0.5 * (raw_score - 2.5)))
     return round(min(0.99, max(0.1, confidence)), 2)
 
 
-def _make_citations(papers: list[dict], cited_indices: set[int] | None = None) -> list[CitationRef]:
+def _make_citations(
+    papers: list[dict], cited_indices: set[int] | None = None
+) -> list[CitationRef]:
     source_papers = (
         [papers[i] for i in sorted(cited_indices) if 0 <= i < len(papers)]
-        if cited_indices else papers[:5]
+        if cited_indices
+        else papers[:5]
     )
     refs: list[CitationRef] = []
     for p in source_papers:
-        evidence = (p.get("normalized_limitations") or [])[:2] + (p.get("normalized_future_work") or [])[:2]
-        refs.append(CitationRef(
-            paper_id=p.get("paper_id"),
-            title=p.get("title", "Unknown"),
-            year=p.get("year"),
-            source=p.get("source"),
-            venue=p.get("venue") or "Unknown Venue",
-            citation_count=p.get("citation_count") or 0,
-            url=p.get("url"),
-            extracted_evidence=evidence,
-        ))
+        evidence = (p.get("normalized_limitations") or [])[:2] + (
+            p.get("normalized_future_work") or []
+        )[:2]
+        refs.append(
+            CitationRef(
+                paper_id=p.get("paper_id"),
+                title=p.get("title", "Unknown"),
+                year=p.get("year"),
+                source=p.get("source"),
+                venue=p.get("venue") or "Unknown Venue",
+                citation_count=p.get("citation_count") or 0,
+                url=p.get("url"),
+                extracted_evidence=evidence,
+            )
+        )
     return refs
 
 
-#Heuristic fallback gap
+# Heuristic fallback gap
 def _heuristic_gap(
     cluster_id: int,
     papers: list[dict],
@@ -445,8 +499,9 @@ def _heuristic_gap(
     paper_ids: list[str],
 ) -> SynthesisGap:
     from collections import Counter
+
     lim_c: Counter[str] = Counter()
-    fw_c:  Counter[str] = Counter()
+    fw_c: Counter[str] = Counter()
     for p in papers:
         for lim in p.get("normalized_limitations", []):
             lim_c[lim] += 1
@@ -454,16 +509,16 @@ def _heuristic_gap(
             fw_c[fw] += 1
 
     top_lim = lim_c.most_common(1)
-    top_fw  = fw_c.most_common(1)
+    top_fw = fw_c.most_common(1)
     lim_text = top_lim[0][0] if top_lim else "unclear limitations"
-    fw_text  = top_fw[0][0]  if top_fw  else "unspecified future work"
+    fw_text = top_fw[0][0] if top_fw else "unspecified future work"
 
     gap_fields = {
         "description": (
             f"Across {len(papers)} papers in this cluster, a recurring limitation is '{lim_text}'. "
             f"Authors frequently cite '{fw_text}' as open future work."
         ),
-        "what_fails":    lim_text,
+        "what_fails": lim_text,
         "why_it_exists": "This limitation appears repeatedly without resolution across the surveyed literature.",
         "missing_piece": fw_text,
         "proposed_direction": f"Address '{lim_text}' through a targeted study focused on '{fw_text}'.",
@@ -482,14 +537,19 @@ def _heuristic_gap(
         cluster_id=cluster_id,
         supporting_papers=paper_ids,
         citations=citations,
-        score_breakdown=build_gap_score_breakdown(papers, evidence, _gap_category(evidence)),
+        score_breakdown=build_gap_score_breakdown(
+            papers, evidence, _gap_category(evidence)
+        ),
         citation_validation=validate_gap_citations(gap_fields, citations),
-        cross_paper_validation=validate_gap_against_supported_papers(gap_fields, papers),
-        llm_verification={"status": "unvalidated", "reason": "Heuristic fallback"}
+        cross_paper_validation=validate_gap_against_supported_papers(
+            gap_fields, papers
+        ),
+        llm_verification={"status": "unvalidated", "reason": "Heuristic fallback"},
     )
 
 
-#Main gap generator (per cluster)
+# Main gap generator (per cluster)
+
 
 async def generate_gaps_for_cluster(
     cluster_id: int,
@@ -500,7 +560,7 @@ async def generate_gaps_for_cluster(
     force_heuristic: bool = False,
 ) -> tuple[list[SynthesisGap], str | None]:
 
-    gap_serial  = f"GAP-{cluster_id + 1:03d}"
+    gap_serial = f"GAP-{cluster_id + 1:03d}"
     _all_papers = all_papers or cluster_papers
 
     confidence_score = compute_gap_score(cluster_papers, _all_papers)
@@ -509,14 +569,19 @@ async def generate_gaps_for_cluster(
     themes = extract_cluster_themes(cluster_papers)
 
     pattern_data = (
-        pattern if isinstance(pattern, dict)
+        pattern
+        if isinstance(pattern, dict)
         else (pattern.model_dump() if hasattr(pattern, "model_dump") else {})
     )
 
     # Skip tiny clusters or those outside top K — use heuristic only
     if force_heuristic or len(cluster_papers) < MIN_CLUSTER_SIZE_FOR_LLM:
         fallback = _heuristic_gap(
-            cluster_id, cluster_papers, topic, gap_serial, confidence_score,
+            cluster_id,
+            cluster_papers,
+            topic,
+            gap_serial,
+            confidence_score,
             _make_citations(cluster_papers),
             [p.get("paper_id") or p.get("title", "") for p in cluster_papers],
         )
@@ -548,8 +613,14 @@ async def generate_gaps_for_cluster(
             llm_theme_label: str | None = _clean_val(data.get("theme_label")) or None
             data_list = data.get("gaps", [])
         else:
-            llm_theme_label = _clean_val(data.get("theme_label")) if isinstance(data, dict) else None
-            data_list = [data] if isinstance(data, dict) else (data if isinstance(data, list) else [])
+            llm_theme_label = (
+                _clean_val(data.get("theme_label")) if isinstance(data, dict) else None
+            )
+            data_list = (
+                [data]
+                if isinstance(data, dict)
+                else (data if isinstance(data, list) else [])
+            )
 
         gaps_out: list[SynthesisGap] = []
         for idx, gap_data in enumerate(data_list):
@@ -563,88 +634,108 @@ async def generate_gaps_for_cluster(
                 f"{gap_data.get('missing_piece', '')} "
                 f"{gap_data.get('proposed_direction', '')}"
             )
-            cited_indices = sorted(list(_extract_and_verify_citations(text_content, cluster_papers)))
+            cited_indices = sorted(
+                list(_extract_and_verify_citations(text_content, cluster_papers))
+            )
             if len(cited_indices) < 1:
                 cited_indices = list(range(min(2, len(cluster_papers))))
 
-            citations     = _make_citations(cluster_papers, cited_indices=set(cited_indices))
+            citations = _make_citations(
+                cluster_papers, cited_indices=set(cited_indices)
+            )
             cited_paper_ids = [
                 cluster_papers[i].get("paper_id") or cluster_papers[i].get("title", "")
                 for i in cited_indices
             ]
 
-
-            mapping = {old_idx + 1: new_idx + 1 for new_idx, old_idx in enumerate(cited_indices)}
+            mapping = {
+                old_idx + 1: new_idx + 1
+                for new_idx, old_idx in enumerate(cited_indices)
+            }
 
             def renumber_text(text: str) -> str:
                 if not text:
                     return text
+
                 def _replace(m: re.Match) -> str:
                     remapped = mapping.get(int(m.group(1)))
                     return f"[{remapped}]" if remapped is not None else ""
+
                 return re.sub(r"\[(\d+)\]", _replace, text).strip()
 
             def clean(key: str, default: str = "") -> str:
                 return _clean_val(gap_data.get(key)) or default
 
             gap_fields_for_val = {
-                "what_fails":    clean("what_fails"),
+                "what_fails": clean("what_fails"),
                 "missing_piece": clean("missing_piece"),
             }
-            cross_val = validate_gap_against_supported_papers(gap_fields_for_val, cluster_papers)
+            cross_val = validate_gap_against_supported_papers(
+                gap_fields_for_val, cluster_papers
+            )
 
-            base_score     = _score_from_evidence(cluster_papers, cluster_id, text_content)
+            base_score = _score_from_evidence(cluster_papers, cluster_id, text_content)
             try:
                 llm_conf = float(gap_data.get("confidence_score", base_score))
             except (ValueError, TypeError):
                 llm_conf = base_score
-            
+
             # Blend objective evidence score with the gap-specific LLM confidence
             final_score = round(0.6 * base_score + 0.4 * llm_conf, 2)
-            
+
             # Apply penalty if the gap is potentially addressed by newer papers
             if cross_val.get("status") == "potentially_addressed":
                 final_score = round(final_score * 0.7, 2)
 
-            evidence       = _build_evidence(cluster_papers)
+            evidence = _build_evidence(cluster_papers)
             score_breakdown = build_gap_score_breakdown(
                 cluster_papers, evidence, _gap_category(evidence)
             )
             gap_fields = {
-                "gap_title":          clean("gap_title", f"Research gap in cluster {cluster_id}"),
-                "description":        renumber_text(clean("description")),
-                "what_fails":         renumber_text(clean("what_fails")),
-                "why_it_exists":      renumber_text(clean("why_it_exists")),
-                "missing_piece":      renumber_text(clean("missing_piece")),
-                "pattern_detected":   clean("pattern_detected"),
+                "gap_title": clean(
+                    "gap_title", f"Research gap in cluster {cluster_id}"
+                ),
+                "description": renumber_text(clean("description")),
+                "what_fails": renumber_text(clean("what_fails")),
+                "why_it_exists": renumber_text(clean("why_it_exists")),
+                "missing_piece": renumber_text(clean("missing_piece")),
+                "pattern_detected": clean("pattern_detected"),
                 "proposed_direction": renumber_text(clean("proposed_direction")),
             }
 
-            gaps_out.append(SynthesisGap(
-                gap_id=f"{gap_serial}-{idx + 1}",
-                gap_title=gap_fields["gap_title"],
-                description=gap_fields["description"],
-                what_fails=gap_fields["what_fails"],
-                why_it_exists=gap_fields["why_it_exists"],
-                missing_piece=gap_fields["missing_piece"],
-                pattern_detected=gap_fields["pattern_detected"],
-                proposed_direction=gap_fields["proposed_direction"],
-                confidence_score=final_score,
-                cluster_id=cluster_id,
-                supporting_papers=cited_paper_ids,
-                citations=citations,
-                score_breakdown=score_breakdown,
-                citation_validation=validate_gap_citations(gap_fields, citations),
-                cross_paper_validation=cross_val,
-                llm_verification=await verify_gap_with_llm(gap_fields, citations, GapLLMClient()),
-            ))
+            gaps_out.append(
+                SynthesisGap(
+                    gap_id=f"{gap_serial}-{idx + 1}",
+                    gap_title=gap_fields["gap_title"],
+                    description=gap_fields["description"],
+                    what_fails=gap_fields["what_fails"],
+                    why_it_exists=gap_fields["why_it_exists"],
+                    missing_piece=gap_fields["missing_piece"],
+                    pattern_detected=gap_fields["pattern_detected"],
+                    proposed_direction=gap_fields["proposed_direction"],
+                    confidence_score=final_score,
+                    cluster_id=cluster_id,
+                    supporting_papers=cited_paper_ids,
+                    citations=citations,
+                    score_breakdown=score_breakdown,
+                    citation_validation=validate_gap_citations(gap_fields, citations),
+                    cross_paper_validation=cross_val,
+                    llm_verification=await verify_gap_with_llm(
+                        gap_fields, citations, GapLLMClient()
+                    ),
+                )
+            )
 
         return gaps_out, llm_theme_label
 
     except Exception as exc:
         logger.warning("LLM gap generation failed for cluster %d: %s", cluster_id, exc)
         fallback = _heuristic_gap(
-            cluster_id, cluster_papers, topic, gap_serial, confidence_score,
+            cluster_id,
+            cluster_papers,
+            topic,
+            gap_serial,
+            confidence_score,
             _make_citations(cluster_papers),
             [p.get("paper_id") or p.get("title", "") for p in cluster_papers],
         )
@@ -673,14 +764,14 @@ async def generate_all_gaps(
 
     # Sort clusters by size descending to prioritise LLM calls for the largest clusters.
     sorted_clusters = sorted(cluster_map.items(), key=lambda x: len(x[1]), reverse=True)
-    
+
     # Process all clusters with the LLM for maximum gap coverage
-    max_llm_clusters = 100 
+    max_llm_clusters = 100
 
     results = []
     for i, (cid, cprs) in enumerate(sorted_clusters):
         # Allow all clusters to use the LLM if they meet the minimum size
-        force_heuristic = (i >= max_llm_clusters)
+        force_heuristic = i >= max_llm_clusters
         try:
             res = await generate_gaps_for_cluster(
                 cid, cprs, topic, pattern, _all, force_heuristic=force_heuristic
@@ -688,7 +779,7 @@ async def generate_all_gaps(
             results.append(res)
         except Exception as e:
             results.append(e)
-            
+
         # Add a delay between LLM calls to prevent upstream rate limits
         if not force_heuristic and i < len(sorted_clusters) - 1:
             await asyncio.sleep(2.0)
@@ -714,10 +805,12 @@ async def generate_all_gaps(
 
 async def label_cluster(cluster_papers: list[dict], topic: str) -> dict:
 
-    context = "\n".join([
-        f"Title: {p.get('title')}\nAbstract: {(p.get('abstract') or '')[:300]}…"
-        for p in cluster_papers[:5]
-    ])
+    context = "\n".join(
+        [
+            f"Title: {p.get('title')}\nAbstract: {(p.get('abstract') or '')[:300]}…"
+            for p in cluster_papers[:5]
+        ]
+    )
     prompt = f"""Identify the core research theme and the main shared technical limitation for this cluster.
 TOPIC: {topic}
 PAPERS:
@@ -729,13 +822,19 @@ Return ONLY a valid JSON object:
   "top_limitation": "One technical sentence describing the main shared gap/limitation"
 }}"""
     try:
-        raw  = await _call_llm(prompt)
+        raw = await _call_llm(prompt)
         data = _extract_json(raw)
         return {
-            "theme_label":     _clean_val(data.get("theme_label"), "unspecified gap"),
-            "top_limitations": [data.get("top_limitation")] if data.get("top_limitation") else [],
-            "paper_count":     len(cluster_papers),
+            "theme_label": _clean_val(data.get("theme_label"), "unspecified gap"),
+            "top_limitations": [data.get("top_limitation")]
+            if data.get("top_limitation")
+            else [],
+            "paper_count": len(cluster_papers),
         }
     except Exception as exc:
         logger.warning("LLM cluster labeling failed: %s", exc)
-        return {"theme_label": "Research cluster", "top_limitations": [], "paper_count": len(cluster_papers)}
+        return {
+            "theme_label": "Research cluster",
+            "top_limitations": [],
+            "paper_count": len(cluster_papers),
+        }

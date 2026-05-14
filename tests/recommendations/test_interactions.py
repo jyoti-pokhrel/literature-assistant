@@ -1,5 +1,3 @@
-import pytest
-
 from app.services.recommendations.interactions import (
     InteractionSignal,
     INTERACTION_WEIGHTS,

@@ -51,7 +51,9 @@ def _make_client() -> AsyncIOMotorClient | None:
     try:
         return AsyncIOMotorClient(MONGO_URL, **CLIENT_OPTIONS)
     except Exception:
-        logger.exception("Mongo client init failed with certifi; retrying with permissive TLS")
+        logger.exception(
+            "Mongo client init failed with certifi; retrying with permissive TLS"
+        )
     try:
         fallback = {**CLIENT_OPTIONS, "tlsAllowInvalidCertificates": True}
         fallback.pop("tlsCAFile", None)
@@ -154,7 +156,9 @@ async def init_indexes() -> None:
     await _safe_create_index(otps_collection, "email")
 
     # Reset tokens: TTL + lookup by token
-    await _safe_create_index(reset_tokens_collection, "expires_at", expireAfterSeconds=0)
+    await _safe_create_index(
+        reset_tokens_collection, "expires_at", expireAfterSeconds=0
+    )
     await _safe_create_index(reset_tokens_collection, "email")
     await _safe_create_index(reset_tokens_collection, "token", unique=True)
 

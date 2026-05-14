@@ -5,6 +5,7 @@ recency and citation popularity — fast, deterministic, and explainable.
 Diversity is enforced by capping the number of papers per venue per page;
 once any venue saturates the cap, we relax it to keep the page filled.
 """
+
 from __future__ import annotations
 
 import logging

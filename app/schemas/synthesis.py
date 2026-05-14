@@ -11,16 +11,27 @@ def sanitize_string(v: Any) -> str:
         return ""
 
     s = str(v)
-    s = re.sub(r'(?i)\bundefined\b', '', s)
+    s = re.sub(r"(?i)\bundefined\b", "", s)
     s = s.strip()
     if not s or s.lower() in {"null", "none"}:
         return ""
 
     lower_s = s.lower()
     junk_patterns = {
-        "null", "[object object]", "none", "n/a",
-        "unknown", "string", "empty", "all", "any", "npt",
-        "javascript:void(0)", "void(0)", "not available", "no information"
+        "null",
+        "[object object]",
+        "none",
+        "n/a",
+        "unknown",
+        "string",
+        "empty",
+        "all",
+        "any",
+        "npt",
+        "javascript:void(0)",
+        "void(0)",
+        "not available",
+        "no information",
     }
     if lower_s in junk_patterns:
         return ""
@@ -28,7 +39,8 @@ def sanitize_string(v: Any) -> str:
     return s
 
 
-#Core models
+# Core models
+
 
 class CitationRef(BaseModel):
     paper_id: Optional[str] = None
@@ -73,9 +85,14 @@ class SynthesisGap(BaseModel):
     llm_verification: Dict[str, Any] = Field(default_factory=dict)
 
     @field_validator(
-        "gap_title", "description", "what_fails", "why_it_exists",
-        "missing_piece", "pattern_detected", "proposed_direction",
-        mode="before"
+        "gap_title",
+        "description",
+        "what_fails",
+        "why_it_exists",
+        "missing_piece",
+        "pattern_detected",
+        "proposed_direction",
+        mode="before",
     )
     @classmethod
     def sanitize_gap_fields(cls, v: Any) -> str:
@@ -84,13 +101,16 @@ class SynthesisGap(BaseModel):
 
 class ClusterSummary(BaseModel):
     """Summarises one HDBSCAN cluster — returned in SynthesisResponse.clusters[]."""
+
     cluster_id: int
     theme_label: str = "unspecified"
     paper_count: int = 0
     top_limitations: List[str] = Field(default_factory=list)
     top_future_work: List[str] = Field(default_factory=list)
     gap_id: Optional[str] = None  # linked SynthesisGap.gap_id
-    papers: List[Dict[str, Any]] = Field(default_factory=list)  # papers with x/y for the literature map
+    papers: List[Dict[str, Any]] = Field(
+        default_factory=list
+    )  # papers with x/y for the literature map
     trend_status: str = "Established"
 
     @field_validator("theme_label", mode="before")
@@ -113,10 +133,14 @@ class PatternAnalysis(BaseModel):
     saturated_areas: List[str] = Field(default_factory=list)
 
     @field_validator(
-        "top_methods", "top_datasets", "top_metrics",
-        "top_limitations", "top_future_work", "emerging_opportunities",
+        "top_methods",
+        "top_datasets",
+        "top_metrics",
+        "top_limitations",
+        "top_future_work",
+        "emerging_opportunities",
         "saturated_areas",
-        mode="before"
+        mode="before",
     )
     @classmethod
     def sanitize_list_fields(cls, v: Any) -> List[str]:
@@ -163,7 +187,8 @@ class VisualizationData(BaseModel):
         return cleaned
 
 
-#Request / Response
+# Request / Response
+
 
 class SynthesisRequest(BaseModel):
     topic: str = Field(..., min_length=3, examples=["multi agent rl"])
@@ -219,7 +244,7 @@ class SynthesisResponse(BaseModel):
     papers_analyzed: int = 0
     pattern_analysis: PatternAnalysis
     gaps: List[SynthesisGap] = Field(default_factory=list)
-    clusters: List[ClusterSummary] = Field(default_factory=list)   # now populated
+    clusters: List[ClusterSummary] = Field(default_factory=list)  # now populated
     stats: Dict[str, Any] = Field(default_factory=dict)
     visualizations: VisualizationData
     pdf_url: Optional[str] = None

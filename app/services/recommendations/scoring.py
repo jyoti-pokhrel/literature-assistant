@@ -3,6 +3,7 @@
 Lives outside `ranker.py` so the functions can be unit-tested without
 touching Mongo. All inputs are plain numbers/vectors; no I/O.
 """
+
 from __future__ import annotations
 
 import datetime as _dt
