@@ -75,6 +75,15 @@ document.addEventListener('alpine:init', () => {
             return this.$store.app.result?.gapData?.gaps || [];
         },
 
+        validGaps() {
+            return this.gaps().filter((gap) => {
+                const isHallucinated = 
+                    gap.llm_verification?.status?.toLowerCase() === 'hallucinated' || 
+                    gap.citation_validation?.status?.toLowerCase() === 'hallucinated';
+                return !isHallucinated;
+            });
+        },
+
         clusters() {
             if (this.$store.app.isLoading) return [];
             return this.$store.app.result?.gapData?.clusters || this.$store.app.result?.searchData?.clusters || [];
@@ -122,7 +131,7 @@ document.addEventListener('alpine:init', () => {
                     metricFreq: this.$refs.chartMetrics,
                 },
                 {
-                    gaps: this.gaps(),
+                    gaps: this.validGaps(),
                     papers: this.papers(),
                     clusters: this.clusters(),
                     patternAnalysis: this.patternAnalysis(),
@@ -217,6 +226,10 @@ document.addEventListener('alpine:init', () => {
             return colors[index];
         },
 
+        clusterTrend(cluster) {
+            return cluster?.trend_status || 'Established';
+        },
+
         confidence(gap) {
             const value = Number(gap?.confidence_score ?? 0);
             return Number.isFinite(value) ? value : 0;
@@ -226,6 +239,7 @@ document.addEventListener('alpine:init', () => {
             return this.clusters().map((cluster) => ({
                 id: String(cluster.cluster_id),
                 label: `Cluster ${cluster.cluster_id}`,
+                trend: this.clusterTrend(cluster),
                 count: cluster.paper_count || cluster.papers?.length || 0,
             }));
         },
@@ -238,6 +252,13 @@ document.addEventListener('alpine:init', () => {
             const clusterId = filters.clusterId === null || filters.clusterId === undefined ? '' : String(filters.clusterId);
 
             const filtered = this.gaps().filter((gap) => {
+                // EXCLUDE HALLUCINATED GAPS
+                const isHallucinated = 
+                    gap.llm_verification?.status?.toLowerCase() === 'hallucinated' || 
+                    gap.citation_validation?.status?.toLowerCase() === 'hallucinated';
+                
+                if (isHallucinated) return false;
+
                 const score = this.confidence(gap);
                 const text = [
                     gap.gap_title,
@@ -508,8 +529,7 @@ document.addEventListener('alpine:init', () => {
                 .map(([key, label]) => ({
                     key,
                     label,
-                    value: Number(breakdown[key]) || 0,
-                    formatted: Number(breakdown[key] || 0).toFixed(2),
+                    value: Number(breakdown[key] || 0).toFixed(2)
                 }));
         },
 

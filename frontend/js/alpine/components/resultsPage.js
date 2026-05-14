@@ -8,16 +8,20 @@ document.addEventListener('alpine:init', () => {
 
         meta() {
             const searchData = this.$store.app.result?.searchData;
+            const gapData = this.$store.app.result?.gapData;
             const filters = this.activeFilters();
-            const paperCount = searchData?.count ?? searchData?.papers?.length ?? 0;
+            const paperCount = searchData?.count ?? searchData?.papers?.length ?? gapData?.papers_analyzed ?? 0;
+            const quality = gapData?.stats?.cluster_accuracy ?? null;
 
-            if (this.$store.app.isLoading) {
-                return filters.length ? filters.join(' · ') : 'Topic only';
+            let text = `${paperCount} paper${paperCount === 1 ? '' : 's'}`;
+            if (filters.length) {
+                text += ` · ${filters.join(' · ')}`;
+            }
+            if (quality !== null) {
+                text += ` · Cluster Quality: ${Number(quality * 100).toFixed(0)}%`;
             }
 
-            return filters.length
-                ? `${paperCount} paper${paperCount === 1 ? '' : 's'} · ${filters.join(' · ')}`
-                : `${paperCount} paper${paperCount === 1 ? '' : 's'} · query only`;
+            return text;
         },
 
         papers() {

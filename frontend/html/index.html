@@ -597,6 +597,7 @@
               <a class="dw-log-allink" href="#" x-show="$store.app.history.length > 8" @click.prevent="document.getElementById('search-history')?.scrollIntoView({ behavior: 'smooth', block: 'start' })">All searches</a>
             </div>
 
+<<<<<<< Updated upstream
             <ol class="dw-log-list">
               <template x-for="(item, index) in $store.app.history.slice(1, 8)" :key="item.id">
                 <li class="dw-log-row" tabindex="0" role="button" @click="$store.app.useHistoryItem(item)" @keydown.enter.prevent="$store.app.useHistoryItem(item)" @keydown.space.prevent="$store.app.useHistoryItem(item)">
@@ -612,6 +613,38 @@
                         x-show="(item.result?.searchData?.papers || item.result?.papers || []).length > 3"
                         x-text="'+ ' + ((item.result?.searchData?.papers || item.result?.papers || []).length - 3) + ' more papers'"></li>
                   </ol>
+=======
+            <ol class="dash-recent-list">
+              <template x-if="!$store.app.history.length">
+                <li class="dash-recent-empty">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="19" x2="12" y2="5"></line><polyline points="5 12 12 5 19 12"></polyline></svg>
+                  <span>Nothing yet — point the search above at a topic to begin.</span>
+                </li>
+              </template>
+              <template x-for="(item, index) in $store.app.history.slice(0, 8)" :key="item.id">
+                <li class="dash-recent-row" :class="{ 'is-featured': index === 0 }" tabindex="0" role="button" @click="$store.app.useHistoryItem(item)" @keydown.enter.prevent="$store.app.useHistoryItem(item)" @keydown.space.prevent="$store.app.useHistoryItem(item)" :style="{ position: 'relative', zIndex: ($store.app.activeHistoryMenuId === item.id ? '200' : '1') }">
+                  <span class="dash-recent-idx" x-text="(index + 1).toString().padStart(2, '0')"></span>
+                  <span class="dash-recent-title" x-text="item.topic" style="color: var(--text-main); font-weight: 700;"></span>
+                  <i class="t-leader" aria-hidden="true"></i>
+                  <span class="dash-recent-meta" x-text="item.summary" style="margin-left: 0.75rem;"></span>
+                  
+                  <div style="display: flex; align-items: center; gap: 0.5rem; margin-left: 1rem;">
+                    <span class="dash-recent-resume" x-show="index === 0" style="font-size: 0.75rem; font-weight: 700; color: var(--accent); white-space: nowrap;">Resume →</span>
+
+                    <!-- Kebab menu for removal -->
+                    <div class="dash-recent-actions" @click.stop @click.outside="if($store.app.activeHistoryMenuId === item.id) $store.app.activeHistoryMenuId = null" style="position: relative; z-index: 10;">
+                      <button type="button" class="dash-recent-kebab" @click="$store.app.activeHistoryMenuId = ($store.app.activeHistoryMenuId === item.id ? null : item.id)" style="background: none; border: none; color: var(--text-muted); cursor: pointer; padding: 4px; display: flex; align-items: center; justify-content: center; border-radius: 4px; transition: all 0.2s;" onmouseover="this.style.background='var(--hover-bg)'; this.style.color='var(--text-main)'" onmouseout="this.style.background='none'; this.style.color='var(--text-muted)'">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"></circle><circle cx="5" cy="12" r="1"></circle><circle cx="19" cy="12" r="1"></circle></svg>
+                      </button>
+                      <div x-show="$store.app.activeHistoryMenuId === item.id" x-cloak style="position: absolute; right: 0; top: 100%; background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 8px; box-shadow: 0 8px 24px rgba(0,0,0,0.15); padding: 4px; min-width: 120px; z-index: 300;">
+                        <button type="button" @click="$store.app.removeFromHistory(item.id); $store.app.activeHistoryMenuId = null" style="width: 100%; text-align: left; background: none; border: none; color: var(--text-main); padding: 8px 12px; font-size: 0.85rem; font-weight: 600; cursor: pointer; border-radius: 6px; display: flex; align-items: center; gap: 8px; transition: all 0.2s;" onmouseover="this.style.background='rgba(239, 68, 68, 0.08)'; this.style.color='#ef4444'" onmouseout="this.style.background='none'; this.style.color='var(--text-main)'">
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                          Remove
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+>>>>>>> Stashed changes
                 </li>
               </template>
             </ol>
@@ -768,7 +801,16 @@
             
             <!-- Zone 2: The Executive Summary (BLUF) -->
             <section class="results-summary">
-                <p class="synthesis-bluf" x-html="renderTextWithCitations($store.app.result?.gapData?.synthesis?.summary_text) || '<strong>Synthesized ' + papers().length + ' papers</strong> and identified <strong>' + gaps().length + ' core research gaps</strong> across ' + clusters().length + ' thematic clusters.'"></p>
+                <p class="synthesis-bluf" x-html="renderTextWithCitations($store.app.result?.gapData?.synthesis?.summary_text) || '<strong>Synthesized ' + papers().length + ' papers</strong> and identified <strong>' + validGaps().length + ' core research gaps</strong> across ' + clusters().length + ' thematic clusters.'"></p>
+                
+                <div x-show="$store.app.result?.gapData?.stats?.cluster_accuracy !== undefined" 
+                     style="display: flex !important; flex-direction: row !important; align-items: center !important; gap: 10px; margin-top: 1.25rem; padding-bottom: 0.75rem; border-bottom: 1px solid var(--border-color); opacity: 0.9;">
+                  <span style="font-size: 0.7rem; font-weight: 800; letter-spacing: 0.05em; color: var(--text-muted); text-transform: uppercase; white-space: nowrap;">Cluster Quality:</span>
+                  <div style="background: rgba(59, 130, 246, 0.08); padding: 2px 10px; border-radius: 4px; font-size: 0.75rem; font-weight: 700; color: var(--accent); border: 1px solid rgba(59, 130, 246, 0.15); display: inline-flex; align-items: center; gap: 4px; white-space: nowrap;">
+                    <span x-text="Number($store.app.result.gapData.stats.cluster_accuracy * 100).toFixed(0) + '%'"></span>
+                  </div>
+                  <div style="width: 1px; height: 14px; background: var(--border-color); margin-left: 4px; opacity: 0.5;"></div>
+                </div>
             </section>
 
             <!-- Zone 3: The Deep-Dive Workspace (Tabbed Navigation) -->
@@ -806,18 +848,24 @@
                     <ol class="gap-entries">
                         <template x-for="(gap, index) in filteredGaps()" :key="gapKey(gap, index)">
                           <li class="gap-entry" :class="{ 'is-selected': $store.app.explorer.selectedGapId === gapKey(gap, index) }" @click="selectGap(gap)">
-                            <span class="gap-entry-folio" x-text="`Cluster ${(gap.cluster_id ?? '–').toString().padStart(2, '0')}`"></span>
+                            <div class="gap-entry-folio-row" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem;">
+                              <div style="display: flex; align-items: center; gap: 12px;">
+                                <span class="gap-entry-folio" x-text="`Cluster ${(gap.cluster_id ?? '–').toString().padStart(2, '0')}`"></span>
+                                <!-- Temporal Signal -->
+                                <span class="gap-meta-pill" 
+                                      :class="{ 'pill-emerging': clusterTrend(findCluster(gap.cluster_id)) === 'Emerging', 'pill-active': clusterTrend(findCluster(gap.cluster_id)) === 'Active', 'pill-saturated': clusterTrend(findCluster(gap.cluster_id)) === 'Saturated' }"
+                                      x-text="clusterTrend(findCluster(gap.cluster_id))"></span>
+                              </div>
+                              <div style="font-size: 0.75rem; color: var(--text-muted); font-weight: 500; letter-spacing: -0.01em;">
+                                <span x-text="supportCountLabel(gap)"></span>
+                                <span style="margin: 0 4px; opacity: 0.4;">·</span>
+                                <span x-text="Number(gap.confidence_score).toFixed(2) + ' confidence'"></span>
+                              </div>
+                            </div>
                             <h3 class="gap-entry-title" x-text="gap.gap_title || 'Untitled research gap'"></h3>
                             <p class="gap-entry-desc" x-show="hasValue(gap.description)" x-html="renderTextWithCitations(gap.description, gap)"></p>
-                            <div style="display: flex; align-items: center; gap: 6px; margin-top: 6px; font-size: 11px; color: var(--text-muted, #94a3b8);">
-                                <span x-text="supportCountLabel(gap)"></span>
-                                <template x-if="gap.confidence_score !== undefined">
-                                  <span>
-                                    <span style="opacity:0.4; margin: 0 2px;">·</span>
-                                    <span x-text="Number(gap.confidence_score).toFixed(2) + ' confidence'"></span>
-                                  </span>
-                                </template>
-
+                            <div style="display: flex; align-items: center; gap: 8px; margin-top: 8px; flex-wrap: wrap;">
+                                <!-- Validation Status Removed from here -->
                             </div>
                           </li>
                         </template>
@@ -918,20 +966,87 @@
                             </ol>
                           </section>
 
+                           <section class="gap-rail-section" x-show="scoreBreakdown(selectedGap()).length">
+                             <h4 class="gap-rail-section-label">Score</h4>
+                             <div class="score-leader-list">
+                               <template x-for="item in scoreBreakdown(selectedGap())" :key="item.label">
+                                 <div class="score-leader-row">
+                                   <span class="score-leader-label" x-text="item.label"></span>
+                                   <div class="score-leader-dots"></div>
+                                   <span class="score-leader-value" x-text="item.value"></span>
+                                 </div>
+                               </template>
+                             </div>
+                           </section>
+
+                           <!-- Validation Section -->
+                           <section class="gap-rail-section" 
+                                    x-show="selectedGap().citation_validation || selectedGap().llm_verification"
+                                    x-data="{ 
+                                      status() {
+                                        const llm = selectedGap().llm_verification?.status?.toLowerCase();
+                                        const cit = selectedGap().citation_validation?.status?.toLowerCase();
+                                        if (llm === 'hallucinated' || cit === 'hallucinated') return 'hallucinated';
+                                        if (llm === 'weakly supported' || cit === 'weakly_supported') return 'weakly_supported';
+                                        if (llm === 'validated' || cit === 'grounded') return 'validated';
+                                        return 'unknown';
+                                      }
+                                    }">
+                             <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem;">
+                               <h4 class="gap-rail-section-label" style="margin-bottom: 0;">Validation</h4>
+                               
+                               <!-- Status Pill -->
+                               <div style="display: flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; text-transform: capitalize;"
+                                    :style="{
+                                      background: status() === 'validated' ? 'rgba(34, 197, 94, 0.1)' : 
+                                                  status() === 'weakly_supported' ? 'rgba(245, 158, 11, 0.1)' : 
+                                                  status() === 'hallucinated' ? 'rgba(239, 68, 68, 0.1)' : 'rgba(100, 100, 100, 0.1)',
+                                      color: status() === 'validated' ? 'rgb(34, 197, 94)' : 
+                                             status() === 'weakly_supported' ? 'rgb(245, 158, 11)' : 
+                                             status() === 'hallucinated' ? 'rgb(239, 68, 68)' : 'rgb(100, 100, 100)'
+                                    }">
+                                 
+                                 <!-- Tick icon (Grounded) -->
+                                 <template x-if="status() === 'validated'">
+                                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                 </template>
+
+                                 <!-- Warning icon (Weakly Supported) -->
+                                 <template x-if="status() === 'weakly_supported'">
+                                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                                 </template>
+
+                                 <!-- Error icon (Hallucinated) -->
+                                 <template x-if="status() === 'hallucinated'">
+                                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                                 </template>
+
+                                 <span x-text="status() === 'validated' ? 'Validated' : status().replace('_', ' ')"></span>
+                               </div>
+                             </div>
+
+                             <div class="validation-box" 
+                                  style="border-radius: 12px; padding: 1.25rem;"
+                                  :style="{
+                                    background: status() === 'validated' ? 'rgba(34, 197, 94, 0.03)' : 
+                                                status() === 'weakly_supported' ? 'rgba(245, 158, 11, 0.03)' : 
+                                                'rgba(239, 68, 68, 0.03)',
+                                    border: status() === 'validated' ? '1px solid rgba(34, 197, 94, 0.15)' : 
+                                            status() === 'weakly_supported' ? '1px solid rgba(245, 158, 11, 0.15)' : 
+                                            '1px solid rgba(239, 68, 68, 0.15)'
+                                  }">
+                               <p style="margin: 0; font-size: 0.95rem; line-height: 1.6;" 
+                                  :style="{
+                                    color: status() === 'validated' ? 'rgb(34, 197, 94)' : 
+                                           status() === 'weakly_supported' ? 'rgb(245, 158, 11)' : 
+                                           status() === 'hallucinated' ? 'rgb(239, 68, 68)' : 'var(--text-main)'
+                                  }"
+                                  x-text="selectedGap().llm_verification?.reason || selectedGap().citation_validation?.reasoning || validationLabel(selectedGap())"></p>
+                             </div>
+                           </section>
 
 
-                          <section class="gap-rail-section">
-                            <h4 class="gap-rail-section-label">Score</h4>
-                            <div class="gap-rail-scores">
-                              <template x-for="item in scoreBreakdown(selectedGap())" :key="item.key">
-                                <div class="score-row">
-                                  <span class="score-row-label" x-text="item.label"></span>
-                                  <i class="t-leader" aria-hidden="true"></i>
-                                  <strong class="score-row-value" x-text="item.formatted"></strong>
-                                </div>
-                              </template>
-                            </div>
-                          </section>
+
                         </div>
                       </template>
 
@@ -988,7 +1103,7 @@
           <div style="padding: 0 2.5rem 2.5rem;">
             <div x-show="$store.app.explore.error" class="search-error" x-text="$store.app.explore.error" style="margin-bottom:1rem; padding:0.75rem 1rem; background:var(--glass-bg); border:1px solid var(--border-color); border-radius:8px;"></div>
 
-            <div class="results-list" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(450px, 1fr)); gap:1.5rem;">
+            <div class="results-list" style="display:grid; grid-template-columns:repeat(2, 1fr); gap:1.5rem; width: 100%; max-width: 1200px; margin: 0 auto;">
               <template x-for="(paper, index) in $store.app.explore.papers" :key="(paper.external_id || paper.url || paper.title) + ':' + index">
                 <article class="gap-card-premium" style="display:flex; flex-direction:column; gap:0.5rem; padding:1.25rem 1.5rem;">
                   <h3 x-text="paper.title" style="font-size:1.05rem; font-weight:700; color:var(--text-main); line-height:1.35;"></h3>
@@ -1048,7 +1163,7 @@
                   if (entries.some((e) => e.isIntersecting)) {
                     loadMore();
                   }
-                }, { rootMargin: '300px' });
+                }, { rootMargin: '800px' });
                 observer.observe(sentinel);
                 $cleanup = () => observer.disconnect();
               "

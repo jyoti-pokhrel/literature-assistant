@@ -52,6 +52,119 @@ def _build_sent_citation_map(text: str) -> dict[str, list[int]]:
     return result
 
 
+def validate_gap_against_supported_papers(
+    gap_fields: dict[str, Any],
+    cluster_papers: list[dict],
+) -> dict[str, Any]:
+    """
+    Cross-references a gap against all papers in the cluster (supported papers).
+    Includes abstracts and extracted evidence for a deeper check.
+    """
+    if not cluster_papers:
+        return {"status": "unvalidated", "reason": "No papers available for validation."}
+
+    # 1. Semantic check
+    # Include title for better context matching
+    target_text = f"{gap_fields.get('gap_title', '')}: {gap_fields.get('what_fails', '')} {gap_fields.get('missing_piece', '')}".strip()
+    if len(target_text) < 20:
+        return {"status": "unvalidated", "reason": "Gap description too short for semantic validation."}
+
+    # Prepare cluster paper contexts (titles + abstracts + evidence)
+    paper_contexts = []
+    for p in cluster_papers:
+        title = p.get('title', '')
+        text = f"{p.get('abstract', '') or p.get('contribution', '')}"
+        ev = p.get('extracted_evidence', [])
+        if ev:
+            text += " " + " ".join(str(e) for e in ev if e)
+        paper_contexts.append(f"{title}. {text}")
+    
+    all_texts = [target_text] + paper_contexts
+    vecs = _embed_batch(all_texts)
+    if vecs is None:
+        return {"status": "error", "reason": "Embedding service failed."}
+
+    target_vec = vecs[0]
+    paper_vecs = vecs[1:]
+    
+    matches: list[dict] = []
+    for i, p_vec in enumerate(paper_vecs):
+        sim = _cosine_similarity(target_vec, p_vec)
+        # Check if the paper's "contribution" area matches our "gap"
+        # 0.60 is a safer threshold for semantic overlap in technical text
+        if sim > 0.60: 
+            matches.append({
+                "paper_id": cluster_papers[i].get("paper_id"),
+                "title": cluster_papers[i].get("title"),
+                "similarity": round(sim, 3)
+            })
+
+    if matches:
+        matches.sort(key=lambda x: x["similarity"], reverse=True)
+        return {
+            "status": "potentially_addressed",
+            "reason": f"Found {len(matches)} papers in the cluster that may already address this gap.",
+            "conflicting_papers": matches[:3]
+        }
+
+    return {
+        "status": "validated",
+        "reason": f"Gap confirmed as unique against {len(cluster_papers)} cluster papers."
+    }
+
+async def verify_gap_with_llm(
+    gap_fields: dict[str, Any],
+    citations: list[Any],
+    llm_client: Any,
+) -> dict[str, Any]:
+    """
+    Uses the LLM to perform a high-fidelity check of the gap against cited evidence.
+    """
+    if not citations or not llm_client:
+        return {"status": "unvalidated", "reason": "Insufficient data for LLM verification."}
+
+    # Prepare evidence context
+    evidence_text = ""
+    for i, cit in enumerate(citations):
+        context = _paper_context(cit)
+        evidence_text += f"[{i+1}] {context}\n\n"
+
+    prompt = f"""
+Validate the following research gap against the provided evidence from cited papers.
+
+RESEARCH GAP:
+Title: {gap_fields.get('gap_title')}
+Failure: {gap_fields.get('what_fails')}
+Missing Piece: {gap_fields.get('missing_piece')}
+
+EVIDENCE FROM CITED PAPERS:
+{evidence_text}
+
+TASK:
+1. Check if the "Failure" and "Missing Piece" are explicitly or implicitly supported by the evidence.
+2. Check if any cited paper actually SOLVES the "Missing Piece" (which would make the gap invalid).
+3. Assign a final status: "Validated", "Hallucinated", or "Weakly Supported".
+
+Return JSON only:
+{{
+  "status": "Validated" | "Hallucinated" | "Weakly Supported",
+  "reason": "Brief explanation",
+  "confidence": 0.0 to 1.0
+}}
+"""
+    try:
+        response = await llm_client.generate(prompt, response_format={"type": "json_object"})
+        import json
+        data = json.loads(response)
+        return {
+            "status": data.get("status", "Unknown").lower(),
+            "reason": data.get("reason", "No reason provided."),
+            "llm_confidence": data.get("confidence", 0.5)
+        }
+    except Exception as exc:
+        return {"status": "error", "reason": f"LLM verification failed: {exc}"}
+
+
 #Semantic grounding check
 
 # Cosine similarity thresholds
@@ -163,10 +276,19 @@ def validate_gap_citations(
     else:
         status = "grounded"
 
+    # Generate reasoning summary
+    if status == "grounded":
+        reasoning = f"The evidence strongly supports this gap across {citation_count} papers, with {evidence_count} specific evidence snippets extracted. Most citations show high semantic grounding (avg similarity: {round(sum(grounding_scores.values())/max(1, len(grounding_scores)), 2) if grounding_scores else 0.0})."
+    elif status == "weakly_supported":
+        reasoning = f"The gap is partially supported by {citation_count} papers, but some claims have low semantic alignment with the source text. Reviewing the '{weakly_supported}' citations is recommended."
+    else:
+        reasoning = " ".join(issues) if issues else "The validation engine identifies several gaps between the claim and the cited evidence."
+
     return {
         # Core flags
         "is_grounded":   status in ("grounded", "weakly_supported"),
         "status":        status,
+        "reasoning":     reasoning,
         # Structural counts
         "cited_marker_count":     len(cited_numbers),
         "supporting_paper_count": citation_count,

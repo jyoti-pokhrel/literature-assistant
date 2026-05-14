@@ -86,6 +86,11 @@ def _build_cluster_dashboard(
 
     gaps_by_cluster: dict[int, list[dict]] = {}
     for gap in gaps:
+        # Filter out hallucinated gaps from the dashboard/map
+        if (gap.llm_verification.get("status", "").lower() == "hallucinated") or \
+           (gap.citation_validation.get("status", "").lower() == "hallucinated"):
+            continue
+
         gaps_by_cluster.setdefault(gap.cluster_id, []).append({
             "gap_id":            gap.gap_id,
             "gap_title":         gap.gap_title,
@@ -159,16 +164,7 @@ def _build_cluster_summaries(
         if not lims or not lims[0] or "unspecified" in str(lims[0]).lower():
             lims = ["Insufficient data available for targeted analysis."]
 
-        years = [int(p.get("year")) for p in papers if str(p.get("year", "")).isdigit()]
-        trend_status = "Established"
-        if years:
-            current_year = datetime.now(timezone.utc).year
-            recent_papers = sum(1 for y in years if y >= current_year - 2)
-            if len(years) > 0:
-                if recent_papers / len(years) >= 0.7:
-                    trend_status = "Emerging"
-                elif recent_papers / len(years) <= 0.2 and sum(1 for y in years if y <= current_year - 4) / len(years) >= 0.5:
-                    trend_status = "Saturated"
+        trend_status = themes.get("trend_status", "Established")
 
         summaries.append(ClusterSummary(
             cluster_id=cluster_id,
@@ -328,9 +324,16 @@ async def run_synthesis_pipeline(
     cluster_summaries_future = loop.run_in_executor(
         None, _build_cluster_summaries, cluster_map, cluster_themes, gaps,
     )
+    # Filter out hallucinated gaps for visualizations
+    valid_viz_gaps = [
+        g for g in gaps 
+        if (g.llm_verification.get("status", "").lower() != "hallucinated") and 
+           (g.citation_validation.get("status", "").lower() != "hallucinated")
+    ]
+
     viz_dict_future = loop.run_in_executor(
         None, generate_all_visualizations,
-        reduced_2d, labels, normalized_papers, gaps, pattern, cluster_themes,
+        reduced_2d, labels, normalized_papers, valid_viz_gaps, pattern, cluster_themes,
     )
     cluster_dashboard_future = loop.run_in_executor(
         None, _build_cluster_dashboard,
@@ -441,7 +444,15 @@ async def run_synthesis_pipeline(
 
 def _generate_copy_text(topic: str, gaps: list[SynthesisGap]) -> str:
     lines = [f"# Synthesis Report: {topic}\n"]
-    for idx, gap in enumerate(gaps, 1):
+    
+    # Filter out hallucinated gaps
+    valid_gaps = [
+        g for g in gaps 
+        if not ((g.llm_verification.get("status", "").lower() == "hallucinated") or 
+                (g.citation_validation.get("status", "").lower() == "hallucinated"))
+    ]
+    
+    for idx, gap in enumerate(valid_gaps, 1):
         lines.append(f"## {idx}. {gap.gap_title}")
         lines.append(f"**Description:** {gap.description}")
         lines.append(f"**What fails:** {gap.what_fails}")

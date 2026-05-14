@@ -69,6 +69,8 @@ class SynthesisGap(BaseModel):
     citations: List[CitationRef] = Field(default_factory=list)
     score_breakdown: Dict[str, float] = Field(default_factory=dict)
     citation_validation: Dict[str, Any] = Field(default_factory=dict)
+    cross_paper_validation: Dict[str, Any] = Field(default_factory=dict)
+    llm_verification: Dict[str, Any] = Field(default_factory=dict)
 
     @field_validator(
         "gap_title", "description", "what_fails", "why_it_exists",
@@ -108,10 +110,12 @@ class PatternAnalysis(BaseModel):
     metric_frequency: Dict[str, int] = Field(default_factory=dict)
     baseline_stagnation: bool = False
     emerging_opportunities: List[str] = Field(default_factory=list)
+    saturated_areas: List[str] = Field(default_factory=list)
 
     @field_validator(
         "top_methods", "top_datasets", "top_metrics",
         "top_limitations", "top_future_work", "emerging_opportunities",
+        "saturated_areas",
         mode="before"
     )
     @classmethod

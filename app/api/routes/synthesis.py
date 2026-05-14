@@ -361,7 +361,15 @@ async def download_synthesis_report(
     from app.services.synthesis.pdf import generate_pdf_report
 
     pattern = PatternAnalysis(**(doc.get("pattern_analysis") or {}))
-    gaps = [SynthesisGap(**g) for g in (doc.get("gaps") or [])]
+    
+    # Filter out hallucinated gaps for the PDF report
+    all_gaps = [SynthesisGap(**g) for g in (doc.get("gaps") or [])]
+    gaps = [
+        g for g in all_gaps 
+        if g.llm_verification.get("status", "").lower() != "hallucinated" and 
+           g.citation_validation.get("status", "").lower() != "hallucinated"
+    ]
+    
     clusters = [ClusterSummary(**c) for c in (doc.get("clusters") or [])]
 
     viz_raw = doc.get("visualizations") or {}
