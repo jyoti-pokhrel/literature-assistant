@@ -188,3 +188,48 @@ async def rank_for_profile(
         item["score"] = round(float(item.get("_final_score", 0.0)), 4)
 
     return selected
+
+
+async def rank_in_memory(
+    query_vectors: list[list[float]],
+    weights: list[float],
+    candidates: list[dict],
+    seen_ids: set[str],
+    page_size: int,
+) -> list[dict]:
+    """Cosine-rank candidates that already have an `embedding` in memory.
+
+    Used when Atlas Vector Search has not yet indexed freshly-fetched papers,
+    or when we want to score a small pool without an extra Atlas round-trip.
+    `query_vectors` are typically the per-component profile vectors; weights
+    line up positionally. The best similarity across queries is used as the
+    `vector_score` to keep behavior consistent with multi-query retrieval.
+    """
+    if not query_vectors or not candidates or page_size <= 0:
+        return []
+
+    scored: list[dict] = []
+    for paper in candidates:
+        external_id = paper.get("external_id")
+        if not external_id or external_id in seen_ids:
+            continue
+        embedding = paper.get("embedding")
+        if not isinstance(embedding, list) or not embedding:
+            continue
+        best_sim = 0.0
+        for q, w in zip(query_vectors, weights):
+            if w <= 0:
+                continue
+            sim = cosine(embedding, q)
+            if sim > best_sim:
+                best_sim = sim
+        recency = recency_score(paper.get("year"))
+        citations = citation_score(paper.get("citation_count"))
+        final = composite_score(best_sim, recency, citations, affinity=0.0)
+        out = dict(paper)
+        out["vector_score"] = best_sim
+        out["_final_score"] = final
+        scored.append(out)
+
+    scored.sort(key=lambda d: d["_final_score"], reverse=True)
+    return scored[:page_size]
