@@ -8736,3 +8736,96 @@ body.landing-state #landing-page {
 :root[data-theme='dark'] .synthesis-bluf strong {
     color: rgba(246, 248, 252, 0.98);
 }
+
+
+/* ============================================================
+   Map sidebar: promoted gap-confidence panel (cluster-size
+   chart removed; confidence is now the sole, prominent chart).
+   ============================================================ */
+
+#thread-view .map-pane {
+    grid-template-columns: minmax(0, 1fr) minmax(320px, 0.36fr);
+    gap: var(--s-3);
+}
+
+#thread-view .map-side--confidence {
+    padding: var(--s-3);
+    display: flex;
+    flex-direction: column;
+    gap: var(--s-2);
+}
+
+#thread-view .map-side-head {
+    margin: 0;
+    padding: 0 0 var(--s-2);
+    border-bottom: 1px solid rgba(5, 6, 8, 0.07);
+}
+
+#thread-view .map-side-head .map-side-label {
+    margin: 0 0 0.35rem;
+    font-family: var(--font-sans);
+    font-size: 1rem;
+    font-weight: 600;
+    letter-spacing: -0.012em;
+    color: rgba(5, 6, 8, 0.96);
+    text-transform: none;
+    border-top: 0;
+    padding-top: 0;
+}
+
+#thread-view .map-side-sub {
+    margin: 0;
+    font-family: var(--font-sans);
+    font-size: 0.78rem;
+    line-height: 1.5;
+    color: rgba(74, 85, 100, 0.82);
+    letter-spacing: 0;
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.28rem;
+}
+
+#thread-view .map-side-sub > span:first-child {
+    font-weight: 600;
+    color: rgba(5, 6, 8, 0.94);
+    font-variant-numeric: tabular-nums;
+}
+
+#thread-view .map-side-chart {
+    flex: 1;
+    min-height: 260px;
+    margin: 0;
+}
+
+#thread-view .map-side-chart svg {
+    width: 100%;
+    height: auto;
+    display: block;
+}
+
+:root[data-theme='dark'] #thread-view .map-side-head {
+    border-bottom-color: rgba(255, 255, 255, 0.08);
+}
+
+:root[data-theme='dark'] #thread-view .map-side-head .map-side-label {
+    color: rgba(246, 248, 252, 0.96);
+}
+
+:root[data-theme='dark'] #thread-view .map-side-sub {
+    color: rgba(174, 182, 196, 0.82);
+}
+
+:root[data-theme='dark'] #thread-view .map-side-sub > span:first-child {
+    color: rgba(246, 248, 252, 0.94);
+}
+
+/* On narrower viewports, the confidence panel stacks under the map */
+@media (max-width: 980px) {
+    #thread-view .map-pane {
+        grid-template-columns: 1fr;
+    }
+    #thread-view .map-side--confidence {
+        max-width: 640px;
+    }
+}
