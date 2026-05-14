@@ -20,7 +20,7 @@
   <link rel="stylesheet" href="/css/style.css?v=20260516a" />
   <link rel="stylesheet" href="/css/workspace.css?v=20260506n" />
   <link rel="stylesheet" href="/css/dashboard.css?v=20260516d" />
-  <link rel="stylesheet" href="/css/citations.css?v=20260516a" />
+  <link rel="stylesheet" href="/css/citations.css?v=20260516b" />
 </head>
 <body class="landing-state" x-data="appShell()" x-init="init()" :class="$store.app.mode === 'workspace' ? 'workspace-state' : 'landing-state'">
   <div class="bg-grid"></div>
@@ -1068,23 +1068,26 @@
               <input id="cit-input" class="cit-form-input" type="text" autocomplete="off"
                      placeholder="Paste a DOI, arXiv ID, or paper URL"
                      x-model="input" @input="resolved = null" />
+              <button type="button" class="cit-form-resolve" @click="resolve()" :disabled="resolving || building || !input.trim()" title="Resolve the paper without building the network">
+                <span x-show="!resolving">Preview</span>
+                <span x-show="resolving">…</span>
+              </button>
               <button type="submit" class="cit-form-submit" :disabled="building || resolving || !input.trim()">
                 <span x-show="!building">Build network</span>
                 <span x-show="building">Building…</span>
               </button>
             </form>
-            <div class="cit-form-foot">
-              <button type="button" class="cit-form-resolve" @click="resolve()" :disabled="resolving || building || !input.trim()">
-                <span x-show="!resolving">Preview paper first</span>
-                <span x-show="resolving">Resolving…</span>
-              </button>
-            </div>
             <p class="cit-form-error" x-cloak x-show="errorMsg" x-text="errorMsg"></p>
             <template x-if="resolved && !building">
               <div class="cit-resolved">
-                <span class="cit-pill cit-pill-strong" x-text="resolved.source.replace('_', ' ')"></span>
-                <strong x-text="resolved.title || resolved.paper_id"></strong>
-                <template x-if="resolved.doi"><span class="cit-resolved-doi" x-text="'DOI ' + resolved.doi"></span></template>
+                <div class="cit-resolved-head">
+                  <span class="cit-resolved-source" x-text="resolved.source.replace('_', ' ').toUpperCase()"></span>
+                  <template x-if="resolved.year"><span class="cit-resolved-year" x-text="resolved.year"></span></template>
+                </div>
+                <h3 class="cit-resolved-title" x-text="resolved.title || resolved.paper_id"></h3>
+                <template x-if="resolved.doi">
+                  <div class="cit-resolved-doi"><span class="cit-resolved-doi-label">DOI</span><span x-text="resolved.doi"></span></div>
+                </template>
               </div>
             </template>
           </section>
@@ -1148,44 +1151,26 @@
               <div class="cit-canvas-overlay cit-hint">drag to rearrange · scroll to zoom · double-click a node to expand</div>
             </main>
 
-            <aside class="cit-panel glass" aria-label="Citation network controls">
-              <section class="cit-panel-section">
-                <h4 class="cit-panel-label">Filters</h4>
-                <label class="cit-checkbox">
-                  <input type="checkbox" x-model="filters.showRefs" />
-                  <span>References (<span x-text="meta.refs"></span>)</span>
-                </label>
-                <label class="cit-checkbox">
-                  <input type="checkbox" x-model="filters.showCiters" />
-                  <span>Citers (<span x-text="meta.citers"></span>)</span>
-                </label>
-                <label class="cit-range">
-                  <span>Min citations: <strong x-text="filters.minCites"></strong></span>
-                  <input type="range" min="0" max="500" step="5" x-model.number="filters.minCites" />
-                </label>
-                <label class="cit-range">
-                  <span>Year from: <strong x-text="filters.yearMin"></strong></span>
-                  <input type="range" :min="meta.yearMin" :max="meta.yearMax" step="1" x-model.number="filters.yearMin" />
-                </label>
-                <label class="cit-range">
-                  <span>Year to: <strong x-text="filters.yearMax"></strong></span>
-                  <input type="range" :min="meta.yearMin" :max="meta.yearMax" step="1" x-model.number="filters.yearMax" />
-                </label>
-              </section>
+            <aside class="cit-panel" aria-label="Citation network controls">
+              <header class="cit-panel-meta">
+                <div class="cit-panel-meta-item">
+                  <span class="cit-panel-meta-num" x-text="meta.totalNodes"></span>
+                  <span class="cit-panel-meta-label">nodes</span>
+                </div>
+                <div class="cit-panel-meta-item">
+                  <span class="cit-panel-meta-num" x-text="meta.totalEdges"></span>
+                  <span class="cit-panel-meta-label">edges</span>
+                </div>
+                <div class="cit-panel-meta-item cit-panel-meta-item--sources" x-show="sourcesUsed.length">
+                  <span class="cit-panel-meta-label">sources</span>
+                  <span class="cit-panel-meta-sources" x-text="sourcesUsed.join(' · ') || '—'"></span>
+                </div>
+              </header>
 
-              <section class="cit-panel-section">
-                <h4 class="cit-panel-label">Stats</h4>
-                <ul class="cit-stats">
-                  <li><span>Total nodes</span><strong x-text="meta.totalNodes"></strong></li>
-                  <li><span>Total edges</span><strong x-text="meta.totalEdges"></strong></li>
-                  <li><span>Sources</span><strong x-text="sourcesUsed.join(', ') || '—'"></strong></li>
-                </ul>
-              </section>
-
-              <section class="cit-panel-section">
-                <h4 class="cit-panel-label">Selected node</h4>
+              <section class="cit-panel-section cit-panel-section--selected">
+                <h4 class="cit-panel-label">Selected paper</h4>
                 <template x-if="!selectedNode">
-                  <p class="cit-panel-empty">Click a node to inspect it. Double-click to expand it by one hop.</p>
+                  <p class="cit-panel-empty">Click a node to inspect. Double-click to expand its references and citers.</p>
                 </template>
                 <template x-if="selectedNode">
                   <div class="cit-selected">
@@ -1201,33 +1186,66 @@
                        x-text="(selectedNode.authors || []).slice(0,4).join(', ') + ((selectedNode.authors||[]).length>4 ? ' et al.' : '')"></p>
                     <div class="cit-selected-actions">
                       <template x-if="paperLink(selectedNode)">
-                        <a class="btn-glass" :href="paperLink(selectedNode)" target="_blank" rel="noopener noreferrer">Open ↗</a>
+                        <a class="cit-selected-action cit-selected-action--primary" :href="paperLink(selectedNode)" target="_blank" rel="noopener noreferrer">Open paper ↗</a>
                       </template>
-                      <button type="button" class="btn-glass" @click="expand(selectedNode.id)" :disabled="selectedNode.role==='seed'">Expand</button>
-                      <button type="button" class="btn-glass cit-btn-ghost" @click="clearSelection()">Clear</button>
+                      <button type="button" class="cit-selected-action" @click="expand(selectedNode.id)" :disabled="selectedNode.role==='seed'">Expand by one hop</button>
+                      <button type="button" class="cit-selected-action cit-selected-action--ghost" @click="clearSelection()">Clear</button>
                     </div>
                   </div>
                 </template>
               </section>
 
-              <section class="cit-panel-section" x-show="topCited.length">
-                <h4 class="cit-panel-label">Top cited in network</h4>
+              <section class="cit-panel-section cit-panel-section--top" x-show="topCited.length">
+                <h4 class="cit-panel-label">Most cited in network</h4>
                 <ol class="cit-top">
                   <template x-for="(node, idx) in topCited" :key="node.id">
                     <li @click="selectNode(node)" :class="{ 'is-selected': selectedNode && selectedNode.id === node.id }">
-                      <span class="cit-top-idx" x-text="(idx + 1).toString().padStart(2, '0')"></span>
-                      <div>
+                      <div class="cit-top-body">
                         <strong x-text="node.title"></strong>
-                        <span class="cit-top-meta">
-                          <span x-text="node.year || '—'"></span>
-                          <template x-if="Number.isFinite(node.citation_count)">
-                            <span> · <span x-text="node.citation_count.toLocaleString()"></span> cites</span>
-                          </template>
-                        </span>
+                        <span class="cit-top-meta" x-text="node.year || '—'"></span>
                       </div>
+                      <span class="cit-top-cites">
+                        <span class="cit-top-cites-num" x-text="Number.isFinite(node.citation_count) ? node.citation_count.toLocaleString() : '—'"></span>
+                        <span class="cit-top-cites-label">cites</span>
+                      </span>
                     </li>
                   </template>
                 </ol>
+              </section>
+
+              <section class="cit-panel-section cit-panel-section--filters">
+                <h4 class="cit-panel-label">Filters</h4>
+                <div class="cit-filter-toggles">
+                  <label class="cit-toggle">
+                    <input type="checkbox" x-model="filters.showRefs" />
+                    <span class="cit-toggle-text">References<span class="cit-toggle-count" x-text="meta.refs"></span></span>
+                  </label>
+                  <label class="cit-toggle">
+                    <input type="checkbox" x-model="filters.showCiters" />
+                    <span class="cit-toggle-text">Citers<span class="cit-toggle-count" x-text="meta.citers"></span></span>
+                  </label>
+                </div>
+                <label class="cit-range">
+                  <span class="cit-range-head">
+                    <span>Min citations</span>
+                    <strong x-text="filters.minCites"></strong>
+                  </span>
+                  <input type="range" min="0" max="500" step="5" x-model.number="filters.minCites" />
+                </label>
+                <label class="cit-range">
+                  <span class="cit-range-head">
+                    <span>From year</span>
+                    <strong x-text="filters.yearMin"></strong>
+                  </span>
+                  <input type="range" :min="meta.yearMin" :max="meta.yearMax" step="1" x-model.number="filters.yearMin" />
+                </label>
+                <label class="cit-range">
+                  <span class="cit-range-head">
+                    <span>To year</span>
+                    <strong x-text="filters.yearMax"></strong>
+                  </span>
+                  <input type="range" :min="meta.yearMin" :max="meta.yearMax" step="1" x-model.number="filters.yearMax" />
+                </label>
               </section>
             </aside>
           </div>
