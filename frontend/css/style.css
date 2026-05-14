@@ -9644,3 +9644,130 @@ body.landing-state #landing-page {
         transform: none !important;
     }
 }
+
+
+/* ============================================================
+   Hero — full-width single-column variant (figure removed).
+   The search experience takes the stage; the outline carries
+   a slow conic-gradient shimmer that quickens on focus.
+   ============================================================ */
+
+@property --lp-search-angle {
+    syntax: '<angle>';
+    initial-value: 0deg;
+    inherits: false;
+}
+
+.lp-hero--split .lp-hero-layout {
+    grid-template-columns: minmax(0, 1fr);
+    max-width: 980px;
+    margin: 0 auto;
+}
+
+.lp-hero--split .lp-hero-copy {
+    max-width: 100%;
+}
+
+.lp-hero--split .lp-hero-title {
+    max-width: 16ch;
+    font-size: clamp(3.25rem, 7.8vw, 6.5rem);
+    line-height: 1.01;
+    letter-spacing: -0.04em;
+}
+
+.lp-hero--split .lp-hero-subtitle {
+    max-width: 52ch;
+    font-size: clamp(1.05rem, 1.45vw, 1.2rem);
+}
+
+.lp-hero--split .lp-search-container {
+    max-width: 680px;
+    margin: 0;
+}
+
+/* Animated search-box border --------------------------------- */
+
+.lp-hero--split .lp-search-form {
+    --lp-search-shimmer-base: rgba(5, 6, 8, 0.07);
+    --lp-search-shimmer-highlight: rgba(5, 6, 8, 0.48);
+    --lp-search-shimmer-arc: 70deg;
+    --lp-search-shimmer-fade: 30deg;
+
+    position: relative;
+    isolation: isolate;
+    background: rgba(255, 255, 255, 0.94);
+    border: 0;
+    border-radius: 14px;
+    padding: 0.6rem 0.6rem 0.6rem 1.15rem;
+    box-shadow: 0 12px 36px rgba(5, 6, 8, 0.05);
+}
+
+.lp-hero--split .lp-search-form::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 1.5px;
+    background: conic-gradient(
+        from var(--lp-search-angle),
+        var(--lp-search-shimmer-base) 0deg,
+        var(--lp-search-shimmer-base) calc(360deg - var(--lp-search-shimmer-arc) - var(--lp-search-shimmer-fade)),
+        var(--lp-search-shimmer-highlight) calc(360deg - var(--lp-search-shimmer-arc) / 2),
+        var(--lp-search-shimmer-base) calc(360deg - var(--lp-search-shimmer-fade)),
+        var(--lp-search-shimmer-base) 360deg
+    );
+    -webkit-mask:
+        linear-gradient(#000 0 0) content-box,
+        linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+            mask-composite: exclude;
+    pointer-events: none;
+    z-index: -1;
+    animation: lp-search-shimmer 7s linear infinite;
+}
+
+.lp-hero--split .lp-search-form:focus-within {
+    --lp-search-shimmer-base: rgba(5, 6, 8, 0.18);
+    --lp-search-shimmer-highlight: rgba(5, 6, 8, 0.78);
+    --lp-search-shimmer-arc: 110deg;
+    box-shadow: 0 18px 48px rgba(5, 6, 8, 0.10);
+}
+
+.lp-hero--split .lp-search-form:focus-within::before {
+    animation-duration: 3.6s;
+}
+
+@keyframes lp-search-shimmer {
+    to { --lp-search-angle: 360deg; }
+}
+
+/* Fallback for browsers without @property: a static thin outline */
+@supports not (background: paint(thing)) {
+    .lp-hero--split .lp-search-form::before {
+        background: linear-gradient(135deg,
+            rgba(5, 6, 8, 0.08) 0%,
+            rgba(5, 6, 8, 0.36) 50%,
+            rgba(5, 6, 8, 0.08) 100%);
+        animation: none;
+    }
+}
+
+/* Dark theme */
+:root[data-theme='dark'] .lp-hero--split .lp-search-form {
+    --lp-search-shimmer-base: rgba(246, 248, 252, 0.10);
+    --lp-search-shimmer-highlight: rgba(246, 248, 252, 0.6);
+    background: rgba(20, 24, 33, 0.82);
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.42);
+}
+
+:root[data-theme='dark'] .lp-hero--split .lp-search-form:focus-within {
+    --lp-search-shimmer-base: rgba(246, 248, 252, 0.22);
+    --lp-search-shimmer-highlight: rgba(246, 248, 252, 0.88);
+    box-shadow: 0 22px 52px rgba(0, 0, 0, 0.54);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .lp-hero--split .lp-search-form::before {
+        animation: none;
+    }
+}
