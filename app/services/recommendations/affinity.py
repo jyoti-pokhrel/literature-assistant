@@ -99,7 +99,12 @@ def affinity_score_for_paper(paper: dict, profile: AffinityProfile) -> float:
     venue_score = 0.0
     if venue:
         for known, w in profile.venues.items():
-            if known and (known == venue or known in venue or venue in known):
+            if not known:
+                continue
+            if known == venue:
+                venue_score = max(venue_score, w)
+                break
+            if len(known) >= 4 and len(venue) >= 4 and (known in venue or venue in known):
                 venue_score = max(venue_score, w)
                 break
     return min(1.0, author_score * 0.6 + venue_score * 0.4)
