@@ -92,6 +92,28 @@ class ExploreProfileResponse(BaseModel):
     is_cold_start: bool
 
 
+class ExploreInteractionEvent(BaseModel):
+    external_id: str = Field(..., min_length=1, max_length=200)
+    kind: str = Field(..., min_length=1, max_length=20)
+
+    @field_validator("kind")
+    @classmethod
+    def validate_kind(cls, value: str) -> str:
+        from app.services.recommendations.interactions import INTERACTION_WEIGHTS
+        v = value.strip().lower()
+        if v not in INTERACTION_WEIGHTS:
+            raise ValueError(f"unknown interaction kind: {value}")
+        return v
+
+
+class ExploreInteractionsRequest(BaseModel):
+    events: List[ExploreInteractionEvent] = Field(..., min_length=1, max_length=50)
+
+
+class ExploreInteractionsResponse(BaseModel):
+    recorded: int
+
+
 class ExploreDiagnosticsResponse(BaseModel):
     paper_count: int
     embedded_paper_count: int
@@ -146,17 +168,11 @@ async def explore_feed(
     current_user: dict = Depends(get_current_user),
 ):
     _ensure_enabled()
-    try:
-        page = await get_feed_page(
-            _username(current_user),
-            cursor=payload.cursor,
-            page_size=payload.page_size,
-        )
-    except ColdStartRequired:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail={"error": "cold_start_required"},
-        )
+    page = await get_feed_page(
+        _username(current_user),
+        cursor=payload.cursor,
+        page_size=payload.page_size,
+    )
     return ExploreFeedResponse(
         papers=page.papers,
         next_cursor=page.next_cursor,
@@ -291,3 +307,26 @@ async def explore_diagnostics(current_user: dict = Depends(get_current_user)):
         vector_search_sample=vector_search_sample,
         notes=notes,
     )
+
+
+@router.post(
+    "/explore/interactions",
+    response_model=ExploreInteractionsResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Record per-card user interactions (open / like / dislike / hide)",
+)
+async def record_explore_interactions(
+    payload: ExploreInteractionsRequest,
+    current_user: dict = Depends(get_current_user),
+):
+    _ensure_enabled()
+    from app.services.recommendations.interactions import record_interaction
+
+    username = _username(current_user)
+    recorded = 0
+    for event in payload.events:
+        await record_interaction(username, event.external_id, event.kind)
+        recorded += 1
+    # Profile vector is rebuilt lazily on next /explore/feed; mark it stale.
+    await profile_builder.invalidate(username)
+    return ExploreInteractionsResponse(recorded=recorded)
