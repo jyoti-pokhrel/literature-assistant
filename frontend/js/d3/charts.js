@@ -137,8 +137,8 @@
         const longestLabel = d3.max(gaps, g => (g.gap_id || '').length);
         const leftMargin = Math.min(Math.max(longestLabel * 7.5, 86), 180);
         const margin = { top: 8, right: 28, bottom: 20, left: leftMargin };
-        const barH = 28;
-        const gapSize = 7;
+        const barH = 34;
+        const gapSize = 8;
         const height = margin.top + margin.bottom + gaps.length * (barH + gapSize);
         const width = 480;
         const { g, innerWidth, innerHeight } = ensureSvg(container, width, height, margin);
@@ -189,19 +189,24 @@
             .attr('x', 0)
             .attr('y', d => y(d.label))
             .attr('height', y.bandwidth())
-            .attr('rx', 4)
-            .attr('fill', (d, i) => PALETTE.multiBar[i % PALETTE.multiBar.length])
+            .attr('rx', 5)
+            .attr('fill', theme.text)
+            .attr('fill-opacity', d => {
+                const t = Math.max(0, Math.min(1, d.score));
+                return (0.55 + 0.4 * t).toFixed(2);
+            })
             .attr('width', 0)
             .style('cursor', 'pointer')
             .on('mouseenter', function (event, d) {
-                d3.select(this).attr('opacity', 0.82);
+                d3.select(this).attr('fill-opacity', 1);
                 showTip(tip, event, `<strong>${d.label}</strong><br/>${d.title ? d.title + '<br/>' : ''}Score: ${d.score.toFixed(2)}`, container);
             })
             .on('mousemove', function (event, d) {
                 showTip(tip, event, `<strong>${d.label}</strong><br/>${d.title ? d.title + '<br/>' : ''}Score: ${d.score.toFixed(2)}`, container);
             })
-            .on('mouseleave', function () {
-                d3.select(this).attr('opacity', 1);
+            .on('mouseleave', function (event, d) {
+                const t = Math.max(0, Math.min(1, d.score));
+                d3.select(this).attr('fill-opacity', (0.55 + 0.4 * t).toFixed(2));
                 hideTip(tip);
             })
             .transition()
@@ -327,14 +332,15 @@
             .attr('fill', PALETTE.primary)
             .style('cursor', 'pointer')
             .on('mouseenter', function (event, d) {
-                d3.select(this).attr('opacity', 0.82);
+                d3.select(this).attr('fill-opacity', 1);
                 showTip(tip, event, `<strong>${d.year}</strong><br/>${d.count} paper${d.count === 1 ? '' : 's'}`, container);
             })
             .on('mousemove', function (event, d) {
                 showTip(tip, event, `<strong>${d.year}</strong><br/>${d.count} paper${d.count === 1 ? '' : 's'}`, container);
             })
-            .on('mouseleave', function () {
-                d3.select(this).attr('opacity', 1);
+            .on('mouseleave', function (event, d) {
+                const t = Math.max(0, Math.min(1, d.score));
+                d3.select(this).attr('fill-opacity', (0.55 + 0.4 * t).toFixed(2));
                 hideTip(tip);
             })
             .transition()
@@ -394,14 +400,15 @@
             .attr('fill', (d, i) => PALETTE.multiBar[i % PALETTE.multiBar.length])
             .style('cursor', 'pointer')
             .on('mouseenter', function (event, d) {
-                d3.select(this).attr('opacity', 0.82);
+                d3.select(this).attr('fill-opacity', 1);
                 showTip(tip, event, `<strong>${d.label}</strong><br/>${d.value} paper${d.value === 1 ? '' : 's'}`, container);
             })
             .on('mousemove', function (event, d) {
                 showTip(tip, event, `<strong>${d.label}</strong><br/>${d.value} paper${d.value === 1 ? '' : 's'}`, container);
             })
-            .on('mouseleave', function () {
-                d3.select(this).attr('opacity', 1);
+            .on('mouseleave', function (event, d) {
+                const t = Math.max(0, Math.min(1, d.score));
+                d3.select(this).attr('fill-opacity', (0.55 + 0.4 * t).toFixed(2));
                 hideTip(tip);
             })
             .transition()
@@ -616,14 +623,15 @@
             .attr('fill', color || PALETTE.primary)
             .style('cursor', 'pointer')
             .on('mouseenter', function (event, d) {
-                d3.select(this).attr('opacity', 0.82);
+                d3.select(this).attr('fill-opacity', 1);
                 showTip(tip, event, `<strong>${d.label}</strong><br/>Count: ${d.value}`, container);
             })
             .on('mousemove', function (event, d) {
                 showTip(tip, event, `<strong>${d.label}</strong><br/>Count: ${d.value}`, container);
             })
-            .on('mouseleave', function () {
-                d3.select(this).attr('opacity', 1);
+            .on('mouseleave', function (event, d) {
+                const t = Math.max(0, Math.min(1, d.score));
+                d3.select(this).attr('fill-opacity', (0.55 + 0.4 * t).toFixed(2));
                 hideTip(tip);
             })
             .transition()
