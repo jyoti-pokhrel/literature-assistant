@@ -9241,3 +9241,214 @@ body.landing-state #landing-page {
         transform: none !important;
     }
 }
+
+
+/* ============================================================
+   Hero figure v3 — refined HDBSCAN/UMAP rendering
+   (3 clusters, asymmetric composition, soft-elevated hulls,
+   sans+mono label pairs, italic gap annotation).
+   ============================================================ */
+
+/* Hull: soft fill, faint stroke, soft elevation */
+.lp-hero-fig-hull {
+    fill: rgba(5, 6, 8, 0.05);
+    stroke: rgba(5, 6, 8, 0.16);
+    stroke-width: 1;
+    stroke-linejoin: round;
+    filter: drop-shadow(0 2px 6px rgba(5, 6, 8, 0.06));
+    opacity: 0;
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: hero-fig-hull-in 900ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Gap cluster: no elevation, lighter hull — it visually sits flat */
+.lp-hero-fig-cluster--gap .lp-hero-fig-hull {
+    fill: rgba(5, 6, 8, 0.025);
+    stroke: rgba(5, 6, 8, 0.12);
+    filter: none;
+}
+
+.lp-hero-fig-hull-mark {
+    fill: none;
+    stroke: rgba(5, 6, 8, 0.6);
+    stroke-width: 1.3;
+    stroke-dasharray: 4 4;
+    stroke-linejoin: round;
+    opacity: 0;
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: hero-fig-hull-in 700ms cubic-bezier(0.22, 1, 0.36, 1) 1240ms forwards;
+}
+
+.lp-hero-fig-points circle {
+    fill: rgba(5, 6, 8, 0.92);
+    opacity: 0;
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: hero-fig-point-in 480ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.lp-hero-fig-cluster--gap .lp-hero-fig-points circle {
+    fill: rgba(5, 6, 8, 0.72);
+}
+
+.lp-hero-fig-tick {
+    stroke: rgba(5, 6, 8, 0.42);
+    stroke-width: 1;
+    stroke-linecap: square;
+    opacity: 0;
+    animation: hero-fig-fade 500ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.lp-hero-fig-label-row {
+    opacity: 0;
+    animation: hero-fig-fade 600ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.lp-hero-fig-label-letter {
+    font-family: var(--font-sans);
+    font-size: 16px;
+    font-weight: 700;
+    fill: rgba(5, 6, 8, 0.96);
+    letter-spacing: -0.028em;
+}
+
+.lp-hero-fig-label-count {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 500;
+    fill: rgba(74, 85, 100, 0.78);
+    letter-spacing: 0.04em;
+}
+
+.lp-hero-fig-label-gap {
+    font-family: var(--font-sans);
+    font-style: italic;
+    font-size: 10.5px;
+    font-weight: 500;
+    fill: rgba(5, 6, 8, 0.74);
+    letter-spacing: 0;
+    opacity: 0;
+    animation: hero-fig-fade 500ms cubic-bezier(0.22, 1, 0.36, 1) 1480ms forwards;
+}
+
+/* Folio */
+.lp-hero-fig-folio {
+    font-family: var(--font-mono);
+    font-size: 9.5px;
+    fill: rgba(74, 85, 100, 0.7);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    opacity: 0;
+    animation: hero-fig-fade 600ms cubic-bezier(0.22, 1, 0.36, 1) 200ms forwards;
+}
+
+/* Cluster entrance stagger */
+.lp-hero-fig-cluster[data-cluster="a"] .lp-hero-fig-hull { animation-delay: 360ms; }
+.lp-hero-fig-cluster[data-cluster="b"] .lp-hero-fig-hull { animation-delay: 520ms; }
+.lp-hero-fig-cluster[data-cluster="c"] .lp-hero-fig-hull { animation-delay: 740ms; }
+
+/* Per-point staggers (inside each cluster) */
+.lp-hero-fig-cluster[data-cluster="a"] .lp-hero-fig-points circle:nth-child(1) { animation-delay: 540ms; }
+.lp-hero-fig-cluster[data-cluster="a"] .lp-hero-fig-points circle:nth-child(2) { animation-delay: 580ms; }
+.lp-hero-fig-cluster[data-cluster="a"] .lp-hero-fig-points circle:nth-child(3) { animation-delay: 620ms; }
+.lp-hero-fig-cluster[data-cluster="a"] .lp-hero-fig-points circle:nth-child(4) { animation-delay: 660ms; }
+.lp-hero-fig-cluster[data-cluster="a"] .lp-hero-fig-points circle:nth-child(5) { animation-delay: 700ms; }
+.lp-hero-fig-cluster[data-cluster="a"] .lp-hero-fig-points circle:nth-child(6) { animation-delay: 740ms; }
+
+.lp-hero-fig-cluster[data-cluster="b"] .lp-hero-fig-points circle:nth-child(1) { animation-delay: 700ms; }
+.lp-hero-fig-cluster[data-cluster="b"] .lp-hero-fig-points circle:nth-child(2) { animation-delay: 740ms; }
+.lp-hero-fig-cluster[data-cluster="b"] .lp-hero-fig-points circle:nth-child(3) { animation-delay: 780ms; }
+.lp-hero-fig-cluster[data-cluster="b"] .lp-hero-fig-points circle:nth-child(4) { animation-delay: 820ms; }
+.lp-hero-fig-cluster[data-cluster="b"] .lp-hero-fig-points circle:nth-child(5) { animation-delay: 860ms; }
+.lp-hero-fig-cluster[data-cluster="b"] .lp-hero-fig-points circle:nth-child(6) { animation-delay: 900ms; }
+.lp-hero-fig-cluster[data-cluster="b"] .lp-hero-fig-points circle:nth-child(7) { animation-delay: 940ms; }
+.lp-hero-fig-cluster[data-cluster="b"] .lp-hero-fig-points circle:nth-child(8) { animation-delay: 980ms; }
+.lp-hero-fig-cluster[data-cluster="b"] .lp-hero-fig-points circle:nth-child(9) { animation-delay: 1020ms; }
+
+.lp-hero-fig-cluster[data-cluster="c"] .lp-hero-fig-points circle:nth-child(1) { animation-delay: 920ms; }
+.lp-hero-fig-cluster[data-cluster="c"] .lp-hero-fig-points circle:nth-child(2) { animation-delay: 960ms; }
+.lp-hero-fig-cluster[data-cluster="c"] .lp-hero-fig-points circle:nth-child(3) { animation-delay: 1000ms; }
+
+/* Ticks + labels follow each cluster's points */
+.lp-hero-fig-cluster[data-cluster="a"] .lp-hero-fig-tick,
+.lp-hero-fig-cluster[data-cluster="a"] .lp-hero-fig-label-row { animation-delay: 800ms; }
+.lp-hero-fig-cluster[data-cluster="b"] .lp-hero-fig-tick,
+.lp-hero-fig-cluster[data-cluster="b"] .lp-hero-fig-label-row { animation-delay: 1080ms; }
+.lp-hero-fig-cluster[data-cluster="c"] .lp-hero-fig-tick,
+.lp-hero-fig-cluster[data-cluster="c"] .lp-hero-fig-label-row { animation-delay: 1320ms; }
+
+@keyframes hero-fig-hull-in {
+    0%   { opacity: 0; transform: scale(0.92); }
+    100% { opacity: 1; transform: scale(1); }
+}
+
+@keyframes hero-fig-point-in {
+    0%   { opacity: 0; transform: scale(0.4); }
+    100% { opacity: 1; transform: scale(1); }
+}
+
+@keyframes hero-fig-fade {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}
+
+/* Dark theme */
+:root[data-theme='dark'] .lp-hero-fig-hull {
+    fill: rgba(255, 255, 255, 0.05);
+    stroke: rgba(246, 248, 252, 0.18);
+    filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.5));
+}
+
+:root[data-theme='dark'] .lp-hero-fig-cluster--gap .lp-hero-fig-hull {
+    fill: rgba(255, 255, 255, 0.03);
+    stroke: rgba(246, 248, 252, 0.14);
+    filter: none;
+}
+
+:root[data-theme='dark'] .lp-hero-fig-hull-mark {
+    stroke: rgba(246, 248, 252, 0.7);
+}
+
+:root[data-theme='dark'] .lp-hero-fig-points circle {
+    fill: rgba(246, 248, 252, 0.94);
+}
+
+:root[data-theme='dark'] .lp-hero-fig-cluster--gap .lp-hero-fig-points circle {
+    fill: rgba(246, 248, 252, 0.74);
+}
+
+:root[data-theme='dark'] .lp-hero-fig-tick {
+    stroke: rgba(246, 248, 252, 0.46);
+}
+
+:root[data-theme='dark'] .lp-hero-fig-label-letter {
+    fill: rgba(246, 248, 252, 0.96);
+}
+
+:root[data-theme='dark'] .lp-hero-fig-label-count {
+    fill: rgba(174, 182, 196, 0.78);
+}
+
+:root[data-theme='dark'] .lp-hero-fig-label-gap {
+    fill: rgba(246, 248, 252, 0.76);
+}
+
+:root[data-theme='dark'] .lp-hero-fig-folio {
+    fill: rgba(174, 182, 196, 0.7);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .lp-hero-fig-hull,
+    .lp-hero-fig-hull-mark,
+    .lp-hero-fig-points circle,
+    .lp-hero-fig-tick,
+    .lp-hero-fig-label-row,
+    .lp-hero-fig-label-gap,
+    .lp-hero-fig-folio {
+        animation: none !important;
+        opacity: 1 !important;
+        transform: none !important;
+    }
+}
