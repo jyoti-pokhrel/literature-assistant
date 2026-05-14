@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Signing you in — Research Agent</title>
+  <script>
+    (function () {
+      var storedTheme = localStorage.getItem('theme');
+      document.documentElement.setAttribute('data-theme', storedTheme === 'dark' ? 'dark' : 'light');
+    })();
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/tokens.css">
+  <link rel="stylesheet" href="/css/auth.css">
+  <style>
+    .oauth-splash {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: var(--s-3);
+    }
+    .oauth-card {
+      max-width: 380px;
+      text-align: center;
+      padding: var(--s-5);
+      background: var(--glass-strong);
+      backdrop-filter: var(--glass-blur-strong);
+      -webkit-backdrop-filter: var(--glass-blur-strong);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--radius-xl);
+      box-shadow: var(--shadow-glass-strong);
+      opacity: 0;
+      animation: reveal-up 900ms var(--ease-out) 40ms forwards;
+    }
+    .oauth-kicker {
+      font-family: 'Instrument Serif', 'Times New Roman', serif;
+      font-style: italic;
+      font-weight: 400;
+      font-size: 1rem;
+      color: var(--ink-3);
+      display: block;
+      margin-bottom: var(--s-1);
+    }
+    .oauth-title {
+      font-size: 1.45rem;
+      font-weight: 700;
+      letter-spacing: -0.025em;
+      margin: 0 0 0.4rem;
+    }
+    .oauth-subtitle {
+      color: var(--ink-2);
+      font-size: 0.95rem;
+      margin: 0 0 var(--s-3);
+      line-height: 1.5;
+    }
+    .oauth-dots {
+      display: inline-flex;
+      gap: 6px;
+      align-items: center;
+    }
+    .oauth-dots i {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--ink-2);
+      animation: oauth-pulse 1.2s var(--ease-in-out) infinite;
+    }
+    .oauth-dots i:nth-child(2) { animation-delay: 0.15s; }
+    .oauth-dots i:nth-child(3) { animation-delay: 0.3s; }
+    @keyframes oauth-pulse {
+      0%, 100% { opacity: 0.25; transform: scale(0.9); }
+      50% { opacity: 1; transform: scale(1.1); }
+    }
+    .oauth-error-actions {
+      display: none;
+      margin-top: var(--s-3);
+    }
+    .oauth-error-actions.is-visible { display: block; }
+    .oauth-error-actions a {
+      color: var(--ink);
+      font-weight: 600;
+      text-decoration: none;
+      border-bottom: 1px solid var(--accent-line);
+    }
+  </style>
+</head>
+<body class="auth-page">
+  <nav class="auth-nav">
+    <a href="/index.html" class="auth-brand">Research Agent</a>
+  </nav>
+
+  <div class="oauth-splash">
+    <div class="oauth-card">
+      <span class="oauth-kicker">Just a moment</span>
+      <h1 class="oauth-title" id="oauth-title">Signing you in…</h1>
+      <p class="oauth-subtitle" id="oauth-subtitle">Verifying your Google session.</p>
+      <span class="oauth-dots" id="oauth-dots" aria-hidden="true"><i></i><i></i><i></i></span>
+      <p class="oauth-error-actions" id="oauth-error-actions">
+        <a href="/html/login.html">Back to log in</a>
+      </p>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      function safeNext() {
+        var params = new URLSearchParams(window.location.search);
+        var next = params.get('next');
+        if (typeof next === 'string' && next.startsWith('/') && !next.startsWith('//')) return next;
+        return '/workspace';
+      }
+      function fail(message) {
+        var title = document.getElementById('oauth-title');
+        var subtitle = document.getElementById('oauth-subtitle');
+        var dots = document.getElementById('oauth-dots');
+        var actions = document.getElementById('oauth-error-actions');
+        title.innerText = 'Sign-in failed';
+        subtitle.innerText = message || 'We could not complete the Google sign-in.';
+        dots.style.display = 'none';
+        actions.classList.add('is-visible');
+      }
+      try {
+        var hash = window.location.hash.startsWith('#') ? window.location.hash.slice(1) : '';
+        var params = new URLSearchParams(hash || window.location.search);
+        var token = params.get('token');
+        var username = params.get('username');
+        if (!token || !username) {
+          fail('Missing token in callback URL.');
+          return;
+        }
+        localStorage.setItem('access_token', token);
+        localStorage.setItem('username', username);
+        // Replace history so users can't go "back" into the token-carrying URL.
+        window.location.replace(safeNext());
+      } catch (e) {
+        fail(e && e.message ? e.message : 'Unexpected error during sign-in.');
+      }
+    })();
+  </script>
+</body>
+</html>

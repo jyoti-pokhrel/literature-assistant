@@ -8,6 +8,27 @@ from app.schemas.user import APIKeyResponse, APIKeyInfo
 
 router = APIRouter(prefix="/user", tags=["User"])
 
+# Separate /users router for the canonical "current user" surface so existing
+# /user/api-key consumers don't break and frontend can call /users/me.
+users_router = APIRouter(prefix="/users", tags=["User"])
+
+
+@users_router.get("/me")
+async def get_me(current_user: dict = Depends(get_current_user)):
+    """Return the authenticated user's public profile.
+
+    Frontend hydrates avatar, role, and admin-only UI from this response.
+    """
+    return {
+        "username": current_user.get("username"),
+        "email": current_user.get("email"),
+        "role": current_user.get("role"),
+        "is_verified": current_user.get("is_verified", False),
+        "auth_provider": current_user.get("auth_provider"),
+        "created_at": current_user.get("created_at"),
+    }
+
+
 @router.post("/api-key", response_model=APIKeyResponse)
 async def generate_api_key(current_user: dict = Depends(get_current_user)):
     """Generate a new personal API key. Overwrites existing one."""

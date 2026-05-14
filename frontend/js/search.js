@@ -2,19 +2,32 @@ async function parseResponse(response, fallbackMessage) {
     const data = await response.json();
 
     if (!response.ok) {
-        const detail = Array.isArray(data.detail)
-            ? data.detail.map((item) => item.msg || item.message).join(", ")
-            : data.detail || data.message || fallbackMessage;
-        throw new Error(detail);
+        const detail = data.detail;
+        let message = fallbackMessage;
+        let code = null;
+        if (Array.isArray(detail)) {
+            message = detail.map((item) => item.msg || item.message).join(", ");
+        } else if (detail && typeof detail === 'object') {
+            code = detail.error || null;
+            message = detail.message || code || fallbackMessage;
+        } else if (typeof detail === 'string') {
+            message = detail;
+        } else if (data.message) {
+            message = data.message;
+        }
+        const error = new Error(message);
+        error.status = response.status;
+        error.code = code;
+        error.detail = detail;
+        throw error;
     }
 
     return data;
 }
 
 async function searchPapers(payload) {
-    const response = await fetch(`${BASE_URL}/search/papers`, {
+    const response = await authenticatedFetch(`${BASE_URL}/search/papers`, {
         method: "POST",
-        headers: getHeaders({ hasBody: true, includeAuth: false }),
         body: JSON.stringify(payload),
     });
 
@@ -22,9 +35,8 @@ async function searchPapers(payload) {
 }
 
 async function analyzeGaps(payload) {
-    const response = await fetch(`${BASE_URL}/synthesis/gaps`, {
+    const response = await authenticatedFetch(`${BASE_URL}/synthesis/gaps`, {
         method: "POST",
-        headers: getHeaders({ hasBody: true, includeAuth: false }),
         body: JSON.stringify(payload),
     });
 
@@ -32,9 +44,8 @@ async function analyzeGaps(payload) {
 }
 
 async function analyzeGapsStream(payload, onEvent) {
-    const response = await fetch(`${BASE_URL}/synthesis/gaps/stream`, {
+    const response = await authenticatedFetch(`${BASE_URL}/synthesis/gaps/stream`, {
         method: "POST",
-        headers: getHeaders({ hasBody: true, includeAuth: false }),
         body: JSON.stringify(payload),
     });
 
@@ -89,14 +100,35 @@ async function analyzeGapsStream(payload, onEvent) {
     return finalResult;
 }
 
-async function exploreArxiv(payload) {
-    const response = await fetch(`${BASE_URL}/explore/arxiv`, {
+async function fetchExploreFeed({ cursor = 0, pageSize = 20 } = {}) {
+    const payload = {
+        cursor: Math.max(0, Number.parseInt(cursor, 10) || 0),
+        page_size: Math.min(50, Math.max(1, Number.parseInt(pageSize, 10) || 20)),
+    };
+    const response = await authenticatedFetch(`${BASE_URL}/explore/feed`, {
         method: "POST",
-        headers: getHeaders({ hasBody: true, includeAuth: false }),
         body: JSON.stringify(payload),
     });
 
-    return await parseResponse(response, "Explore failed");
+    return await parseResponse(response, "Could not load recommendations");
+}
+
+async function saveExploreSeeds(topics) {
+    const payload = { topics: (topics || []).slice(0, 3) };
+    const response = await authenticatedFetch(`${BASE_URL}/explore/seed`, {
+        method: "POST",
+        body: JSON.stringify(payload),
+    });
+
+    return await parseResponse(response, "Could not save your topics");
+}
+
+async function fetchExploreProfile() {
+    const response = await authenticatedFetch(`${BASE_URL}/explore/profile`, {
+        method: "GET",
+    });
+
+    return await parseResponse(response, "Could not load explore profile");
 }
 
 async function fetchPublicReport(report_id) {
@@ -113,29 +145,6 @@ function buildSearchPayload({ topic, year, venue, strictVenue, maxResults }) {
         topic: topic.trim(),
         max_results: maxResults,
     };
-
-    const normalizedYear = typeof year === 'string' ? year.trim() : '';
-    if (normalizedYear) {
-        payload.year = normalizedYear.replace(/\s*-\s*/g, '-');
-    }
-
-    if (venue && venue.trim()) {
-        payload.venue = venue.trim();
-        payload.strict_venue = strictVenue === true;
-    }
-
-    return payload;
-}
-
-function buildExplorePayload({ topic, year, venue, strictVenue, cursor = 0, pageSize = 20 }) {
-    const trimmedTopic = (topic || '').trim();
-    const payload = {
-        cursor: Math.max(0, Number.parseInt(cursor, 10) || 0),
-        page_size: Math.min(50, Math.max(1, Number.parseInt(pageSize, 10) || 20)),
-    };
-    if (trimmedTopic) {
-        payload.topic = trimmedTopic;
-    }
 
     const normalizedYear = typeof year === 'string' ? year.trim() : '';
     if (normalizedYear) {
@@ -173,15 +182,23 @@ function sourceLabel(source) {
         .join(" ");
 }
 
+async function fetchCurrentUser() {
+    const response = await authenticatedFetch(`${BASE_URL}/users/me`);
+    if (response.status === 401) return null;
+    return await parseResponse(response, "Could not load profile");
+}
+
 window.searchAPI = {
     searchPapers,
     analyzeGaps,
     analyzeGapsStream,
-    exploreArxiv,
+    fetchExploreFeed,
+    saveExploreSeeds,
+    fetchExploreProfile,
     fetchPublicReport,
     buildSearchPayload,
-    buildExplorePayload,
     formatFilters,
     sourceLabel,
     authenticatedFetch,
+    fetchCurrentUser,
 };

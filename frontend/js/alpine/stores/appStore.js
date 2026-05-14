@@ -12,34 +12,6 @@ window.ResearchAgent.exploreDefaults = Object.freeze({
     pageSize: 20,
 });
 
-window.ResearchAgent.buildExploreSeed = function buildExploreSeed(values = {}) {
-    const normalized = window.ResearchAgent.normalizeSearchValues(values);
-    return {
-        topic: normalized.topic,
-        year: normalized.year,
-        venue: normalized.venue,
-        strictVenue: normalized.strictVenue,
-    };
-};
-
-window.ResearchAgent.exploreParamsFromSeed = function exploreParamsFromSeed(seed = {}) {
-    const params = new URLSearchParams();
-    if (seed.topic) params.set('topic', seed.topic);
-    if (seed.year) params.set('year', seed.year);
-    if (seed.venue) params.set('venue', seed.venue);
-    if (seed.venue && seed.strictVenue) params.set('strictVenue', 'true');
-    return params;
-};
-
-window.ResearchAgent.exploreSeedFromParams = function exploreSeedFromParams(searchParams) {
-    return window.ResearchAgent.buildExploreSeed({
-        topic: searchParams.get('topic') || '',
-        year: searchParams.get('year') || '',
-        venue: searchParams.get('venue') || '',
-        strictVenue: searchParams.get('strictVenue') === 'true',
-    });
-};
-
 window.ResearchAgent.defaults = Object.freeze({
     topic: '',
     year: '',
@@ -251,6 +223,19 @@ document.addEventListener('alpine:init', () => {
             const token = localStorage.getItem('access_token');
             return !!(token && token !== 'undefined' && token !== 'null');
         },
+        user: {
+            username: '',
+            email: '',
+            role: '',
+            authProvider: '',
+            get displayName() { return this.username || ''; },
+            get initial() { return (this.username || '?').trim().charAt(0).toUpperCase() || '?'; },
+            get subtitle() {
+                if (this.role === 'admin') return 'Admin';
+                return this.authProvider === 'google' ? 'Google account' : 'Researcher';
+            },
+            get isAdmin() { return this.role === 'admin'; },
+        },
         mode: 'landing',
         currentView: 'form',
         theme: localStorage.getItem('theme') || 'light',
@@ -278,7 +263,6 @@ document.addEventListener('alpine:init', () => {
             },
         },
         explore: {
-            seed: { topic: '', year: '', venue: '', strictVenue: false },
             papers: [],
             seenIds: {},
             nextCursor: 0,
@@ -286,6 +270,8 @@ document.addEventListener('alpine:init', () => {
             isLoadingPage: false,
             error: '',
             pageRequestId: 0,
+            profileSummary: null,
+            coldStart: false,
         },
 
         init() {
@@ -295,10 +281,49 @@ document.addEventListener('alpine:init', () => {
 
             this.initialized = true;
             this.applyTheme(this.theme);
+            if (this.requireAuthForCurrentRoute()) return;
+            this.hydrateUser();
             window.addEventListener('popstate', () => {
+                if (this.requireAuthForCurrentRoute()) return;
                 this.syncFromLocation();
             });
             this.syncFromLocation();
+        },
+
+        // True iff the current route requires login. If it does and the user
+        // is not logged in, redirect to /html/login.html?next=<path> and
+        // return true (caller should bail out of further init).
+        requireAuthForCurrentRoute() {
+            const path = window.location.pathname || '/';
+            const workspaceRoutes = window.ResearchAgent.routes;
+            const needsAuth =
+                path === workspaceRoutes.workspace ||
+                path.startsWith(workspaceRoutes.workspace + '/') ||
+                path === workspaceRoutes.search ||
+                path === workspaceRoutes.explore;
+            if (!needsAuth) return false;
+            if (this.isLoggedIn) return false;
+            const next = path + window.location.search;
+            const safeNext = next.startsWith('/') && !next.startsWith('//') ? next : '/workspace';
+            window.location.replace(`/html/login.html?next=${encodeURIComponent(safeNext)}`);
+            return true;
+        },
+
+        hydrateUser() {
+            const cachedName = localStorage.getItem('username') || '';
+            if (cachedName) this.user.username = cachedName;
+            if (!this.isLoggedIn) return;
+            // Refresh from server in the background — corrects role/email drift.
+            window.searchAPI?.fetchCurrentUser?.()
+                .then((me) => {
+                    if (!me || !me.username) return;
+                    this.user.username = me.username;
+                    this.user.email = me.email || '';
+                    this.user.role = me.role || '';
+                    this.user.authProvider = me.auth_provider || '';
+                    localStorage.setItem('username', me.username);
+                })
+                .catch(() => { /* 401 is handled by the fetch interceptor */ });
         },
 
         applyTheme(theme) {
@@ -351,7 +376,6 @@ document.addEventListener('alpine:init', () => {
 
         resetExplore() {
             this.explore = {
-                seed: { topic: '', year: '', venue: '', strictVenue: false },
                 papers: [],
                 seenIds: {},
                 nextCursor: 0,
@@ -359,86 +383,41 @@ document.addEventListener('alpine:init', () => {
                 isLoadingPage: false,
                 error: '',
                 pageRequestId: 0,
+                profileSummary: null,
+                coldStart: false,
             };
         },
 
-        buildExploreRoute(seed) {
-            const params = window.ResearchAgent.exploreParamsFromSeed(seed);
-            const search = params.toString();
-            return {
-                pathname: window.ResearchAgent.routes.explore,
-                search: search ? `?${search}` : '',
-            };
+        resetExplorePapers() {
+            this.explore.papers = [];
+            this.explore.seenIds = {};
+            this.explore.nextCursor = 0;
+            this.explore.hasMore = true;
+            this.explore.error = '';
         },
 
-        async openExplore({ replace = false, fromForm = false } = {}) {
-            const sourceValues = fromForm ? this.form : {};
-            const seed = window.ResearchAgent.buildExploreSeed(sourceValues);
-
+        async openExplore({ replace = false } = {}) {
             this.resetExplore();
-            this.explore.seed = seed;
-
             this.setMode('workspace');
             this.currentView = 'explore';
             this.error = '';
             this.closeSidebar();
 
-            const route = this.buildExploreRoute(seed);
-            this.goToPath(route.pathname, { search: route.search, replace });
-
-            return await this.loadMoreExplore();
+            this.goToPath(window.ResearchAgent.routes.explore, { replace });
+            // exploreFeed component's init() handles profile load + first page
+            return true;
         },
 
         async loadMoreExplore() {
-            if (this.explore.isLoadingPage || !this.explore.hasMore) {
-                return false;
+            // Delegates to the active exploreFeed Alpine component, which holds
+            // the cold-start state and the seed-onboarding form.
+            const root = document.getElementById('explore-view');
+            if (!root) return false;
+            const component = window.Alpine?.$data?.(root);
+            if (component && typeof component.loadMore === 'function') {
+                return await component.loadMore();
             }
-            const seed = this.explore.seed || {};
-
-            const requestId = ++this.explore.pageRequestId;
-            this.explore.isLoadingPage = true;
-            this.explore.error = '';
-
-            try {
-                const payload = window.searchAPI.buildExplorePayload({
-                    topic: seed.topic,
-                    year: seed.year,
-                    venue: seed.venue,
-                    strictVenue: seed.strictVenue,
-                    cursor: this.explore.nextCursor,
-                    pageSize: window.ResearchAgent.exploreDefaults.pageSize,
-                });
-                const data = await window.searchAPI.exploreArxiv(payload);
-                if (requestId !== this.explore.pageRequestId) {
-                    return false;
-                }
-
-                const incoming = Array.isArray(data?.papers) ? data.papers : [];
-                const seen = this.explore.seenIds;
-                const newPapers = [];
-                for (const paper of incoming) {
-                    const key = paper.external_id || paper.url || paper.title;
-                    if (!key || seen[key]) continue;
-                    seen[key] = true;
-                    newPapers.push(paper);
-                }
-
-                this.explore.papers = [...this.explore.papers, ...newPapers];
-                this.explore.nextCursor = Number.isFinite(data?.next_cursor)
-                    ? data.next_cursor
-                    : this.explore.nextCursor;
-                this.explore.hasMore = data?.has_more === true;
-                return true;
-            } catch (error) {
-                if (requestId === this.explore.pageRequestId) {
-                    this.explore.error = error?.message || 'Could not load more papers';
-                }
-                return false;
-            } finally {
-                if (requestId === this.explore.pageRequestId) {
-                    this.explore.isLoadingPage = false;
-                }
-            }
+            return false;
         },
 
         focusMainPrompt() {
@@ -463,7 +442,7 @@ document.addEventListener('alpine:init', () => {
             this.goToPath(window.ResearchAgent.routes.landing, { replace });
         },
 
-        logout() {
+        signOut() {
             localStorage.removeItem('access_token');
             localStorage.removeItem('username');
             window.location.href = window.ResearchAgent.routes.landing;
@@ -642,23 +621,11 @@ document.addEventListener('alpine:init', () => {
             }
 
             if (pathname === window.ResearchAgent.routes.explore) {
-                const seed = window.ResearchAgent.exploreSeedFromParams(searchParams);
-
-                if (seed.topic) {
-                    this.form = window.ResearchAgent.cloneSearchValues({
-                        ...this.form,
-                        topic: seed.topic,
-                        year: seed.year,
-                        venue: seed.venue,
-                        strictVenue: seed.strictVenue,
-                    });
-                }
                 this.setMode('workspace');
                 this.currentView = 'explore';
                 this.error = '';
                 this.resetExplore();
-                this.explore.seed = seed;
-                await this.loadMoreExplore();
+                // exploreFeed's init() handles profile + first page on view show
                 return;
             }
 

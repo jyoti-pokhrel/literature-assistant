@@ -321,16 +321,33 @@ async def google_auth_callback(code: str):
     async with httpx.AsyncClient() as client:
         response = await client.post(token_url, data=data)
         if response.status_code != 200:
-            raise HTTPException(status_code=400, detail="Google authentication failed")
-            
+            import logging
+            body = response.text[:500]
+            logging.getLogger(__name__).error(
+                "Google token exchange failed: status=%s body=%s redirect_uri=%s client_id_set=%s client_secret_set=%s",
+                response.status_code, body, redirect_uri,
+                bool(settings.GOOGLE_CLIENT_ID), bool(settings.GOOGLE_CLIENT_SECRET),
+            )
+            try:
+                err = response.json()
+                msg = f"Google rejected token exchange: {err.get('error', 'unknown')} — {err.get('error_description', '')}"
+            except Exception:
+                msg = "Google authentication failed (token exchange)"
+            raise HTTPException(status_code=400, detail=msg)
+
         access_token = response.json().get("access_token")
-        
+
         # Get user info
         user_info_url = "https://www.googleapis.com/oauth2/v3/userinfo"
         headers = {"Authorization": f"Bearer {access_token}"}
         user_info_response = await client.get(user_info_url, headers=headers)
-        
+
         if user_info_response.status_code != 200:
+            import logging
+            logging.getLogger(__name__).error(
+                "Google userinfo failed: status=%s body=%s",
+                user_info_response.status_code, user_info_response.text[:500],
+            )
             raise HTTPException(status_code=400, detail="Could not retrieve user info from Google")
             
         user_info = user_info_response.json()
@@ -363,11 +380,11 @@ async def google_auth_callback(code: str):
             
         token = create_access_token(data={"sub": user["username"]})
         
-        # Read from settings (which pulls from your .env)
+        # Land on a dedicated callback page that just stores the token and
+        # routes to /workspace (or ?next=). Avoids flashing the login form.
         FRONTEND_URL = settings.FRONTEND_URL
         encoded_username = quote(user['username'], safe='')
-        final_redirect = f"{FRONTEND_URL}/html/login.html#token={token}&username={encoded_username}"
-        
-        
+        final_redirect = f"{FRONTEND_URL}/html/oauth-callback.html#token={token}&username={encoded_username}"
+
         from fastapi.responses import RedirectResponse
         return RedirectResponse(final_redirect)
