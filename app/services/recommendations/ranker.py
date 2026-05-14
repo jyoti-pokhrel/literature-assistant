@@ -160,6 +160,7 @@ async def rank_for_profile(
     seen_paper_ids: list[str],
     page_size: int,
     embed_lookup,
+    affinity_profile=None,
 ) -> list[dict]:
     """Return up to `page_size` ranked candidate papers.
 
@@ -211,7 +212,11 @@ async def rank_for_profile(
         vector_score = float(doc.get("vector_score") or 0.0)
         recency = recency_score(doc.get("year"))
         citations = citation_score(doc.get("citation_count"))
-        affinity = float(doc.get("_affinity_score") or 0.0)
+        if affinity_profile is not None:
+            from app.services.recommendations.affinity import affinity_score_for_paper
+            affinity = affinity_score_for_paper(doc, affinity_profile)
+        else:
+            affinity = 0.0
         doc["_final_score"] = composite_score(vector_score, recency, citations, affinity)
 
     interleaved.sort(key=lambda d: d["_final_score"], reverse=True)
@@ -230,6 +235,7 @@ async def rank_in_memory(
     candidates: list[dict],
     seen_ids: set[str],
     page_size: int,
+    affinity_profile=None,
 ) -> list[dict]:
     """Cosine-rank candidates that already have an `embedding` in memory.
 
@@ -259,7 +265,12 @@ async def rank_in_memory(
                 best_sim = sim
         recency = recency_score(paper.get("year"))
         citations = citation_score(paper.get("citation_count"))
-        final = composite_score(best_sim, recency, citations, affinity=0.0)
+        if affinity_profile is not None:
+            from app.services.recommendations.affinity import affinity_score_for_paper
+            affinity = affinity_score_for_paper(paper, affinity_profile)
+        else:
+            affinity = 0.0
+        final = composite_score(best_sim, recency, citations, affinity=affinity)
         out = dict(paper)
         out["vector_score"] = best_sim
         out["_final_score"] = final

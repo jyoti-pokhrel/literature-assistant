@@ -17,6 +17,7 @@ import logging
 from dataclasses import dataclass
 from typing import Any
 
+from app.services.recommendations.affinity import build_affinity
 from app.services.recommendations.candidate_fetcher import (
     fetch_for_topics,
     replenish,
@@ -130,6 +131,7 @@ async def get_feed_page(
     ]
     prepare_lookup, lookup = _make_embed_lookup(positive_labels)
     await prepare_lookup()
+    affinity_profile = await build_affinity(username)
 
     topics = [
         c["label"]
@@ -145,6 +147,7 @@ async def get_feed_page(
         seen_paper_ids=profile.seen_paper_ids,
         page_size=page_size * 2,  # over-fetch so we can dedup against fresh
         embed_lookup=lookup,
+        affinity_profile=affinity_profile,
     )
 
     fresh_candidates: list[dict] = []
@@ -175,6 +178,7 @@ async def get_feed_page(
             candidates=fresh_candidates,
             seen_ids=seen_for_inmem,
             page_size=page_size * 2,
+            affinity_profile=affinity_profile,
         )
         hydrated = _hydrate_components(component_dicts, lookup)
         for item in in_mem_ranked:
