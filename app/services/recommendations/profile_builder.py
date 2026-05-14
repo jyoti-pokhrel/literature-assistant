@@ -28,6 +28,10 @@ from app.services.recommendations.signals import (
     fetch_gap_signals,
     fetch_search_signals,
 )
+from app.services.recommendations.interactions import (
+    INTERACTION_WEIGHTS,
+    fetch_interaction_signals,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -36,6 +40,7 @@ SEED_DECAY_THRESHOLD = 5  # searches needed before seeds fully decay
 SEARCH_HALF_LIFE_DAYS = 14.0
 GAP_POSITIVE_WEIGHT = 1.0
 GAP_NEGATIVE_WEIGHT = -0.6
+INTERACTION_HALF_LIFE_DAYS = 21.0
 
 SEEN_EXPIRY_DAYS = 21
 SEEN_MAX_KEEP = 1000
@@ -112,6 +117,12 @@ def _gap_weight(signal: GapSignal) -> float:
     return 0.0
 
 
+def _interaction_weight(signal) -> float:
+    """Decay raw interaction weights over INTERACTION_HALF_LIFE_DAYS."""
+    age = (datetime.now(timezone.utc) - signal.ts).total_seconds() / 86400.0
+    return signal.weight * min(1.0, math.exp(-age / INTERACTION_HALF_LIFE_DAYS))
+
+
 async def _embed_signal_texts(texts: list[str]) -> list[list[float]]:
     if not texts:
         return []
@@ -169,6 +180,25 @@ async def _compose_profile(
                 weight=weight,
                 vector=list(vector),
                 meta={"gap_id": signal.gap_id},
+            )
+        )
+
+    interaction_signals = await fetch_interaction_signals(username)
+    for signal in interaction_signals:
+        weight = _interaction_weight(signal)
+        if weight == 0.0:
+            continue
+        components.append(
+            ProfileComponent(
+                kind=(
+                    "interaction_positive"
+                    if weight > 0
+                    else "interaction_negative"
+                ),
+                label=signal.external_id,
+                weight=weight,
+                vector=list(signal.embedding),
+                meta={"kind": signal.kind, "ts": signal.ts.isoformat()},
             )
         )
 
