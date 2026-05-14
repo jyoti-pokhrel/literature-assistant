@@ -43,7 +43,7 @@ def _format_search_date(iso: str | None) -> str:
         return ""
 
 
-def _build_reason(paper_vec: list[float], profile_components: list[dict]) -> str:
+def build_reason(paper_vec: list[float], profile_components: list[dict]) -> str:
     if not profile_components:
         return "Matches your interests"
     positives = [
@@ -97,7 +97,7 @@ async def _vector_search(query: list[float]) -> list[dict]:
         return []
 
 
-def _hydrate_components(profile_components: list[dict], embed_lookup) -> list[dict]:
+def hydrate_components(profile_components: list[dict], embed_lookup) -> list[dict]:
     """Attach the per-component vector by re-embedding labels.
 
     Profile components are persisted without their vectors (vectors are heavy
@@ -170,7 +170,7 @@ async def rank_for_profile(
     """
     seen = set(seen_paper_ids or [])
 
-    hydrated = _hydrate_components(profile_components, embed_lookup)
+    hydrated = hydrate_components(profile_components, embed_lookup)
     positives = [c for c in hydrated if c.get("weight", 0) > 0]
     positives.sort(key=lambda c: c["weight"], reverse=True)
 
@@ -223,7 +223,7 @@ async def rank_for_profile(
     selected = _mmr_select(interleaved, page_size)
 
     for item in selected:
-        item["reason"] = _build_reason(item.get("embedding") or [], hydrated)
+        item["reason"] = build_reason(item.get("embedding") or [], hydrated)
         item["score"] = round(float(item.get("_final_score", 0.0)), 4)
 
     return selected

@@ -28,8 +28,8 @@ from app.services.recommendations.profile_builder import (
     record_impressions,
 )
 from app.services.recommendations.ranker import (
-    _build_reason,
-    _hydrate_components,
+    build_reason,
+    hydrate_components,
     rank_for_profile,
     rank_in_memory,
 )
@@ -53,7 +53,7 @@ class FeedPage:
 
 
 def _make_embed_lookup(labels: list[str]) -> tuple[Any, Any]:
-    """Returns (async_prepare, sync_lookup) used by ranker._hydrate_components.
+    """Returns (async_prepare, sync_lookup) used by ranker.hydrate_components.
 
     Calling `await async_prepare()` populates an internal map; `sync_lookup(label)`
     then returns the vector or None. Separated this way because ranker calls the
@@ -180,9 +180,9 @@ async def get_feed_page(
             page_size=page_size * 2,
             affinity_profile=affinity_profile,
         )
-        hydrated = _hydrate_components(component_dicts, lookup)
+        hydrated = hydrate_components(component_dicts, lookup)
         for item in in_mem_ranked:
-            item["reason"] = _build_reason(item.get("embedding") or [], hydrated)
+            item["reason"] = build_reason(item.get("embedding") or [], hydrated)
             item["score"] = round(float(item.get("_final_score", 0.0)), 4)
 
         merged = atlas_ranked + in_mem_ranked
