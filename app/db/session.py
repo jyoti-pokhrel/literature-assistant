@@ -79,6 +79,7 @@ search_history_collection = db["search_history"] if db is not None else None
 chat_history_collection = db["chat_history"] if db is not None else None
 user_profiles_collection = db["user_profiles"] if db is not None else None
 gap_feedback_signals_collection = db["gap_feedback_signals"] if db is not None else None
+paper_interactions_collection = db["paper_interactions"] if db is not None else None
 
 
 async def ping() -> bool:
@@ -181,6 +182,20 @@ async def init_indexes() -> None:
         [("username", 1), ("report_id", 1), ("gap_id", 1)],
         unique=True,
         name="gap_feedback_signal_uniq",
+    )
+
+    # Per-user interaction log for the explore feed (open/like/dislike/hide).
+    # Compound covers the common "load my recent feedback" query.
+    await _safe_create_index(
+        paper_interactions_collection,
+        [("username", 1), ("ts", -1)],
+    )
+    # One write per (user, paper, kind) — dedup likes/dislikes/etc.
+    await _safe_create_index(
+        paper_interactions_collection,
+        [("username", 1), ("external_id", 1), ("kind", 1)],
+        unique=True,
+        name="paper_interaction_uniq",
     )
 
     # Recommendation candidates: dedup lookup by (source, external_id) and
