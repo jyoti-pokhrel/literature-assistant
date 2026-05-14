@@ -173,14 +173,90 @@ function sourceLabel(source) {
         .join(" ");
 }
 
+async function fetchSearchHistory() {
+    const response = await fetch(`${BASE_URL}/search/history`, {
+        method: "GET",
+        headers: getHeaders(),
+    });
+    return await parseResponse(response, "Failed to fetch search history");
+}
+
+async function deleteSearchHistory(history_id) {
+    const response = await fetch(`${BASE_URL}/search/history/${history_id}`, {
+        method: "DELETE",
+        headers: getHeaders(),
+    });
+    return await parseResponse(response, "Failed to delete history");
+}
+
+async function clearSearchHistory() {
+    const response = await fetch(`${BASE_URL}/search/history`, {
+        method: "DELETE",
+        headers: getHeaders(),
+    });
+    return await parseResponse(response, "Failed to clear search history");
+}
+
+async function fetchReport(report_id) {
+    const response = await fetch(`${BASE_URL}/synthesis/report/${report_id}`, {
+        method: "GET",
+        headers: getHeaders(),
+    });
+    return await parseResponse(response, "Failed to fetch report");
+}
+
 window.searchAPI = {
     searchPapers,
     analyzeGaps,
     analyzeGapsStream,
     exploreArxiv,
+    fetchReport,
     fetchPublicReport,
     buildSearchPayload,
     buildExplorePayload,
     formatFilters,
     sourceLabel,
+    fetchSearchHistory,
+    deleteSearchHistory,
+    clearSearchHistory,
+};
+
+async function fetchChatHistory() {
+    const response = await fetch(`${BASE_URL}/chat/history`, {
+        method: "GET",
+        headers: getHeaders(),
+    });
+    return await parseResponse(response, "Failed to fetch chat history");
+}
+
+async function saveChatMessage(payload) {
+    const response = await fetch(`${BASE_URL}/chat/save`, {
+        method: "POST",
+        headers: getHeaders({ hasBody: true }),
+        body: JSON.stringify(payload),
+    });
+    return await parseResponse(response, "Failed to save chat");
+}
+
+async function deleteChatSession(session_id) {
+    const response = await fetch(`${BASE_URL}/chat/session/${session_id}`, {
+        method: "DELETE",
+        headers: getHeaders(),
+    });
+    return await parseResponse(response, "Failed to delete chat session");
+}
+
+async function clearChatHistory() {
+    const response = await fetch(`${BASE_URL}/chat/clear`, {
+        method: "DELETE",
+        headers: getHeaders(),
+    });
+    return await parseResponse(response, "Failed to clear chat history");
+}
+
+window.chatAPI = {
+    fetchChatHistory,
+    saveChatMessage,
+    deleteChatSession,
+    clearChatHistory,
 };

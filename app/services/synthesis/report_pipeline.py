@@ -175,6 +175,7 @@ def _build_cluster_summaries(
 
 async def run_synthesis_pipeline(
     request: SynthesisRequest,
+    username: str | None = None,
     progress_callback: ProgressCallback | None = None,
 ) -> SynthesisResponse:
     loop = asyncio.get_event_loop()
@@ -354,6 +355,7 @@ async def run_synthesis_pipeline(
     doc = {
         "_id": report_id,
         "report_id": report_id,
+        "username": username,
         "topic": request.topic,
         "filters": retrieval.filters,
         "sources_used": retrieval.sources_used,

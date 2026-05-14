@@ -3,5 +3,8 @@ document.addEventListener('alpine:init', () => {
         open(item) {
             this.$store.app.useHistoryItem(item);
         },
+        openChat(chat) {
+            this.$store.app.openChat(chat);
+        },
     }));
 });

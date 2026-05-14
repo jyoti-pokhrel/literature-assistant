@@ -9,7 +9,7 @@ from fastapi.staticfiles import StaticFiles
 from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware
 import logging
 
-from app.api.routes import auth, papers, synthesis, search, admin, user
+from app.api.routes import auth, papers, synthesis, search, admin, user, chat
 from app.db.session import connect_to_mongo, close_mongo_connection, create_indexes
 from app.core.config import settings
 from app.core.http import get_http_client, close_http_client
@@ -98,6 +98,7 @@ app.include_router(synthesis.router)
 app.include_router(search.router)
 app.include_router(admin.router)
 app.include_router(user.router)
+app.include_router(chat.router)
 
 # Mount static files correctly
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")

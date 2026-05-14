@@ -22,6 +22,7 @@ from app.schemas.synthesis import (
     JobStatusEnum,
 )
 import datetime
+from app.services.retrieval.history import save_search_history
 
 # Global job store for tracking background tasks
 # In production, this could be moved to Redis or MongoDB TTL collection
@@ -106,7 +107,7 @@ async def detect_gaps(
 ) -> SynthesisResponse:
     from app.services.synthesis.report_pipeline import run_synthesis_pipeline
     try:
-        return await run_synthesis_pipeline(payload)
+        return await run_synthesis_pipeline(payload, username=current_user["username"])
     except Exception as exc:
         logger.exception("Synthesis pipeline error: %s", exc)
         raise HTTPException(
@@ -149,7 +150,7 @@ async def detect_gaps_async(
 
     async def run_task():
         try:
-            result = await run_synthesis_pipeline(payload, progress_callback=progress_callback)
+            result = await run_synthesis_pipeline(payload, username=current_user["username"], progress_callback=progress_callback)
             job = job_store.get(job_id)
             if job:
                 job.status = JobStatusEnum.COMPLETED
@@ -250,7 +251,24 @@ async def stream_detect_gaps(
         try:
             result = await run_synthesis_pipeline(
                 payload,
+                username=current_user["username"],
                 progress_callback=progress_callback
+            )
+            
+            # Save search to history automatically
+            filters = {
+                "year": payload.year,
+                "venue": payload.venue,
+                "strict_venue": payload.strict_venue,
+                "max_results": payload.max_results,
+                "type": "synthesis"
+            }
+            await save_search_history(
+                current_user["username"], 
+                payload.topic, 
+                filters, 
+                result.papers_analyzed,
+                report_id=result.report_id
             )
             await queue.put({"type": "result", "data": result.model_dump()})
 
