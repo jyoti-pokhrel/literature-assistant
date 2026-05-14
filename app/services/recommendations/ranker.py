@@ -10,6 +10,7 @@ Pipeline:
 
 from __future__ import annotations
 
+import asyncio
 import datetime as _dt
 import logging
 import math
@@ -182,10 +183,9 @@ async def rank_for_profile(
     if not queries:
         return []
 
-    per_query_raw: list[list[dict]] = []
-    for vector, _w, _comp in queries:
-        results = await _vector_search(vector)
-        per_query_raw.append(results)
+    per_query_raw = await asyncio.gather(
+        *(_vector_search(vector) for vector, _w, _comp in queries)
+    )
 
     per_query_filtered: list[list[dict]] = []
     for results in per_query_raw:
