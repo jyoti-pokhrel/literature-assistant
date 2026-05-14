@@ -278,7 +278,7 @@ def validate_gap_citations(
 
     # Generate reasoning summary
     if status == "grounded":
-        reasoning = f"The evidence strongly supports this gap across {citation_count} papers, with {evidence_count} specific evidence snippets extracted. Most citations show high semantic grounding (avg similarity: {round(sum(grounding_scores.values())/max(1, len(grounding_scores)), 2) if grounding_scores else 0.0})."
+        reasoning = f"The evidence strongly supports this gap across {citation_count} papers, with {evidence_count} specific evidence snippets extracted."
     elif status == "weakly_supported":
         reasoning = f"The gap is partially supported by {citation_count} papers, but some claims have low semantic alignment with the source text. Reviewing the '{weakly_supported}' citations is recommended."
     else:
