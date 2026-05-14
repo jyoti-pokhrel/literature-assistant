@@ -10220,7 +10220,7 @@ body.landing-state #landing-page {
    speed up the draw (800ms delay, 600ms duration). */
 .lp-hero-accent-underline path {
     stroke: url(#lpHeroUnderlineGrad);
-    stroke-width: 4.8;
+    stroke-width: 3.2;
     animation: lp-accent-draw 600ms cubic-bezier(0.22, 1, 0.36, 1) 800ms forwards;
 }
 
