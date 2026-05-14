@@ -292,11 +292,7 @@ document.addEventListener('alpine:init', () => {
         renderClusterMap() {
             const container = this.$refs.clusterMap;
             if (!container || this.$store.app.isLoading) return;
-            if (window.ClusterMap?.renderSpider) {
-                window.ClusterMap.renderSpider(container, this.clusters());
-            } else if (window.ClusterMap?.render) {
-                window.ClusterMap.render(container, this.clusters());
-            }
+            window.ClusterMap?.render(container, this.clusters());
             this.syncMapFilterHighlight();
         },
 
