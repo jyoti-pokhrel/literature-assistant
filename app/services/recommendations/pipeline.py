@@ -26,7 +26,12 @@ from app.services.recommendations.profile_builder import (
     load_profile,
     record_impressions,
 )
-from app.services.recommendations.ranker import rank_for_profile
+from app.services.recommendations.ranker import (
+    _build_reason,
+    _hydrate_components,
+    rank_for_profile,
+    rank_in_memory,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -117,12 +122,7 @@ async def get_feed_page(
         raise ColdStartRequired()
 
     component_dicts = [
-        {
-            "kind": c.kind,
-            "label": c.label,
-            "weight": c.weight,
-            "meta": c.meta,
-        }
+        {"kind": c.kind, "label": c.label, "weight": c.weight, "meta": c.meta}
         for c in profile.components
     ]
     positive_labels = [
@@ -131,41 +131,69 @@ async def get_feed_page(
     prepare_lookup, lookup = _make_embed_lookup(positive_labels)
     await prepare_lookup()
 
-    ranked = await rank_for_profile(
+    topics = [
+        c["label"]
+        for c in sorted(
+            component_dicts, key=lambda c: abs(c.get("weight", 0)), reverse=True
+        )
+        if c.get("label")
+    ]
+
+    atlas_ranked = await rank_for_profile(
         profile_vector=profile.vector,
         profile_components=component_dicts,
         seen_paper_ids=profile.seen_paper_ids,
-        page_size=page_size,
+        page_size=page_size * 2,  # over-fetch so we can dedup against fresh
         embed_lookup=lookup,
     )
 
-    if len(ranked) < max(1, int(page_size * MIN_POOL_FOR_PAGE)):
-        topics = [
-            c["label"]
-            for c in sorted(
-                component_dicts, key=lambda c: abs(c.get("weight", 0)), reverse=True
-            )
-            if c.get("label")
-        ]
-        await fetch_for_topics(topics)
-        ranked = await rank_for_profile(
-            profile_vector=profile.vector,
-            profile_components=component_dicts,
-            seen_paper_ids=profile.seen_paper_ids,
-            page_size=page_size,
-            embed_lookup=lookup,
-        )
+    fresh_candidates: list[dict] = []
+    seen_set = set(profile.seen_paper_ids or [])
 
-    if ranked:
-        topics = [
-            c["label"]
-            for c in sorted(
-                component_dicts, key=lambda c: abs(c.get("weight", 0)), reverse=True
-            )
-            if c.get("label")
-        ]
-        if topics:
-            asyncio.create_task(replenish(topics))
+    if len(atlas_ranked) < max(1, int(page_size * MIN_POOL_FOR_PAGE)):
+        fresh_candidates = await fetch_for_topics(topics)
+
+        query_vectors: list[list[float]] = []
+        query_weights: list[float] = []
+        for component in component_dicts:
+            if component["weight"] <= 0:
+                continue
+            vector = lookup(component["label"])
+            if not vector:
+                continue
+            query_vectors.append(vector)
+            query_weights.append(float(component["weight"]))
+        if not query_vectors and profile.vector:
+            query_vectors = [profile.vector]
+            query_weights = [1.0]
+
+        atlas_ids = {p.get("external_id") for p in atlas_ranked if p.get("external_id")}
+        seen_for_inmem = seen_set | atlas_ids
+        in_mem_ranked = await rank_in_memory(
+            query_vectors=query_vectors,
+            weights=query_weights,
+            candidates=fresh_candidates,
+            seen_ids=seen_for_inmem,
+            page_size=page_size * 2,
+        )
+        hydrated = _hydrate_components(component_dicts, lookup)
+        for item in in_mem_ranked:
+            item["reason"] = _build_reason(item.get("embedding") or [], hydrated)
+            item["score"] = round(float(item.get("_final_score", 0.0)), 4)
+
+        merged = atlas_ranked + in_mem_ranked
+        merged.sort(key=lambda d: d.get("_final_score") or d.get("score") or 0.0, reverse=True)
+        ranked = merged[: page_size * 2]
+    else:
+        ranked = atlas_ranked
+
+    if ranked and topics:
+        asyncio.create_task(replenish(topics))
+
+    if cursor > 0:
+        ranked = ranked[cursor : cursor + page_size] if cursor < len(ranked) else []
+    else:
+        ranked = ranked[:page_size]
 
     chosen_ids = [doc.get("external_id") for doc in ranked if doc.get("external_id")]
     if chosen_ids:
