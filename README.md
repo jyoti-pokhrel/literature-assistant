@@ -176,7 +176,12 @@ research-agent/
 │   │   │                         # citationGraph
 │   │   └── d3/                   # clusterMap, citationGraph, charts
 │   └── css/                      # tokens, style, workspace, dashboard
-├── requirements.txt
+├── tests/                        # pytest suites (recommendations, …) + e2e/
+├── Dockerfile                    # Python 3.12 slim, uv-based, non-root
+├── docker-compose.yml            # app + mongo:7 for local dev
+├── .dockerignore
+├── .github/workflows/ci.yml      # lint · pytest · docker build smoke · e2e
+├── requirements.txt              # UTF-16, not used — see note in Setup
 ├── pyproject.toml / uv.lock
 ├── package.json                  # frontend deps + Playwright
 └── playwright.config.js
@@ -186,45 +191,76 @@ research-agent/
 
 ## Getting started
 
-### Prerequisites
-- Python 3.10+
-- Node.js 18+ (only for vendoring frontend deps and running Playwright)
-- A MongoDB instance (Atlas or local)
-- API keys for whichever paper sources and LLM provider you intend to use
+The fastest path is **Docker Compose**. If you want hot-reload while developing the Python code, use the manual setup below.
 
-### Setup
+### Prerequisites
+- A MongoDB instance — Atlas, or the Mongo service spun up by `docker compose` below
+- API keys for the paper sources and LLM provider you intend to use (see [Environment variables](#environment-variables))
+- For Docker: Docker Engine 24+ with the Compose plugin
+- For manual setup: Python 3.12, Node.js 20+ (only for Playwright), and [`uv`](https://docs.astral.sh/uv/) installed
+
+### Quickstart with Docker
+
+`docker compose up --build` boots the FastAPI app on `:8000` and a local MongoDB on `:27017` (volume-backed) in one step.
 
 ```bash
 git clone git@github.com:jyoti-pokhrel/research-agent.git
 cd research-agent
 
-# Python deps (uv recommended; pip works too)
-uv sync                         # or: pip install -r requirements.txt
-
-# Frontend deps (Alpine, D3, Playwright)
-npm install
-
-# Configure environment
-cp .env.example .env
-$EDITOR .env                    # fill in MongoDB URL + API keys
-```
-
-### Run
-
-```bash
-# Backend serves both API and frontend
-python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+cp .env.example .env            # fill in API keys; MONGODB_URL is overridden
+                                # automatically inside the compose network
+docker compose up --build
 ```
 
 Then open:
 - `http://localhost:8000/workspace` — main app
 - `http://localhost:8000/docs` — interactive OpenAPI docs
-- `http://localhost:8000/admin-panel` — admin panel
+
+Stop the stack with `docker compose down`. To wipe the local Mongo volume, `docker compose down -v`.
+
+The image is also runnable standalone if you already have a Mongo URL:
+
+```bash
+docker build -t research-agent .
+docker run --rm -p 8000:8000 --env-file .env research-agent
+```
+
+### Manual setup (hot-reload)
+
+```bash
+git clone git@github.com:jyoti-pokhrel/research-agent.git
+cd research-agent
+
+# Python deps — uv reads pyproject.toml + uv.lock for reproducible installs.
+uv sync
+
+# Frontend tooling — Alpine and D3 load via CDN, so npm is only needed for
+# Playwright (and for vendoring deps if you want offline use).
+npm install
+
+cp .env.example .env
+$EDITOR .env                    # fill in MongoDB URL + API keys
+```
+
+Run the server with reload:
+
+```bash
+uv run uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+```
+
+Then open `http://localhost:8000/workspace`.
+
+> ⚠️ **`requirements.txt` is currently UTF-16 encoded** and unreadable by `pip install -r`. Use `uv sync` (it reads `pyproject.toml` + `uv.lock`). Regenerate the txt with `uv pip compile pyproject.toml -o requirements.txt` if you need it for another tool.
 
 ### Tests
 
+Python unit tests run against a real Mongo (the CI workflow spins one up as a service container). Locally, point `MONGODB_URL` at any Mongo and:
+
 ```bash
-npm run test:e2e                # Playwright end-to-end (no specs yet)
+uv run pytest tests/ -q                  # all Python tests
+uv run pytest tests/recommendations/ -q  # just the recommendations suite
+
+npm run test:e2e                         # Playwright (specs live in tests/e2e/)
 ```
 
 ---
@@ -255,7 +291,20 @@ See `.env.example` for the full list. The required ones:
 - **Auth dev bypass** is on by default in `.env.example`. Turn it off in any non-localhost deployment.
 - **Frontend script order matters.** No bundler — `index.html` loads scripts as plain `<script>` tags in the order they need to initialise.
 - **localStorage keys are versioned** (e.g. `research-agent-sidebar-collapsed-v2`). Bump the version when you want to reset stored user prefs.
-- **No tests directory yet.** Playwright is installed but no specs exist.
+- **Tests live in `tests/`.** Python tests under `tests/recommendations/` (pytest + pytest-asyncio); Playwright specs under `tests/e2e/`.
+
+---
+
+## Continuous integration
+
+`.github/workflows/ci.yml` runs on every push and PR to `main` / `develop`:
+
+| Job | What it does |
+| --- | --- |
+| **lint** | `ruff check` and `ruff format --check` on `app/` and `tests/`. |
+| **test** | `pytest tests/` against a real MongoDB service container. |
+| **docker** | Builds the image with Buildx + GHA cache and runs a container smoke test (boots the app and waits for it to respond on `:8000`). |
+| **e2e** | Manual-only (`workflow_dispatch` with `run_e2e=true`): boots the API + Mongo and runs Playwright. Uploads `playwright-report/` as an artifact. |
 
 ---
 
