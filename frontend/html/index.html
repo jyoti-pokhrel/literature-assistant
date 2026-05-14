@@ -810,7 +810,15 @@
                     <ol class="gap-entries">
                         <template x-for="(gap, index) in filteredGaps()" :key="gapKey(gap, index)">
                           <li class="gap-entry" :class="{ 'is-selected': $store.app.explorer.selectedGapId === gapKey(gap, index) }" @click="selectGap(gap)">
-                            <span class="gap-entry-folio" x-text="`Cluster ${(gap.cluster_id ?? '–').toString().padStart(2, '0')}`"></span>
+                            <div class="gap-entry-folio-row">
+                              <span class="gap-entry-folio" x-text="`Cluster ${(gap.cluster_id ?? '–').toString().padStart(2, '0')}`"></span>
+                              <span class="gap-trend-pill" :data-trend="clusterTrend(findCluster(gap.cluster_id))">
+                                <svg class="pill-trend-icon" width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                  <path :d="clusterTrendIcon(findCluster(gap.cluster_id))"/>
+                                </svg>
+                                <span x-text="`${clusterTrend(findCluster(gap.cluster_id))} Gap`"></span>
+                              </span>
+                            </div>
                             <h3 class="gap-entry-title" x-text="gap.gap_title || 'Untitled research gap'"></h3>
                             <p class="gap-entry-desc" x-show="hasValue(gap.description)" x-html="renderTextWithCitations(gap.description, gap)"></p>
                             <div style="display: flex; align-items: center; gap: 6px; margin-top: 6px; font-size: 11px; color: var(--text-muted, #94a3b8);">
