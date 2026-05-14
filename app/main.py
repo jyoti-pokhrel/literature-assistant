@@ -13,7 +13,7 @@ from dotenv import load_dotenv
 env_path = Path(__file__).resolve().parent.parent / '.env'
 load_dotenv(dotenv_path=env_path)
 
-from app.api.routes import auth, admin, chat, citations, papers, reports, search, synthesis, user
+from app.api.routes import auth, admin, chat, citations, explore, feedback, papers, reports, search, synthesis, user
 
 # Warm-up: kick off embedding model load in the background. The server
 # accepts requests immediately; the first synthesis request after boot will
@@ -80,6 +80,8 @@ app.include_router(admin.router)
 app.include_router(user.router)
 app.include_router(user.users_router)
 app.include_router(chat.router)
+app.include_router(explore.router)
+app.include_router(feedback.router)
 
 
 @app.on_event("startup")
