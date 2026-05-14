@@ -33,6 +33,7 @@ from app.services.recommendations.ranker import (
     rank_for_profile,
     rank_in_memory,
 )
+from app.services.recommendations.popular import rank_popular
 
 logger = logging.getLogger(__name__)
 
@@ -119,8 +120,42 @@ async def get_feed_page(
     page_size: int = DEFAULT_PAGE_SIZE,
 ) -> FeedPage:
     profile = await load_profile(username)
+
+    seen_set = set(profile.seen_paper_ids or [])
+
     if profile.is_cold_start or not profile.vector:
-        raise ColdStartRequired()
+        popular = await rank_popular(seen_paper_ids=seen_set, page_size=page_size)
+        if not popular:
+            # Corpus has no embedded papers yet — pull a curated default
+            # pool from arXiv/S2 so the user sees something on first visit.
+            default_topics = [
+                "machine learning",
+                "neural networks",
+                "climate science",
+                "neuroscience",
+                "computer vision",
+            ]
+            fresh = await fetch_for_topics(default_topics)
+            popular = []
+            for paper in fresh[:page_size]:
+                eid = paper.get("external_id")
+                if not eid or eid in seen_set:
+                    continue
+                item = dict(paper)
+                item["reason"] = "New from arXiv & Semantic Scholar"
+                item["score"] = 0.0
+                item["_final_score"] = 0.0
+                popular.append(item)
+
+        chosen_ids = [doc.get("external_id") for doc in popular if doc.get("external_id")]
+        if chosen_ids:
+            await record_impressions(username, chosen_ids)
+        return FeedPage(
+            papers=[_serialize_paper(doc) for doc in popular],
+            next_cursor=cursor + len(popular),
+            has_more=len(popular) >= page_size,
+            profile_summary=_profile_summary(profile),
+        )
 
     component_dicts = [
         {"kind": c.kind, "label": c.label, "weight": c.weight, "meta": c.meta}
@@ -151,7 +186,6 @@ async def get_feed_page(
     )
 
     fresh_candidates: list[dict] = []
-    seen_set = set(profile.seen_paper_ids or [])
 
     if len(atlas_ranked) < max(1, int(page_size * MIN_POOL_FOR_PAGE)):
         fresh_candidates = await fetch_for_topics(topics)
