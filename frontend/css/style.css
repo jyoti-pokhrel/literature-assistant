@@ -8569,6 +8569,57 @@ body.landing-state #landing-page {
     color: rgba(74, 85, 100, 0.78);
 }
 
+.gap-entry-folio-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 0.45rem;
+}
+
+.gap-entry-folio-row .gap-entry-folio {
+    margin-bottom: 0;
+}
+
+.gap-trend-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 2px 8px;
+    border: 1px solid rgba(5, 6, 8, 0.10);
+    border-radius: 6px;
+    font-family: var(--font-sans);
+    font-size: 0.66rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: rgba(5, 6, 8, 0.82);
+    background: rgba(5, 6, 8, 0.02);
+    white-space: nowrap;
+}
+
+.gap-trend-pill .pill-trend-icon {
+    flex: none;
+    opacity: 0.72;
+}
+
+.gap-trend-pill[data-trend="Saturated"] {
+    color: rgba(74, 85, 100, 0.72);
+}
+
+.gap-trend-pill[data-trend="Saturated"] .pill-trend-icon {
+    opacity: 0.55;
+}
+
+:root[data-theme='dark'] .gap-trend-pill {
+    border-color: rgba(255, 255, 255, 0.10);
+    background: rgba(255, 255, 255, 0.03);
+    color: rgba(255, 255, 255, 0.86);
+}
+
+:root[data-theme='dark'] .gap-trend-pill[data-trend="Saturated"] {
+    color: rgba(255, 255, 255, 0.62);
+}
+
 .gap-entry-title {
     font-family: var(--font-sans);
     font-weight: 600;

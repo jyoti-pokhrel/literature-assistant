@@ -790,15 +790,6 @@
             <!-- Zone 2: The Executive Summary (BLUF) -->
             <section class="results-summary">
                 <p class="synthesis-bluf" x-html="renderTextWithCitations($store.app.result?.gapData?.synthesis?.summary_text) || '<strong>Synthesized ' + papers().length + ' papers</strong> and identified <strong>' + validGaps().length + ' core research gaps</strong> across ' + clusters().length + ' thematic clusters.'"></p>
-                
-                <div x-show="$store.app.result?.gapData?.stats?.cluster_accuracy !== undefined" 
-                     style="display: flex !important; flex-direction: row !important; align-items: center !important; gap: 10px; margin-top: 1.25rem; padding-bottom: 0.75rem; border-bottom: 1px solid var(--border-color); opacity: 0.9;">
-                  <span style="font-size: 0.7rem; font-weight: 800; letter-spacing: 0.05em; color: var(--text-muted); text-transform: uppercase; white-space: nowrap;">Cluster Quality:</span>
-                  <div style="background: rgba(59, 130, 246, 0.08); padding: 2px 10px; border-radius: 4px; font-size: 0.75rem; font-weight: 700; color: var(--accent); border: 1px solid rgba(59, 130, 246, 0.15); display: inline-flex; align-items: center; gap: 4px; white-space: nowrap;">
-                    <span x-text="Number($store.app.result.gapData.stats.cluster_accuracy * 100).toFixed(0) + '%'"></span>
-                  </div>
-                  <div style="width: 1px; height: 14px; background: var(--border-color); margin-left: 4px; opacity: 0.5;"></div>
-                </div>
             </section>
 
             <!-- Zone 3: The Deep-Dive Workspace (Tabbed Navigation) -->
@@ -836,13 +827,15 @@
                     <ol class="gap-entries">
                         <template x-for="(gap, index) in filteredGaps()" :key="gapKey(gap, index)">
                           <li class="gap-entry" :class="{ 'is-selected': $store.app.explorer.selectedGapId === gapKey(gap, index) }" @click="selectGap(gap)">
-                            <div class="gap-entry-folio-row" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem;">
+                            <div class="gap-entry-folio-row" style="justify-content: space-between;">
                               <div style="display: flex; align-items: center; gap: 12px;">
                                 <span class="gap-entry-folio" x-text="`Cluster ${(gap.cluster_id ?? '–').toString().padStart(2, '0')}`"></span>
-                                <!-- Temporal Signal -->
-                                <span class="gap-meta-pill" 
-                                      :class="{ 'pill-emerging': clusterTrend(findCluster(gap.cluster_id)) === 'Emerging', 'pill-active': clusterTrend(findCluster(gap.cluster_id)) === 'Active', 'pill-saturated': clusterTrend(findCluster(gap.cluster_id)) === 'Saturated' }"
-                                      x-text="clusterTrend(findCluster(gap.cluster_id))"></span>
+                                <span class="gap-trend-pill" :data-trend="clusterTrend(findCluster(gap.cluster_id))">
+                                  <svg class="pill-trend-icon" width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                    <path :d="clusterTrendIcon(findCluster(gap.cluster_id))"/>
+                                  </svg>
+                                  <span x-text="`${clusterTrend(findCluster(gap.cluster_id))} Gap`"></span>
+                                </span>
                               </div>
                               <div style="font-size: 0.75rem; color: var(--text-muted); font-weight: 500; letter-spacing: -0.01em;">
                                 <span x-text="supportCountLabel(gap)"></span>
