@@ -17,7 +17,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/css/tokens.css?v=20260506n" />
-  <link rel="stylesheet" href="/css/style.css?v=20260514r" />
+  <link rel="stylesheet" href="/css/style.css?v=20260514p" />
   <link rel="stylesheet" href="/css/workspace.css?v=20260506n" />
   <link rel="stylesheet" href="/css/dashboard.css?v=20260511b" />
   <link rel="stylesheet" href="/css/citations.css?v=20260512c" />
@@ -172,91 +172,105 @@
       </div>
     </section>
 
-    <!-- How it works (scroll scenes) -->
-    <section class="lp-scenes" id="how-it-works">
-      <div class="lp-section-head fade-in">
-        <div class="lp-section-label">How it works</div>
-        <h2 class="lp-section-title">Three steps from query to insight.</h2>
-      </div>
+    <!-- Process — research workflow as a single editorial sequence -->
+    <section class="lp-process" id="how-it-works">
+      <header class="lp-process-head fade-in">
+        <p class="lp-process-folio">002 · Process</p>
+        <h2 class="lp-process-title">
+          From a query, to a landscape, to <span class="lp-process-accent">a gap.</span>
+        </h2>
+      </header>
 
-      <div class="lp-scene fade-in" data-stagger="1">
-        <div class="lp-scene-media">
-          <div class="lp-scene-frame">
-            <div class="lp-scene-chrome"></div>
-            <div class="lp-scene-search">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-              <span>sample efficiency in RL</span>
-            </div>
-            <div class="lp-scene-results">
-              <div class="lp-scene-result"><span class="lp-scene-source">Semantic Scholar</span><span>1,243 results</span></div>
-              <div class="lp-scene-result"><span class="lp-scene-source">arXiv</span><span>867 results</span></div>
-              <div class="lp-scene-result"><span class="lp-scene-source">OpenAlex</span><span>2,108 results</span></div>
-            </div>
+      <ol class="lp-process-steps">
+        <li class="lp-process-step fade-in" data-stagger="1">
+          <div class="lp-process-step-marker">
+            <span class="lp-process-step-num">01</span>
+            <span class="lp-process-step-rule" aria-hidden="true"></span>
           </div>
-        </div>
-        <div class="lp-scene-copy">
-          <span class="lp-scene-num">01</span>
-          <h3 class="lp-scene-title">Search across sources in one query</h3>
-          <p class="lp-scene-desc">One prompt searches Semantic Scholar, arXiv, and OpenAlex simultaneously. Papers are deduplicated and ranked — no manual cross-checking.</p>
-        </div>
-      </div>
+          <div class="lp-process-step-body">
+            <p class="lp-process-step-tag">Query</p>
+            <h3 class="lp-process-step-title">One search, three indexes.</h3>
+            <p class="lp-process-step-desc">
+              Semantic Scholar, arXiv, and OpenAlex are searched in parallel. Results are deduplicated and ranked. No manual cross-checking.
+            </p>
+          </div>
+          <figure class="lp-process-step-media">
+            <svg class="lp-process-step-svg" viewBox="0 0 300 180" preserveAspectRatio="xMidYMid meet" aria-hidden="true" focusable="false">
+              <line class="lp-process-line" x1="46" y1="90" x2="108" y2="42"/>
+              <line class="lp-process-line" x1="46" y1="90" x2="108" y2="90"/>
+              <line class="lp-process-line" x1="46" y1="90" x2="108" y2="138"/>
+              <circle class="lp-process-dot lp-process-dot--main" cx="46" cy="90" r="6"/>
+              <circle class="lp-process-dot" cx="108" cy="42" r="4"/>
+              <circle class="lp-process-dot" cx="108" cy="90" r="4"/>
+              <circle class="lp-process-dot" cx="108" cy="138" r="4"/>
+              <text class="lp-process-label" x="124" y="46">Semantic Scholar · 1,243</text>
+              <text class="lp-process-label" x="124" y="94">arXiv · 867</text>
+              <text class="lp-process-label" x="124" y="142">OpenAlex · 2,108</text>
+              <text class="lp-process-label lp-process-label--source" x="24" y="108">Query</text>
+            </svg>
+          </figure>
+        </li>
 
-      <div class="lp-scene fade-in" data-stagger="2">
-        <div class="lp-scene-media">
-          <div class="lp-scene-frame">
-            <div class="lp-scene-chrome"></div>
-            <div class="lp-scene-stack">
-              <div class="lp-bento-mock-card">
-                <div class="lp-bento-mock-title">Reward shaping under-explored</div>
-                <div class="lp-bento-mock-chips">
-                  <span><i></i> Cluster 01</span>
-                  <span>3 papers</span>
-                </div>
-                <div class="lp-bento-mock-score"><span>Novelty</span><div class="lp-bento-mock-bar"><i style="--w: 84%;"></i></div></div>
-              </div>
-              <div class="lp-bento-mock-card">
-                <div class="lp-bento-mock-title">No standard transfer benchmarks</div>
-                <div class="lp-bento-mock-chips">
-                  <span><i></i> Cluster 04</span>
-                  <span>7 papers</span>
-                </div>
-                <div class="lp-bento-mock-score"><span>Support</span><div class="lp-bento-mock-bar"><i style="--w: 71%;"></i></div></div>
-              </div>
-            </div>
+        <li class="lp-process-step fade-in" data-stagger="2">
+          <div class="lp-process-step-marker">
+            <span class="lp-process-step-num">02</span>
+            <span class="lp-process-step-rule" aria-hidden="true"></span>
           </div>
-        </div>
-        <div class="lp-scene-copy">
-          <span class="lp-scene-num">02</span>
-          <h3 class="lp-scene-title">Detect gaps the agent reads for you</h3>
-          <p class="lp-scene-desc">The agent reads abstracts and surfaces what's missing. Each gap is scored on novelty, support, and actionability — with citations attached.</p>
-        </div>
-      </div>
+          <div class="lp-process-step-body">
+            <p class="lp-process-step-tag">Cluster</p>
+            <h3 class="lp-process-step-title">The corpus shapes itself.</h3>
+            <p class="lp-process-step-desc">
+              Embeddings group papers into thematic regions. Each cluster gets a name, a size, and a position in the landscape.
+            </p>
+          </div>
+          <figure class="lp-process-step-media">
+            <svg class="lp-process-step-svg" viewBox="0 0 300 180" preserveAspectRatio="xMidYMid meet" aria-hidden="true" focusable="false">
+              <path class="lp-process-hull" d="M 50 60 Q 30 35, 75 28 T 135 60 Q 138 100, 95 105 Q 50 100, 50 60 Z"/>
+              <path class="lp-process-hull" d="M 175 105 Q 195 80, 235 90 Q 258 120, 232 148 Q 192 153, 175 128 Q 165 116, 175 105 Z"/>
+              <circle class="lp-process-dot" cx="78" cy="55" r="4"/>
+              <circle class="lp-process-dot" cx="100" cy="72" r="3"/>
+              <circle class="lp-process-dot" cx="68" cy="82" r="3"/>
+              <circle class="lp-process-dot" cx="98" cy="42" r="3"/>
+              <circle class="lp-process-dot" cx="115" cy="80" r="2.5"/>
+              <circle class="lp-process-dot" cx="205" cy="115" r="4"/>
+              <circle class="lp-process-dot" cx="222" cy="132" r="3"/>
+              <circle class="lp-process-dot" cx="190" cy="130" r="3"/>
+              <circle class="lp-process-dot" cx="220" cy="105" r="2.5"/>
+              <text class="lp-process-label" x="50" y="128">Reward shaping</text>
+              <text class="lp-process-label" x="175" y="168">Transfer benchmarks</text>
+            </svg>
+          </figure>
+        </li>
 
-      <div class="lp-scene fade-in" data-stagger="3">
-        <div class="lp-scene-media">
-          <div class="lp-scene-frame">
-            <div class="lp-scene-chrome"></div>
-            <div class="lp-scene-map">
-              <svg viewBox="0 0 320 200" preserveAspectRatio="none" aria-hidden="true">
-                <line x1="80" y1="60" x2="160" y2="100" stroke="currentColor" stroke-opacity="0.15"/>
-                <line x1="160" y1="100" x2="240" y2="70" stroke="currentColor" stroke-opacity="0.15"/>
-                <line x1="160" y1="100" x2="220" y2="150" stroke="currentColor" stroke-opacity="0.15"/>
-                <line x1="80" y1="60" x2="100" y2="140" stroke="currentColor" stroke-opacity="0.15"/>
-              </svg>
-              <span class="lp-bento-node" style="left: 48%; top: 50%; --size: 38px; --o: 1;"></span>
-              <span class="lp-bento-node" style="left: 22%; top: 28%; --size: 26px; --o: 0.5;"></span>
-              <span class="lp-bento-node" style="left: 72%; top: 32%; --size: 20px; --o: 0.3;"></span>
-              <span class="lp-bento-node" style="left: 30%; top: 68%; --size: 18px; --o: 0.2;"></span>
-              <span class="lp-bento-node" style="left: 66%; top: 72%; --size: 24px; --o: 0.35;"></span>
-            </div>
+        <li class="lp-process-step lp-process-step--last fade-in" data-stagger="3">
+          <div class="lp-process-step-marker">
+            <span class="lp-process-step-num">03</span>
           </div>
-        </div>
-        <div class="lp-scene-copy">
-          <span class="lp-scene-num">03</span>
-          <h3 class="lp-scene-title">Map the field, then explore</h3>
-          <p class="lp-scene-desc">Cluster your literature visually. Click a node to drill into its papers and gaps. Find the dense regions — and the silent ones.</p>
-        </div>
-      </div>
+          <div class="lp-process-step-body">
+            <p class="lp-process-step-tag">Gap</p>
+            <h3 class="lp-process-step-title">Read the silences.</h3>
+            <p class="lp-process-step-desc">
+              Between dense regions lie the gaps. Each one is scored on novelty, support, and actionability, and traces back to the citations that suggest it.
+            </p>
+          </div>
+          <figure class="lp-process-step-media">
+            <svg class="lp-process-step-svg" viewBox="0 0 300 180" preserveAspectRatio="xMidYMid meet" aria-hidden="true" focusable="false">
+              <path class="lp-process-hull" d="M 32 50 Q 22 28, 64 22 T 104 60 Q 104 92, 68 92 Q 32 92, 32 50 Z"/>
+              <path class="lp-process-hull" d="M 198 100 Q 230 80, 262 110 Q 262 148, 230 152 Q 198 148, 198 100 Z"/>
+              <circle class="lp-process-dot" cx="62" cy="45" r="3.5"/>
+              <circle class="lp-process-dot" cx="82" cy="60" r="3"/>
+              <circle class="lp-process-dot" cx="50" cy="72" r="3"/>
+              <circle class="lp-process-dot" cx="225" cy="118" r="3.5"/>
+              <circle class="lp-process-dot" cx="240" cy="132" r="3"/>
+              <circle class="lp-process-ring lp-process-ring--outer" cx="148" cy="92" r="26"/>
+              <circle class="lp-process-ring" cx="148" cy="92" r="18"/>
+              <circle class="lp-process-dot lp-process-dot--gap" cx="148" cy="92" r="2.5"/>
+              <line class="lp-process-line lp-process-line--leader" x1="168" y1="86" x2="208" y2="64"/>
+              <text class="lp-process-label lp-process-label--gap" x="212" y="68">Novelty · 0.84</text>
+            </svg>
+          </figure>
+        </li>
+      </ol>
     </section>
 
     <!-- Features (Bento) -->

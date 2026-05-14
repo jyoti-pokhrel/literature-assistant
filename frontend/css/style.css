@@ -8094,3 +8094,315 @@ body.landing-state #landing-page {
         stroke-dashoffset: 0 !important;
     }
 }
+
+/* ============================================================
+   Process — "How it works" reworked as an editorial sequence.
+   A connecting rule binds three numbered steps; each step has
+   a typographic header pair and a monochrome schematic that
+   echoes the hero's cluster-map (instead of a SaaS browser
+   frame around a mock).
+   ============================================================ */
+
+.lp-process {
+    padding: clamp(5rem, 10vw, 8rem) clamp(1.25rem, 3.4vw, 2.5rem);
+    max-width: 1180px;
+    margin: 0 auto;
+}
+
+.lp-process-head {
+    margin-bottom: clamp(3rem, 6vw, 5rem);
+    max-width: 38rem;
+}
+
+.lp-process-folio {
+    margin: 0 0 1.2rem;
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: rgba(74, 85, 100, 0.72);
+}
+
+.lp-process-title {
+    margin: 0;
+    font-size: clamp(2rem, 4.4vw, 3.25rem);
+    line-height: 1.04;
+    letter-spacing: -0.03em;
+    font-weight: 600;
+    color: rgba(5, 6, 8, 0.94);
+    max-width: 22ch;
+}
+
+.lp-process-accent {
+    font-family: 'Instrument Serif', serif;
+    font-style: italic;
+    font-weight: 400;
+    padding-right: 0.04em;
+}
+
+.lp-process-steps {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.lp-process-step {
+    display: grid;
+    grid-template-columns: 96px minmax(0, 1.05fr) minmax(0, 1fr);
+    column-gap: clamp(1.5rem, 3.4vw, 3rem);
+    row-gap: 1rem;
+    padding: clamp(2.25rem, 4.5vw, 3.5rem) 0;
+    align-items: start;
+    position: relative;
+}
+
+.lp-process-step + .lp-process-step {
+    border-top: 1px solid rgba(5, 6, 8, 0.06);
+}
+
+.lp-process-step-marker {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+    min-height: 100%;
+}
+
+.lp-process-step-num {
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    letter-spacing: 0.18em;
+    font-weight: 600;
+    color: rgba(5, 6, 8, 0.5);
+}
+
+.lp-process-step-rule {
+    width: 1px;
+    flex: 1;
+    min-height: 60px;
+    background: linear-gradient(to bottom, rgba(5, 6, 8, 0.2), rgba(5, 6, 8, 0.04));
+}
+
+.lp-process-step--last .lp-process-step-rule {
+    display: none;
+}
+
+.lp-process-step-body {
+    padding-top: 0.1rem;
+    max-width: 38rem;
+}
+
+.lp-process-step-tag {
+    margin: 0 0 0.6rem;
+    font-family: var(--font-mono);
+    font-size: 0.66rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    font-weight: 600;
+    color: rgba(74, 85, 100, 0.66);
+}
+
+.lp-process-step-title {
+    margin: 0 0 0.85rem;
+    font-size: clamp(1.4rem, 2.2vw, 1.85rem);
+    line-height: 1.15;
+    letter-spacing: -0.02em;
+    font-weight: 600;
+    color: rgba(5, 6, 8, 0.92);
+    max-width: 22ch;
+}
+
+.lp-process-step-desc {
+    margin: 0;
+    font-size: clamp(0.95rem, 1.2vw, 1.075rem);
+    line-height: 1.6;
+    color: rgba(74, 85, 100, 0.82);
+    max-width: 44ch;
+}
+
+.lp-process-step-media {
+    margin: 0;
+    padding: clamp(0.9rem, 1.8vw, 1.4rem);
+    background: rgba(255, 255, 255, 0.5);
+    border: 1px solid rgba(5, 6, 8, 0.06);
+    border-radius: 14px;
+    justify-self: stretch;
+    max-width: 520px;
+}
+
+.lp-process-step-svg {
+    width: 100%;
+    height: auto;
+    display: block;
+    color: rgba(5, 6, 8, 0.72);
+    overflow: visible;
+}
+
+.lp-process-line {
+    stroke: rgba(5, 6, 8, 0.22);
+    stroke-width: 0.8;
+    stroke-linecap: round;
+}
+
+.lp-process-line--leader {
+    stroke: rgba(5, 6, 8, 0.32);
+    stroke-dasharray: 3 3;
+}
+
+.lp-process-hull {
+    fill: rgba(5, 6, 8, 0.045);
+    stroke: rgba(5, 6, 8, 0.10);
+    stroke-width: 1;
+}
+
+.lp-process-dot {
+    fill: currentColor;
+}
+
+.lp-process-dot--main {
+    fill: rgba(5, 6, 8, 0.94);
+}
+
+.lp-process-dot--gap {
+    fill: rgba(5, 6, 8, 0.95);
+}
+
+.lp-process-ring {
+    fill: none;
+    stroke: rgba(5, 6, 8, 0.42);
+    stroke-width: 1.1;
+    stroke-dasharray: 4 4;
+}
+
+.lp-process-ring--outer {
+    stroke: rgba(5, 6, 8, 0.22);
+    stroke-width: 1;
+    stroke-dasharray: 2 6;
+}
+
+.lp-process-label {
+    font-family: var(--font-mono);
+    font-size: 9px;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    fill: rgba(74, 85, 100, 0.78);
+}
+
+.lp-process-label--source {
+    fill: rgba(5, 6, 8, 0.78);
+    font-weight: 600;
+}
+
+.lp-process-label--gap {
+    fill: rgba(5, 6, 8, 0.82);
+    font-weight: 600;
+}
+
+:root[data-theme='dark'] .lp-process-folio,
+:root[data-theme='dark'] .lp-process-step-tag {
+    color: rgba(174, 182, 196, 0.66);
+}
+
+:root[data-theme='dark'] .lp-process-title,
+:root[data-theme='dark'] .lp-process-step-title {
+    color: rgba(246, 248, 252, 0.94);
+}
+
+:root[data-theme='dark'] .lp-process-step + .lp-process-step {
+    border-top-color: rgba(255, 255, 255, 0.08);
+}
+
+:root[data-theme='dark'] .lp-process-step-num {
+    color: rgba(246, 248, 252, 0.5);
+}
+
+:root[data-theme='dark'] .lp-process-step-rule {
+    background: linear-gradient(to bottom, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.04));
+}
+
+:root[data-theme='dark'] .lp-process-step-desc {
+    color: rgba(174, 182, 196, 0.82);
+}
+
+:root[data-theme='dark'] .lp-process-step-media {
+    background: rgba(255, 255, 255, 0.025);
+    border-color: rgba(255, 255, 255, 0.08);
+}
+
+:root[data-theme='dark'] .lp-process-step-svg {
+    color: rgba(246, 248, 252, 0.74);
+}
+
+:root[data-theme='dark'] .lp-process-line {
+    stroke: rgba(255, 255, 255, 0.22);
+}
+
+:root[data-theme='dark'] .lp-process-line--leader {
+    stroke: rgba(255, 255, 255, 0.32);
+}
+
+:root[data-theme='dark'] .lp-process-hull {
+    fill: rgba(255, 255, 255, 0.04);
+    stroke: rgba(255, 255, 255, 0.12);
+}
+
+:root[data-theme='dark'] .lp-process-dot--main,
+:root[data-theme='dark'] .lp-process-dot--gap {
+    fill: rgba(246, 248, 252, 0.94);
+}
+
+:root[data-theme='dark'] .lp-process-ring {
+    stroke: rgba(255, 255, 255, 0.42);
+}
+
+:root[data-theme='dark'] .lp-process-ring--outer {
+    stroke: rgba(255, 255, 255, 0.22);
+}
+
+:root[data-theme='dark'] .lp-process-label {
+    fill: rgba(174, 182, 196, 0.78);
+}
+
+:root[data-theme='dark'] .lp-process-label--source,
+:root[data-theme='dark'] .lp-process-label--gap {
+    fill: rgba(246, 248, 252, 0.86);
+}
+
+@media (max-width: 880px) {
+    .lp-process-step {
+        grid-template-columns: 72px minmax(0, 1fr);
+    }
+    .lp-process-step-media {
+        grid-column: 1 / -1;
+        max-width: 520px;
+        margin-left: 72px;
+    }
+    .lp-process-step-title {
+        max-width: none;
+    }
+}
+
+@media (max-width: 560px) {
+    .lp-process-step {
+        grid-template-columns: 1fr;
+        row-gap: 0.85rem;
+    }
+    .lp-process-step-marker {
+        flex-direction: row;
+        align-items: center;
+        min-height: auto;
+    }
+    .lp-process-step-rule {
+        flex: 0 0 auto;
+        width: 36px;
+        height: 1px;
+        min-height: 0;
+        background: linear-gradient(to right, rgba(5, 6, 8, 0.2), rgba(5, 6, 8, 0.04));
+    }
+    :root[data-theme='dark'] .lp-process-step-rule {
+        background: linear-gradient(to right, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.04));
+    }
+    .lp-process-step-media {
+        margin-left: 0;
+    }
+}
