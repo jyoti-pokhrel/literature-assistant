@@ -86,10 +86,9 @@ def _build_cluster_dashboard(
 
     gaps_by_cluster: dict[int, list[dict]] = {}
     for gap in gaps:
-        # Filter out hallucinated or already addressed gaps from the dashboard/map
+        # Filter out hallucinated gaps from the dashboard/map
         if (gap.llm_verification.get("status", "").lower() == "hallucinated") or \
-           (gap.citation_validation.get("status", "").lower() == "hallucinated") or \
-           (gap.cross_paper_validation.get("status", "").lower() == "potentially_addressed"):
+           (gap.citation_validation.get("status", "").lower() == "hallucinated"):
             continue
 
         gaps_by_cluster.setdefault(gap.cluster_id, []).append({
@@ -325,12 +324,11 @@ async def run_synthesis_pipeline(
     cluster_summaries_future = loop.run_in_executor(
         None, _build_cluster_summaries, cluster_map, cluster_themes, gaps,
     )
-    # Filter out hallucinated/addressed gaps for visualizations
+    # Filter out hallucinated gaps for visualizations
     valid_viz_gaps = [
         g for g in gaps 
         if (g.llm_verification.get("status", "").lower() != "hallucinated") and 
-           (g.citation_validation.get("status", "").lower() != "hallucinated") and
-           (g.cross_paper_validation.get("status", "").lower() != "potentially_addressed")
+           (g.citation_validation.get("status", "").lower() != "hallucinated")
     ]
 
     viz_dict_future = loop.run_in_executor(
@@ -447,12 +445,11 @@ async def run_synthesis_pipeline(
 def _generate_copy_text(topic: str, gaps: list[SynthesisGap]) -> str:
     lines = [f"# Synthesis Report: {topic}\n"]
     
-    # Filter out hallucinated and non-novel gaps
+    # Filter out hallucinated gaps
     valid_gaps = [
         g for g in gaps 
         if not ((g.llm_verification.get("status", "").lower() == "hallucinated") or 
-                (g.citation_validation.get("status", "").lower() == "hallucinated") or
-                (g.cross_paper_validation.get("status", "").lower() == "potentially_addressed"))
+                (g.citation_validation.get("status", "").lower() == "hallucinated"))
     ]
     
     for idx, gap in enumerate(valid_gaps, 1):

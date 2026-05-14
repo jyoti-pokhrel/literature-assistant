@@ -965,9 +965,12 @@
 
                            <!-- Validation Section -->
                            <section class="gap-rail-section" 
-                                    x-show="selectedGap().citation_validation || selectedGap().llm_verification"
+                                    x-show="selectedGap().citation_validation || selectedGap().llm_verification || selectedGap().cross_paper_validation"
                                     x-data="{ 
                                       status() {
+                                        const cross = selectedGap().cross_paper_validation?.status?.toLowerCase();
+                                        if (cross === 'potentially_addressed') return 'potentially_addressed';
+
                                         const llm = selectedGap().llm_verification?.status?.toLowerCase();
                                         const cit = selectedGap().citation_validation?.status?.toLowerCase();
                                         if (llm === 'hallucinated' || cit === 'hallucinated') return 'hallucinated';
@@ -984,9 +987,11 @@
                                     :style="{
                                       background: status() === 'validated' ? 'rgba(34, 197, 94, 0.1)' : 
                                                   status() === 'weakly_supported' ? 'rgba(245, 158, 11, 0.1)' : 
+                                                  status() === 'potentially_addressed' ? 'rgba(59, 130, 246, 0.1)' :
                                                   status() === 'hallucinated' ? 'rgba(239, 68, 68, 0.1)' : 'rgba(100, 100, 100, 0.1)',
                                       color: status() === 'validated' ? 'rgb(34, 197, 94)' : 
                                              status() === 'weakly_supported' ? 'rgb(245, 158, 11)' : 
+                                             status() === 'potentially_addressed' ? 'rgb(59, 130, 246)' :
                                              status() === 'hallucinated' ? 'rgb(239, 68, 68)' : 'rgb(100, 100, 100)'
                                     }">
                                  
@@ -998,6 +1003,11 @@
                                  <!-- Warning icon (Weakly Supported) -->
                                  <template x-if="status() === 'weakly_supported'">
                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                                 </template>
+
+                                 <!-- Info icon (Potentially Addressed) -->
+                                 <template x-if="status() === 'potentially_addressed'">
+                                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
                                  </template>
 
                                  <!-- Error icon (Hallucinated) -->
@@ -1014,18 +1024,21 @@
                                   :style="{
                                     background: status() === 'validated' ? 'rgba(34, 197, 94, 0.03)' : 
                                                 status() === 'weakly_supported' ? 'rgba(245, 158, 11, 0.03)' : 
+                                                status() === 'potentially_addressed' ? 'rgba(59, 130, 246, 0.03)' :
                                                 'rgba(239, 68, 68, 0.03)',
                                     border: status() === 'validated' ? '1px solid rgba(34, 197, 94, 0.15)' : 
                                             status() === 'weakly_supported' ? '1px solid rgba(245, 158, 11, 0.15)' : 
+                                            status() === 'potentially_addressed' ? '1px solid rgba(59, 130, 246, 0.15)' :
                                             '1px solid rgba(239, 68, 68, 0.15)'
                                   }">
                                <p style="margin: 0; font-size: 0.95rem; line-height: 1.6;" 
                                   :style="{
                                     color: status() === 'validated' ? 'rgb(34, 197, 94)' : 
                                            status() === 'weakly_supported' ? 'rgb(245, 158, 11)' : 
+                                           status() === 'potentially_addressed' ? 'rgb(59, 130, 246)' :
                                            status() === 'hallucinated' ? 'rgb(239, 68, 68)' : 'var(--text-main)'
                                   }"
-                                  x-text="selectedGap().llm_verification?.reason || selectedGap().citation_validation?.reasoning || validationLabel(selectedGap())"></p>
+                                  x-text="selectedGap().cross_paper_validation?.reason || selectedGap().llm_verification?.reason || selectedGap().citation_validation?.reasoning || validationLabel(selectedGap())"></p>
                              </div>
                            </section>
 

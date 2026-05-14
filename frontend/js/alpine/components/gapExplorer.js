@@ -80,8 +80,7 @@ document.addEventListener('alpine:init', () => {
                 const isHallucinated = 
                     gap.llm_verification?.status?.toLowerCase() === 'hallucinated' || 
                     gap.citation_validation?.status?.toLowerCase() === 'hallucinated';
-                const isAddressed = gap.cross_paper_validation?.status?.toLowerCase() === 'potentially_addressed';
-                return !isHallucinated && !isAddressed;
+                return !isHallucinated;
             });
         },
 
@@ -253,13 +252,12 @@ document.addEventListener('alpine:init', () => {
             const clusterId = filters.clusterId === null || filters.clusterId === undefined ? '' : String(filters.clusterId);
 
             const filtered = this.gaps().filter((gap) => {
-                // EXCLUDE HALLUCINATED OR ALREADY ADDRESSED GAPS
+                // EXCLUDE HALLUCINATED GAPS
                 const isHallucinated = 
                     gap.llm_verification?.status?.toLowerCase() === 'hallucinated' || 
                     gap.citation_validation?.status?.toLowerCase() === 'hallucinated';
-                const isAddressed = gap.cross_paper_validation?.status?.toLowerCase() === 'potentially_addressed';
                 
-                if (isHallucinated || isAddressed) return false;
+                if (isHallucinated) return false;
 
                 const score = this.confidence(gap);
                 const text = [
@@ -511,9 +509,15 @@ document.addEventListener('alpine:init', () => {
         },
 
         validationLabel(gap) {
+            if (gap?.cross_paper_validation?.status?.toLowerCase() === 'potentially_addressed') {
+                return 'Potentially Addressed';
+            }
             const validation = gap?.citation_validation || {};
             if (validation.status === 'grounded') {
                 return `Citation grounded · ${validation.evidence_snippet_count || 0} snippets`;
+            }
+            if (validation.status === 'weakly_supported') {
+                return 'Weakly Supported';
             }
             return `Needs review · ${(validation.issues || []).length || 0} checks`;
         },
