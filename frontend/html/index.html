@@ -597,54 +597,38 @@
               <a class="dw-log-allink" href="#" x-show="$store.app.history.length > 8" @click.prevent="document.getElementById('search-history')?.scrollIntoView({ behavior: 'smooth', block: 'start' })">All searches</a>
             </div>
 
-<<<<<<< Updated upstream
             <ol class="dw-log-list">
-              <template x-for="(item, index) in $store.app.history.slice(1, 8)" :key="item.id">
-                <li class="dw-log-row" tabindex="0" role="button" @click="$store.app.useHistoryItem(item)" @keydown.enter.prevent="$store.app.useHistoryItem(item)" @keydown.space.prevent="$store.app.useHistoryItem(item)">
-                  <div class="dw-log-row-head">
-                    <span class="dw-log-title" x-text="item.topic"></span>
-                    <span class="dw-log-meta" x-text="item.summary"></span>
-                  </div>
-                  <ol class="dw-log-row-papers" x-show="(item.result?.searchData?.papers || item.result?.papers || []).length > 0">
-                    <template x-for="(paper, pIdx) in (item.result?.searchData?.papers || item.result?.papers || []).slice(0, 3)" :key="pIdx">
-                      <li class="dw-log-row-paper" x-text="paper.title || 'Untitled paper'"></li>
-                    </template>
-                    <li class="dw-log-row-paper dw-log-row-paper--more"
-                        x-show="(item.result?.searchData?.papers || item.result?.papers || []).length > 3"
-                        x-text="'+ ' + ((item.result?.searchData?.papers || item.result?.papers || []).length - 3) + ' more papers'"></li>
-                  </ol>
-=======
-            <ol class="dash-recent-list">
               <template x-if="!$store.app.history.length">
-                <li class="dash-recent-empty">
+                <li class="dw-log-row dw-log-row--empty">
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="19" x2="12" y2="5"></line><polyline points="5 12 12 5 19 12"></polyline></svg>
                   <span>Nothing yet — point the search above at a topic to begin.</span>
                 </li>
               </template>
               <template x-for="(item, index) in $store.app.history.slice(0, 8)" :key="item.id">
-                <li class="dash-recent-row" :class="{ 'is-featured': index === 0 }" tabindex="0" role="button" @click="$store.app.useHistoryItem(item)" @keydown.enter.prevent="$store.app.useHistoryItem(item)" @keydown.space.prevent="$store.app.useHistoryItem(item)" :style="{ position: 'relative', zIndex: ($store.app.activeHistoryMenuId === item.id ? '200' : '1') }">
-                  <span class="dash-recent-idx" x-text="(index + 1).toString().padStart(2, '0')"></span>
-                  <span class="dash-recent-title" x-text="item.topic" style="color: var(--text-main); font-weight: 700;"></span>
-                  <i class="t-leader" aria-hidden="true"></i>
-                  <span class="dash-recent-meta" x-text="item.summary" style="margin-left: 0.75rem;"></span>
+                <li class="dw-log-row" :class="{ 'is-featured': index === 0 }" tabindex="0" role="button" @click="$store.app.useHistoryItem(item)" @keydown.enter.prevent="$store.app.useHistoryItem(item)" @keydown.space.prevent="$store.app.useHistoryItem(item)" :style="{ position: 'relative', zIndex: ($store.app.activeHistoryMenuId === item.id ? '200' : '1') }">
+                  <div class="dw-log-row-head">
+                    <span class="dw-log-idx" x-text="(index + 1).toString().padStart(2, '0')"></span>
+                    <span class="dw-log-title" x-text="item.topic"></span>
+                    <i class="dw-log-leader" aria-hidden="true"></i>
+                    <span class="dw-log-meta" x-text="item.summary"></span>
+                  </div>
                   
-                  <div style="display: flex; align-items: center; gap: 0.5rem; margin-left: 1rem;">
-                    <span class="dash-recent-resume" x-show="index === 0" style="font-size: 0.75rem; font-weight: 700; color: var(--accent); white-space: nowrap;">Resume →</span>
+                  <div class="dw-log-row-actions" @click.stop @click.outside="if($store.app.activeHistoryMenuId === item.id) $store.app.activeHistoryMenuId = null">
+                    <span class="dw-log-resume" x-show="index === 0">Resume →</span>
 
                     <!-- Kebab menu for removal -->
-                    <div class="dash-recent-actions" @click.stop @click.outside="if($store.app.activeHistoryMenuId === item.id) $store.app.activeHistoryMenuId = null" style="position: relative; z-index: 10;">
-                      <button type="button" class="dash-recent-kebab" @click="$store.app.activeHistoryMenuId = ($store.app.activeHistoryMenuId === item.id ? null : item.id)" style="background: none; border: none; color: var(--text-muted); cursor: pointer; padding: 4px; display: flex; align-items: center; justify-content: center; border-radius: 4px; transition: all 0.2s;" onmouseover="this.style.background='var(--hover-bg)'; this.style.color='var(--text-main)'" onmouseout="this.style.background='none'; this.style.color='var(--text-muted)'">
+                    <div class="dw-log-kebab-wrap">
+                      <button type="button" class="dw-log-kebab" @click="$store.app.activeHistoryMenuId = ($store.app.activeHistoryMenuId === item.id ? null : item.id)">
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"></circle><circle cx="5" cy="12" r="1"></circle><circle cx="19" cy="12" r="1"></circle></svg>
                       </button>
-                      <div x-show="$store.app.activeHistoryMenuId === item.id" x-cloak style="position: absolute; right: 0; top: 100%; background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 8px; box-shadow: 0 8px 24px rgba(0,0,0,0.15); padding: 4px; min-width: 120px; z-index: 300;">
-                        <button type="button" @click="$store.app.removeFromHistory(item.id); $store.app.activeHistoryMenuId = null" style="width: 100%; text-align: left; background: none; border: none; color: var(--text-main); padding: 8px 12px; font-size: 0.85rem; font-weight: 600; cursor: pointer; border-radius: 6px; display: flex; align-items: center; gap: 8px; transition: all 0.2s;" onmouseover="this.style.background='rgba(239, 68, 68, 0.08)'; this.style.color='#ef4444'" onmouseout="this.style.background='none'; this.style.color='var(--text-main)'">
+                      <div class="dw-log-menu" x-show="$store.app.activeHistoryMenuId === item.id" x-cloak>
+                        <button type="button" class="dw-log-menu-item" @click="$store.app.removeFromHistory(item.id); $store.app.activeHistoryMenuId = null">
                           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
                           Remove
                         </button>
                       </div>
                     </div>
                   </div>
->>>>>>> Stashed changes
                 </li>
               </template>
             </ol>

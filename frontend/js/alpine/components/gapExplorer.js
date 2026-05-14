@@ -80,7 +80,8 @@ document.addEventListener('alpine:init', () => {
                 const isHallucinated = 
                     gap.llm_verification?.status?.toLowerCase() === 'hallucinated' || 
                     gap.citation_validation?.status?.toLowerCase() === 'hallucinated';
-                return !isHallucinated;
+                const isAddressed = gap.cross_paper_validation?.status?.toLowerCase() === 'potentially_addressed';
+                return !isHallucinated && !isAddressed;
             });
         },
 
@@ -252,12 +253,13 @@ document.addEventListener('alpine:init', () => {
             const clusterId = filters.clusterId === null || filters.clusterId === undefined ? '' : String(filters.clusterId);
 
             const filtered = this.gaps().filter((gap) => {
-                // EXCLUDE HALLUCINATED GAPS
+                // EXCLUDE HALLUCINATED OR ALREADY ADDRESSED GAPS
                 const isHallucinated = 
                     gap.llm_verification?.status?.toLowerCase() === 'hallucinated' || 
                     gap.citation_validation?.status?.toLowerCase() === 'hallucinated';
+                const isAddressed = gap.cross_paper_validation?.status?.toLowerCase() === 'potentially_addressed';
                 
-                if (isHallucinated) return false;
+                if (isHallucinated || isAddressed) return false;
 
                 const score = this.confidence(gap);
                 const text = [
