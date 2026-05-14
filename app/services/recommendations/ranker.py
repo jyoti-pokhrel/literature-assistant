@@ -177,9 +177,13 @@ async def rank_for_profile(
     queries: list[tuple[list[float], float, dict | None]] = []
     if positives:
         for component in positives[:TOP_COMPONENTS_FOR_RETRIEVAL]:
-            queries.append((component["_vector"], float(component["weight"]), component))
+            queries.append(
+                (component["_vector"], float(component["weight"]), component)
+            )
     if profile_vector:
-        queries.append((profile_vector, max(0.5, sum(c["weight"] for c in positives) * 0.3), None))
+        queries.append(
+            (profile_vector, max(0.5, sum(c["weight"] for c in positives) * 0.3), None)
+        )
 
     if not queries:
         return []
@@ -214,10 +218,13 @@ async def rank_for_profile(
         citations = citation_score(doc.get("citation_count"))
         if affinity_profile is not None:
             from app.services.recommendations.affinity import affinity_score_for_paper
+
             affinity = affinity_score_for_paper(doc, affinity_profile)
         else:
             affinity = 0.0
-        doc["_final_score"] = composite_score(vector_score, recency, citations, affinity)
+        doc["_final_score"] = composite_score(
+            vector_score, recency, citations, affinity
+        )
 
     interleaved.sort(key=lambda d: d["_final_score"], reverse=True)
     selected = _mmr_select(interleaved, page_size)
@@ -267,6 +274,7 @@ async def rank_in_memory(
         citations = citation_score(paper.get("citation_count"))
         if affinity_profile is not None:
             from app.services.recommendations.affinity import affinity_score_for_paper
+
             affinity = affinity_score_for_paper(paper, affinity_profile)
         else:
             affinity = 0.0

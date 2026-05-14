@@ -2495,6 +2495,103 @@
 :root[data-theme='dark'] .dw-log-leader { border-bottom-color: rgba(255, 255, 255, 0.2); }
 :root[data-theme='dark'] .dw-log-meta { color: rgba(174, 182, 196, 0.7); }
 
+.dw-log-row-head {
+    display: flex;
+    align-items: baseline;
+    gap: var(--s-2);
+    flex: 1;
+    min-width: 0;
+}
+
+.dw-log-row-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-left: 1rem;
+    flex-shrink: 0;
+}
+
+.dw-log-resume {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--accent);
+    white-space: nowrap;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.dw-log-kebab-wrap {
+    position: relative;
+    z-index: 10;
+}
+
+.dw-log-kebab {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    transition: all 0.2s;
+}
+
+.dw-log-kebab:hover {
+    background: var(--hover-bg);
+    color: var(--text-main);
+}
+
+.dw-log-menu {
+    position: absolute;
+    right: 0;
+    top: 100%;
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+    padding: 4px;
+    min-width: 120px;
+    z-index: 300;
+}
+
+.dw-log-menu-item {
+    width: 100%;
+    text-align: left;
+    background: none;
+    border: none;
+    color: var(--text-main);
+    padding: 8px 12px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.2s;
+}
+
+.dw-log-menu-item:hover {
+    background: rgba(239, 68, 68, 0.08);
+    color: #ef4444;
+}
+
+.dw-log-row--empty {
+    padding: 2.5rem 0;
+    justify-content: center;
+    color: var(--text-muted);
+    border-bottom: 0;
+    cursor: default;
+    pointer-events: none;
+}
+
+.dw-log-row--empty svg {
+    opacity: 0.5;
+}
+
 /* ---- Responsive ---- */
 
 @media (max-width: 720px) {

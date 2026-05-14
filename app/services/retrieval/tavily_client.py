@@ -42,7 +42,8 @@ async def search_tavily(
         query_parts.append(venue)
 
     payload = {
-        "query": " ".join(query_parts) + " site:arxiv.org OR site:semanticscholar.org OR site:acm.org OR site:ieeexplore.ieee.org OR site:openreview.net OR site:proceedings.mlr.press",
+        "query": " ".join(query_parts)
+        + " site:arxiv.org OR site:semanticscholar.org OR site:acm.org OR site:ieeexplore.ieee.org OR site:openreview.net OR site:proceedings.mlr.press",
         "search_depth": "advanced",
         "max_results": min(max(limit * 2, limit), 10),
     }
@@ -81,4 +82,6 @@ async def search_tavily(
             )
         )
 
-    return filter_papers(papers, year=year, venue=venue, strict_venue=strict_venue)[:limit]
+    return filter_papers(papers, year=year, venue=venue, strict_venue=strict_venue)[
+        :limit
+    ]

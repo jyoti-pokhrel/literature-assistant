@@ -27,11 +27,11 @@ _MAX_CACHE_SIZE = 50  # evict oldest when limit reached
 
 
 def _paper_fingerprint(texts: list[str]) -> str:
-    
+
     return hashlib.md5("|".join(texts).encode("utf-8", errors="replace")).hexdigest()
 
 
-#Model registry
+# Model registry
 _model_cache: dict[str, object] = {}
 # Serializes get_model() calls so a concurrent background warmup and a
 # first-request synthesis don't both trigger a download/load.
@@ -40,6 +40,7 @@ _model_load_lock = threading.Lock()
 
 def get_model(model_name: str):
     from sentence_transformers import SentenceTransformer
+
     # Fast path: cache hit without taking the lock.
     cached = _model_cache.get(model_name)
     if cached is not None:
@@ -55,7 +56,7 @@ def get_model(model_name: str):
 
 
 def warm_up_model() -> None:
-    #Pre-load the primary embedding model
+    # Pre-load the primary embedding model
     try:
         get_model(PRIMARY_MODEL)
         logger.info("Embedding model '%s' warmed up.", PRIMARY_MODEL)
@@ -63,12 +64,13 @@ def warm_up_model() -> None:
         logger.warning("Embedding model warm-up failed: %s", exc)
 
 
-#Text construction
+# Text construction
+
 
 def _normalize(text: str) -> str:
     if not text:
         return ""
-    text = re.sub(r'\s+', ' ', text).strip().lower()
+    text = re.sub(r"\s+", " ", text).strip().lower()
     seen: set[str] = set()
     return " ".join(w for w in text.split() if not (w in seen or seen.add(w)))  # type: ignore[func-returns-value]
 
@@ -79,12 +81,16 @@ def _build_texts(papers: list[dict]) -> list[str]:
     for paper in papers:
         # Abstract: first 400 chars
         abstract = _normalize((paper.get("abstract") or "")[:400])
-        title    = _normalize(paper.get("title", ""))
-        lims     = " ".join(_normalize(t) for t in (paper.get("normalized_limitations") or [])[:5] if t)
-        fw       = " ".join(_normalize(t) for t in (paper.get("normalized_future_work") or [])[:5] if t)
+        title = _normalize(paper.get("title", ""))
+        lims = " ".join(
+            _normalize(t) for t in (paper.get("normalized_limitations") or [])[:5] if t
+        )
+        fw = " ".join(
+            _normalize(t) for t in (paper.get("normalized_future_work") or [])[:5] if t
+        )
         methods_raw = (
-            paper.get("normalized_method")           # key written by normalization.py
-            or paper.get("normalized_methods")       # legacy alias (keep for compat)
+            paper.get("normalized_method")  # key written by normalization.py
+            or paper.get("normalized_methods")  # legacy alias (keep for compat)
             or ([paper.get("method")] if paper.get("method") else [])
         )
         methods = " ".join(_normalize(t) for t in methods_raw[:3] if t)
@@ -96,7 +102,8 @@ def _build_texts(papers: list[dict]) -> list[str]:
     return texts
 
 
-#Public API
+# Public API
+
 
 def generate_embeddings(papers: list[dict]) -> np.ndarray:
     if not papers:
@@ -114,8 +121,12 @@ def generate_embeddings(papers: list[dict]) -> np.ndarray:
     for model_name in [PRIMARY_MODEL, FALLBACK_MODEL]:
         try:
             model = get_model(model_name)
-            embeddings = model.encode(texts, show_progress_bar=False, convert_to_numpy=True)
-            logger.info("Embeddings generated via SentenceTransformer (%s).", model_name)
+            embeddings = model.encode(
+                texts, show_progress_bar=False, convert_to_numpy=True
+            )
+            logger.info(
+                "Embeddings generated via SentenceTransformer (%s).", model_name
+            )
             result = embeddings.astype(np.float32)
 
             # Store in cache; evict oldest entry if over limit

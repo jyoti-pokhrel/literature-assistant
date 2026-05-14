@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import asyncio
 import logging
-import os
 from dataclasses import dataclass, field
 from typing import Awaitable, Callable, Dict, List, Optional, Tuple
 
@@ -89,7 +88,7 @@ async def _request(
                     return response.json()
                 if response.status_code in (429, 500, 502, 503, 504):
                     if attempt < 2:
-                        delay = RETRY_BACKOFF_SECONDS * (2 ** attempt)
+                        delay = RETRY_BACKOFF_SECONDS * (2**attempt)
                         await asyncio.sleep(delay)
                         continue
                     await _emit(
@@ -101,11 +100,13 @@ async def _request(
                         },
                     )
                     return None
-                logger.warning("%s returned %s for %s", source_label, response.status_code, url)
+                logger.warning(
+                    "%s returned %s for %s", source_label, response.status_code, url
+                )
                 return None
             except (httpx.RequestError, ValueError) as exc:
                 if attempt < 2:
-                    await asyncio.sleep(RETRY_BACKOFF_SECONDS * (2 ** attempt))
+                    await asyncio.sleep(RETRY_BACKOFF_SECONDS * (2**attempt))
                     continue
                 logger.warning("%s request failed: %s", source_label, exc)
                 return None
@@ -118,7 +119,9 @@ async def _request(
 def _normalize_authors(items: List[dict]) -> List[str]:
     names: List[str] = []
     for entry in items or []:
-        name = (entry or {}).get("name") or (entry or {}).get("author", {}).get("display_name")
+        name = (entry or {}).get("name") or (entry or {}).get("author", {}).get(
+            "display_name"
+        )
         if isinstance(name, str):
             name = name.strip()
             if name:
@@ -184,7 +187,9 @@ def _node_from_openalex(item: dict) -> Optional[Node]:
         if len(authors) >= 6:
             break
     return Node(
-        paper_id=f"OA:{work_id}" if work_id else (f"DOI:{doi}" if doi else f"TTL:{title.lower()}"),
+        paper_id=f"OA:{work_id}"
+        if work_id
+        else (f"DOI:{doi}" if doi else f"TTL:{title.lower()}"),
         title=title or "(untitled)",
         year=item.get("publication_year"),
         authors=authors,
@@ -245,7 +250,9 @@ def _dedup_extend(target: Dict[str, Node], extra: List[Node]) -> None:
                 title_key = (node.title or "").strip().lower()
                 if title_key:
                     for key, existing in target.items():
-                        if (existing.title or "").strip().lower() == title_key and existing.year == node.year:
+                        if (
+                            existing.title or ""
+                        ).strip().lower() == title_key and existing.year == node.year:
                             existing_key = key
                             break
 
@@ -264,7 +271,11 @@ async def _s2_fetch_detail(
     on_progress: ProgressCallback,
 ) -> Optional[dict]:
     # Choose the prefixed lookup form S2 supports.
-    if ref.source == "semantic_scholar" and ref.paper_id and not ref.paper_id.startswith(("OA:", "DOI:", "ARX:", "TTL:")):
+    if (
+        ref.source == "semantic_scholar"
+        and ref.paper_id
+        and not ref.paper_id.startswith(("OA:", "DOI:", "ARX:", "TTL:"))
+    ):
         identifier = ref.paper_id
     elif ref.doi:
         identifier = f"DOI:{ref.doi}"
@@ -286,7 +297,9 @@ async def _s2_fetch_detail(
     )
 
 
-def _parse_s2_payload(payload: dict, *, max_refs: int, max_citers: int) -> Tuple[Node, List[Node], List[Node]]:
+def _parse_s2_payload(
+    payload: dict, *, max_refs: int, max_citers: int
+) -> Tuple[Node, List[Node], List[Node]]:
     seed = _node_from_s2(payload) or Node(
         paper_id=payload.get("paperId") or "UNKNOWN",
         title=(payload.get("title") or "(untitled)"),
@@ -320,7 +333,13 @@ async def _openalex_resolve_work_id(
         return ref.external_id
     if ref.doi:
         url = f"{OPENALEX_BASE}/works/https://doi.org/{ref.doi}"
-        payload = await _request(client, url, headers=_openalex_headers(), on_progress=on_progress, source_label="openalex")
+        payload = await _request(
+            client,
+            url,
+            headers=_openalex_headers(),
+            on_progress=on_progress,
+            source_label="openalex",
+        )
         if payload:
             return _strip_oa_id(payload.get("id"))
     # Last-resort: title search. Only confident if the top hit's title matches.
@@ -342,7 +361,9 @@ async def _openalex_resolve_work_id(
             candidate_title = (candidate.get("display_name") or "").strip().lower()
             if not candidate_title:
                 continue
-            year_match = ref.year is None or candidate.get("publication_year") == ref.year
+            year_match = (
+                ref.year is None or candidate.get("publication_year") == ref.year
+            )
             if candidate_title == ref_title_norm and year_match:
                 return _strip_oa_id(candidate.get("id"))
         # Fall back to the top hit only if title is a near-match (substring).
@@ -385,7 +406,9 @@ async def _openalex_fetch(
         chunk_size = 50
         for start in range(0, min(len(ref_urls), max_refs), chunk_size):
             chunk = ref_urls[start : start + chunk_size]
-            ids_param = "|".join(_strip_oa_id(u) or "" for u in chunk if _strip_oa_id(u))
+            ids_param = "|".join(
+                _strip_oa_id(u) or "" for u in chunk if _strip_oa_id(u)
+            )
             if not ids_param:
                 continue
             payload = await _request(
@@ -445,7 +468,14 @@ async def fetch_one_hop(
 
     sources_used: List[str] = []
     try:
-        await _emit(on_progress, {"type": "progress", "stage": "resolve_seed", "message": "Looking up seed paper"})
+        await _emit(
+            on_progress,
+            {
+                "type": "progress",
+                "stage": "resolve_seed",
+                "message": "Looking up seed paper",
+            },
+        )
 
         s2_payload = await _s2_fetch_detail(client, ref, on_progress)
 
@@ -455,24 +485,48 @@ async def fetch_one_hop(
 
         if s2_payload:
             sources_used.append("semantic_scholar")
-            await _emit(on_progress, {"type": "progress", "stage": "fetch_refs", "message": "Reading Semantic Scholar references"})
+            await _emit(
+                on_progress,
+                {
+                    "type": "progress",
+                    "stage": "fetch_refs",
+                    "message": "Reading Semantic Scholar references",
+                },
+            )
             s2_seed, s2_refs, s2_citers = _parse_s2_payload(
                 s2_payload, max_refs=max_refs, max_citers=max_citers
             )
             seed = s2_seed
             _dedup_extend(refs_dict, s2_refs)
-            await _emit(on_progress, {"type": "count", "nodes": 1 + len(refs_dict), "edges": len(refs_dict)})
-            await _emit(on_progress, {"type": "progress", "stage": "fetch_citers", "message": "Reading Semantic Scholar citers"})
+            await _emit(
+                on_progress,
+                {"type": "count", "nodes": 1 + len(refs_dict), "edges": len(refs_dict)},
+            )
+            await _emit(
+                on_progress,
+                {
+                    "type": "progress",
+                    "stage": "fetch_citers",
+                    "message": "Reading Semantic Scholar citers",
+                },
+            )
             _dedup_extend(citers_dict, s2_citers)
             await _emit(
                 on_progress,
-                {"type": "count", "nodes": 1 + len(refs_dict) + len(citers_dict), "edges": len(refs_dict) + len(citers_dict)},
+                {
+                    "type": "count",
+                    "nodes": 1 + len(refs_dict) + len(citers_dict),
+                    "edges": len(refs_dict) + len(citers_dict),
+                },
             )
 
         # Decide whether to call OpenAlex as a fallback / enrichment.
         s2_was_sparse = (
             s2_payload is not None
-            and (len(refs_dict) < SPARSE_REF_THRESHOLD and len(citers_dict) < SPARSE_REF_THRESHOLD)
+            and (
+                len(refs_dict) < SPARSE_REF_THRESHOLD
+                and len(citers_dict) < SPARSE_REF_THRESHOLD
+            )
             and (s2_payload.get("citationCount") or 0) > SPARSE_REF_THRESHOLD
         )
         need_openalex = s2_payload is None or s2_was_sparse
@@ -481,11 +535,26 @@ async def fetch_one_hop(
             if s2_payload is None:
                 await _emit(
                     on_progress,
-                    {"type": "warning", "code": "s2_unavailable_fallback_openalex", "message": "Falling back to OpenAlex"},
+                    {
+                        "type": "warning",
+                        "code": "s2_unavailable_fallback_openalex",
+                        "message": "Falling back to OpenAlex",
+                    },
                 )
-            await _emit(on_progress, {"type": "progress", "stage": "fetch_refs", "message": "Reading OpenAlex references"})
+            await _emit(
+                on_progress,
+                {
+                    "type": "progress",
+                    "stage": "fetch_refs",
+                    "message": "Reading OpenAlex references",
+                },
+            )
             oa_seed, oa_refs, oa_citers = await _openalex_fetch(
-                client, ref, max_refs=max_refs, max_citers=max_citers, on_progress=on_progress
+                client,
+                ref,
+                max_refs=max_refs,
+                max_citers=max_citers,
+                on_progress=on_progress,
             )
             if oa_seed or oa_refs or oa_citers:
                 sources_used.append("openalex")
@@ -495,10 +564,21 @@ async def fetch_one_hop(
                 seed = _merge_node(seed, oa_seed)
             _dedup_extend(refs_dict, oa_refs)
             _dedup_extend(citers_dict, oa_citers)
-            await _emit(on_progress, {"type": "progress", "stage": "fetch_citers", "message": "Reading OpenAlex citers"})
             await _emit(
                 on_progress,
-                {"type": "count", "nodes": 1 + len(refs_dict) + len(citers_dict), "edges": len(refs_dict) + len(citers_dict)},
+                {
+                    "type": "progress",
+                    "stage": "fetch_citers",
+                    "message": "Reading OpenAlex citers",
+                },
+            )
+            await _emit(
+                on_progress,
+                {
+                    "type": "count",
+                    "nodes": 1 + len(refs_dict) + len(citers_dict),
+                    "edges": len(refs_dict) + len(citers_dict),
+                },
             )
 
         if seed is None:
@@ -529,7 +609,14 @@ async def fetch_one_hop(
         for shared_id in list(refs_dict.keys() & citers_dict.keys()):
             citers_dict.pop(shared_id, None)
 
-        await _emit(on_progress, {"type": "progress", "stage": "merge", "message": "Merging and deduplicating"})
+        await _emit(
+            on_progress,
+            {
+                "type": "progress",
+                "stage": "merge",
+                "message": "Merging and deduplicating",
+            },
+        )
 
         return OneHopPayload(
             seed=seed,

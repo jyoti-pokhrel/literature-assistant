@@ -264,13 +264,136 @@
     color: var(--text-main) !important;
 }
 
-.score-bar-row i {
-    border-radius: 3px;
-    box-shadow: 0 0 8px rgba(0, 0, 0, 0.1);
+/* --- Feature Components: Confidence, Validation, Temporal --- */
+
+.confidence-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--glass-bg);
+    border: 1px solid var(--border-color);
+    padding: 2px 8px;
+    border-radius: 6px;
+    font-size: 11px;
+    color: var(--text-muted);
 }
 
-:root[data-theme='dark'] .score-bar-row i {
-    box-shadow: 0 0 8px rgba(255, 255, 255, 0.2);
+.confidence-track {
+    width: 32px;
+    height: 4px;
+    background: rgba(0, 0, 0, 0.05);
+    border-radius: 2px;
+    overflow: hidden;
+}
+
+:root[data-theme='dark'] .confidence-track {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.confidence-fill {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 2px;
+}
+
+.validation-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 8px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+}
+
+.validation-pill.grounded {
+    background: rgba(16, 185, 129, 0.1);
+    color: #10b981;
+    border: 1px solid rgba(16, 185, 129, 0.2);
+}
+
+/* Detail Panel Scores */
+.score-overall {
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: var(--text-main);
+}
+
+.score-track {
+    flex-grow: 1;
+    height: 6px;
+    background: var(--surface-strong);
+    border-radius: 3px;
+    margin: 0 1rem;
+    overflow: hidden;
+}
+
+.score-fill {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 3px;
+    transition: width 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.validation-summary {
+    margin-top: 1.5rem;
+    padding: 1rem;
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+}
+
+.validation-summary.grounded {
+    background: rgba(16, 185, 129, 0.05);
+    border-color: rgba(16, 185, 129, 0.2);
+}
+
+.validation-summary h5 {
+    margin: 0 0 0.5rem 0;
+    font-size: 0.9rem;
+    font-weight: 700;
+}
+
+.validation-summary p {
+    margin: 0;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    line-height: 1.5;
+}
+
+.score-leader-list {
+    margin-top: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.score-leader-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.score-leader-label {
+    font-size: 0.95rem;
+    color: var(--text-muted);
+    white-space: nowrap;
+}
+
+.score-leader-dots {
+    flex-grow: 1;
+    height: 1px;
+    background: var(--border-color);
+    margin-bottom: 4px;
+    opacity: 0.3;
+}
+
+.score-leader-value {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--text-main);
+    font-variant-numeric: tabular-nums;
 }
 
 /* ---- Profile dropdown (sidebar bottom) --------------------------------- */

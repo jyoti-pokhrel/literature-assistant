@@ -6,7 +6,11 @@ from pathlib import Path
 from typing import Any
 
 
-DEFAULT_DATASET_PATH = Path(__file__).resolve().parent.parent.parent.parent / "data" / "research_gap_dataset.jsonl"
+DEFAULT_DATASET_PATH = (
+    Path(__file__).resolve().parent.parent.parent.parent
+    / "data"
+    / "research_gap_dataset.jsonl"
+)
 
 
 def dataset_path() -> Path:

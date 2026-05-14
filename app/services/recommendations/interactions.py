@@ -9,6 +9,7 @@ refreshes `ts`.
 `profile_builder`. Embedding lookup is done from `papers_collection`
 because the candidate paper has already been embedded for vector search.
 """
+
 from __future__ import annotations
 
 import logging
@@ -46,9 +47,7 @@ def _weight_for(kind) -> float:
     return INTERACTION_WEIGHTS.get(kind, 0.0)
 
 
-async def record_interaction(
-    username: str, external_id: str, kind: str
-) -> None:
+async def record_interaction(username: str, external_id: str, kind: str) -> None:
     """Upsert one (user, paper, kind) row. Refreshes `ts` on re-fire."""
     if paper_interactions_collection is None or not username or not external_id:
         return

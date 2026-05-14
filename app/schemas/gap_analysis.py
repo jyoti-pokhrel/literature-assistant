@@ -57,7 +57,7 @@ class GapAnalysisRequest(BaseModel):
     venue: Optional[str] = Field(default=None, examples=["NeurIPS", "ICLR"])
     strict_venue: bool = Field(default=False, examples=[False])
     max_results: int = Field(default=10, examples=[10])
-    top_k_gaps: int = Field(default=6,examples=[6])
+    top_k_gaps: int = Field(default=6, examples=[6])
 
     @field_validator("topic")
     @classmethod
@@ -74,7 +74,14 @@ class GapAnalysisRequest(BaseModel):
             return None
 
         value = value.strip()
-        if not value or value.lower() in {"string", "none", "null", "undefined", "all", "any"}:
+        if not value or value.lower() in {
+            "string",
+            "none",
+            "null",
+            "undefined",
+            "all",
+            "any",
+        }:
             return None
 
         exact_match = re.fullmatch(r"\d{4}", value)
@@ -102,7 +109,14 @@ class GapAnalysisRequest(BaseModel):
         if value is None:
             return None
         value = value.strip()
-        if not value or value.lower() in {"string", "none", "null", "undefined", "all", "any"}:
+        if not value or value.lower() in {
+            "string",
+            "none",
+            "null",
+            "undefined",
+            "all",
+            "any",
+        }:
             return None
         return value
 

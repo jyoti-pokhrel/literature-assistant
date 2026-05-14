@@ -6,7 +6,12 @@ from app.schemas.paper import RetrievedPaper
 
 VENUE_ALIASES: dict[str, tuple[str, ...]] = {
     "icml": ("icml", "international conference on machine learning"),
-    "neurips": ("neurips", "nips", "conference on neural information processing systems"),
+    "neurips": (
+        "neurips",
+        "nips",
+        "conference on neural information processing systems",
+        "advances in neural information processing systems",
+    ),
     "iclr": ("iclr", "international conference on learning representations"),
     "acl": ("acl", "annual meeting of the association for computational linguistics"),
     "emnlp": ("emnlp", "empirical methods in natural language processing"),
@@ -70,7 +75,9 @@ def _normalize_venue(value: str | None) -> str:
     return text
 
 
-def _matches_venue(paper_venue: str | None, target: str | None, *, strict: bool) -> bool:
+def _matches_venue(
+    paper_venue: str | None, target: str | None, *, strict: bool
+) -> bool:
     if not target:
         return True
     aliases = _venue_terms(target)
@@ -123,9 +130,15 @@ def filter_papers(
 
     for paper in papers:
         if start_year is not None:
-            if paper.year is None or paper.year < start_year or paper.year > (end_year or start_year):
+            if (
+                paper.year is None
+                or paper.year < start_year
+                or paper.year > (end_year or start_year)
+            ):
                 continue
-        if venue_filter_active and not _matches_venue(paper.venue, venue, strict=strict_venue):
+        if venue_filter_active and not _matches_venue(
+            paper.venue, venue, strict=strict_venue
+        ):
             continue
         results.append(paper)
 
