@@ -9064,3 +9064,180 @@ body.landing-state #landing-page {
         stroke-dashoffset: 0 !important;
     }
 }
+
+
+/* ============================================================
+   Hero figure v2 — accurate HDBSCAN + UMAP rendering
+   (smooth irregular hulls + scattered points, gap cluster
+   marked with a dashed overlay and badge).
+   ============================================================ */
+
+.lp-hero-fig-hull {
+    fill: rgba(5, 6, 8, 0.05);
+    stroke: rgba(5, 6, 8, 0.32);
+    stroke-width: 1.1;
+    stroke-linejoin: round;
+    opacity: 0;
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: hero-fig-hull-in 900ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.lp-hero-fig-cluster--gap .lp-hero-fig-hull {
+    fill: rgba(5, 6, 8, 0.025);
+    stroke: rgba(5, 6, 8, 0.22);
+}
+
+.lp-hero-fig-hull-mark {
+    fill: none;
+    stroke: rgba(5, 6, 8, 0.7);
+    stroke-width: 1.4;
+    stroke-dasharray: 4 4;
+    stroke-linejoin: round;
+    opacity: 0;
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: hero-fig-hull-in 800ms cubic-bezier(0.16, 1, 0.3, 1) 1240ms forwards;
+}
+
+.lp-hero-fig-points circle {
+    fill: rgba(5, 6, 8, 0.92);
+    opacity: 0;
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: hero-fig-point-in 520ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.lp-hero-fig-cluster--gap .lp-hero-fig-points circle {
+    fill: rgba(5, 6, 8, 0.78);
+}
+
+.lp-hero-fig-label {
+    font-family: var(--font-sans);
+    font-size: 10.5px;
+    font-weight: 600;
+    fill: rgba(5, 6, 8, 0.86);
+    letter-spacing: -0.005em;
+    opacity: 0;
+    animation: hero-fig-fade 600ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.lp-hero-fig-cluster[data-cluster="a"] .lp-hero-fig-hull { animation-delay: 360ms; }
+.lp-hero-fig-cluster[data-cluster="b"] .lp-hero-fig-hull { animation-delay: 540ms; }
+.lp-hero-fig-cluster[data-cluster="c"] .lp-hero-fig-hull { animation-delay: 900ms; }
+.lp-hero-fig-cluster[data-cluster="d"] .lp-hero-fig-hull { animation-delay: 720ms; }
+
+.lp-hero-fig-cluster[data-cluster="a"] .lp-hero-fig-points circle:nth-child(1) { animation-delay: 540ms; }
+.lp-hero-fig-cluster[data-cluster="a"] .lp-hero-fig-points circle:nth-child(2) { animation-delay: 580ms; }
+.lp-hero-fig-cluster[data-cluster="a"] .lp-hero-fig-points circle:nth-child(3) { animation-delay: 620ms; }
+.lp-hero-fig-cluster[data-cluster="a"] .lp-hero-fig-points circle:nth-child(4) { animation-delay: 660ms; }
+.lp-hero-fig-cluster[data-cluster="a"] .lp-hero-fig-points circle:nth-child(5) { animation-delay: 700ms; }
+.lp-hero-fig-cluster[data-cluster="a"] .lp-hero-fig-points circle:nth-child(6) { animation-delay: 740ms; }
+.lp-hero-fig-cluster[data-cluster="a"] .lp-hero-fig-points circle:nth-child(7) { animation-delay: 780ms; }
+
+.lp-hero-fig-cluster[data-cluster="b"] .lp-hero-fig-points circle:nth-child(n) {
+    animation-delay: calc(720ms + 40ms * (var(--n, 0)));
+}
+.lp-hero-fig-cluster[data-cluster="b"] .lp-hero-fig-points circle:nth-child(1) { animation-delay: 720ms; }
+.lp-hero-fig-cluster[data-cluster="b"] .lp-hero-fig-points circle:nth-child(2) { animation-delay: 760ms; }
+.lp-hero-fig-cluster[data-cluster="b"] .lp-hero-fig-points circle:nth-child(3) { animation-delay: 800ms; }
+.lp-hero-fig-cluster[data-cluster="b"] .lp-hero-fig-points circle:nth-child(4) { animation-delay: 840ms; }
+.lp-hero-fig-cluster[data-cluster="b"] .lp-hero-fig-points circle:nth-child(5) { animation-delay: 880ms; }
+.lp-hero-fig-cluster[data-cluster="b"] .lp-hero-fig-points circle:nth-child(6) { animation-delay: 920ms; }
+.lp-hero-fig-cluster[data-cluster="b"] .lp-hero-fig-points circle:nth-child(7) { animation-delay: 960ms; }
+.lp-hero-fig-cluster[data-cluster="b"] .lp-hero-fig-points circle:nth-child(8) { animation-delay: 1000ms; }
+.lp-hero-fig-cluster[data-cluster="b"] .lp-hero-fig-points circle:nth-child(9) { animation-delay: 1040ms; }
+
+.lp-hero-fig-cluster[data-cluster="d"] .lp-hero-fig-points circle:nth-child(1) { animation-delay: 900ms; }
+.lp-hero-fig-cluster[data-cluster="d"] .lp-hero-fig-points circle:nth-child(2) { animation-delay: 940ms; }
+.lp-hero-fig-cluster[data-cluster="d"] .lp-hero-fig-points circle:nth-child(3) { animation-delay: 980ms; }
+.lp-hero-fig-cluster[data-cluster="d"] .lp-hero-fig-points circle:nth-child(4) { animation-delay: 1020ms; }
+.lp-hero-fig-cluster[data-cluster="d"] .lp-hero-fig-points circle:nth-child(5) { animation-delay: 1060ms; }
+.lp-hero-fig-cluster[data-cluster="d"] .lp-hero-fig-points circle:nth-child(6) { animation-delay: 1100ms; }
+.lp-hero-fig-cluster[data-cluster="d"] .lp-hero-fig-points circle:nth-child(7) { animation-delay: 1140ms; }
+
+.lp-hero-fig-cluster[data-cluster="c"] .lp-hero-fig-points circle:nth-child(1) { animation-delay: 1080ms; }
+.lp-hero-fig-cluster[data-cluster="c"] .lp-hero-fig-points circle:nth-child(2) { animation-delay: 1120ms; }
+.lp-hero-fig-cluster[data-cluster="c"] .lp-hero-fig-points circle:nth-child(3) { animation-delay: 1160ms; }
+
+.lp-hero-fig-cluster[data-cluster="a"] .lp-hero-fig-label { animation-delay: 820ms; }
+.lp-hero-fig-cluster[data-cluster="b"] .lp-hero-fig-label { animation-delay: 1080ms; }
+.lp-hero-fig-cluster[data-cluster="d"] .lp-hero-fig-label { animation-delay: 1180ms; }
+.lp-hero-fig-cluster[data-cluster="c"] .lp-hero-fig-label { animation-delay: 1320ms; }
+
+.lp-hero-fig-gap-badge rect {
+    fill: rgba(255, 255, 255, 0.95);
+    stroke: rgba(5, 6, 8, 0.42);
+    stroke-width: 1;
+    opacity: 0;
+    animation: hero-fig-fade 500ms cubic-bezier(0.22, 1, 0.36, 1) 1480ms forwards;
+}
+
+.lp-hero-fig-gap-badge text {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    fill: rgba(5, 6, 8, 0.86);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    opacity: 0;
+    animation: hero-fig-fade 500ms cubic-bezier(0.22, 1, 0.36, 1) 1580ms forwards;
+}
+
+@keyframes hero-fig-hull-in {
+    0%   { opacity: 0; transform: scale(0.92); }
+    100% { opacity: 1; transform: scale(1); }
+}
+
+@keyframes hero-fig-point-in {
+    0%   { opacity: 0; transform: scale(0.4); }
+    100% { opacity: 1; transform: scale(1); }
+}
+
+/* Dark theme */
+:root[data-theme='dark'] .lp-hero-fig-hull {
+    fill: rgba(255, 255, 255, 0.05);
+    stroke: rgba(246, 248, 252, 0.34);
+}
+
+:root[data-theme='dark'] .lp-hero-fig-cluster--gap .lp-hero-fig-hull {
+    fill: rgba(255, 255, 255, 0.03);
+    stroke: rgba(246, 248, 252, 0.24);
+}
+
+:root[data-theme='dark'] .lp-hero-fig-hull-mark {
+    stroke: rgba(246, 248, 252, 0.72);
+}
+
+:root[data-theme='dark'] .lp-hero-fig-points circle {
+    fill: rgba(246, 248, 252, 0.94);
+}
+
+:root[data-theme='dark'] .lp-hero-fig-cluster--gap .lp-hero-fig-points circle {
+    fill: rgba(246, 248, 252, 0.82);
+}
+
+:root[data-theme='dark'] .lp-hero-fig-label {
+    fill: rgba(246, 248, 252, 0.88);
+}
+
+:root[data-theme='dark'] .lp-hero-fig-gap-badge rect {
+    fill: rgba(20, 24, 33, 0.94);
+    stroke: rgba(246, 248, 252, 0.42);
+}
+
+:root[data-theme='dark'] .lp-hero-fig-gap-badge text {
+    fill: rgba(246, 248, 252, 0.9);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .lp-hero-fig-hull,
+    .lp-hero-fig-hull-mark,
+    .lp-hero-fig-points circle,
+    .lp-hero-fig-label,
+    .lp-hero-fig-gap-badge rect,
+    .lp-hero-fig-gap-badge text {
+        animation: none !important;
+        opacity: 1 !important;
+        transform: none !important;
+    }
+}

@@ -17,7 +17,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/css/tokens.css?v=20260506n" />
-  <link rel="stylesheet" href="/css/style.css?v=20260515b" />
+  <link rel="stylesheet" href="/css/style.css?v=20260515c" />
   <link rel="stylesheet" href="/css/workspace.css?v=20260506n" />
   <link rel="stylesheet" href="/css/dashboard.css?v=20260514x" />
   <link rel="stylesheet" href="/css/citations.css?v=20260512c" />
@@ -95,67 +95,76 @@
         <figure class="lp-hero-preview reveal reveal-d2">
           <svg class="lp-hero-fig" viewBox="0 0 440 360" preserveAspectRatio="xMidYMid meet" aria-hidden="true" focusable="false">
 
-            <!-- Axes: a left vertical and bottom horizontal, with three ticks each, suggesting embedding-space coordinates -->
-            <g class="lp-hero-fig-axis">
-              <line class="lp-hero-fig-axis-line" x1="28" y1="32" x2="28" y2="332"/>
-              <line class="lp-hero-fig-axis-line" x1="28" y1="332" x2="412" y2="332"/>
-              <line class="lp-hero-fig-axis-tick" x1="22" y1="80"  x2="32" y2="80"/>
-              <line class="lp-hero-fig-axis-tick" x1="22" y1="180" x2="32" y2="180"/>
-              <line class="lp-hero-fig-axis-tick" x1="22" y1="280" x2="32" y2="280"/>
-              <line class="lp-hero-fig-axis-tick" x1="120" y1="328" x2="120" y2="338"/>
-              <line class="lp-hero-fig-axis-tick" x1="232" y1="328" x2="232" y2="338"/>
-              <line class="lp-hero-fig-axis-tick" x1="340" y1="328" x2="340" y2="338"/>
+            <!-- Figure folio -->
+            <text class="lp-hero-fig-folio" x="412" y="38" text-anchor="end">Fig. 01 · UMAP · HDBSCAN</text>
+
+            <!-- Cluster A: top-left, dense — Region I -->
+            <g class="lp-hero-fig-cluster" data-cluster="a">
+              <path class="lp-hero-fig-hull" d="M 96 100 Q 110 86, 124 88 Q 140 88, 152 96 Q 164 106, 164 122 Q 162 138, 148 148 Q 132 154, 118 152 Q 100 150, 94 138 Q 86 120, 96 100 Z"/>
+              <g class="lp-hero-fig-points">
+                <circle cx="108" cy="104" r="3"/>
+                <circle cx="128" cy="96" r="4"/>
+                <circle cx="148" cy="108" r="3.5"/>
+                <circle cx="152" cy="132" r="3"/>
+                <circle cx="128" cy="142" r="3.5"/>
+                <circle cx="106" cy="130" r="2.5"/>
+                <circle cx="122" cy="118" r="3"/>
+              </g>
+              <text class="lp-hero-fig-label" x="124" y="72" text-anchor="middle">Region I · 42 papers</text>
             </g>
 
-            <!-- Figure folio in the upper-right -->
-            <text class="lp-hero-fig-folio" x="408" y="44" text-anchor="end">Fig. 01 · Literature landscape</text>
-
-            <!-- Region I (top-left, mid density) -->
-            <g class="lp-hero-fig-region" data-region="i">
-              <ellipse class="lp-hero-fig-contour" cx="132" cy="124" rx="64" ry="46" transform="rotate(-14 132 124)"/>
-              <ellipse class="lp-hero-fig-contour" cx="132" cy="124" rx="46" ry="32" transform="rotate(-14 132 124)"/>
-              <ellipse class="lp-hero-fig-contour" cx="132" cy="124" rx="28" ry="18" transform="rotate(-14 132 124)"/>
-              <ellipse class="lp-hero-fig-peak"    cx="132" cy="124" rx="11" ry="6"  transform="rotate(-14 132 124)"/>
-              <line   class="lp-hero-fig-pin" x1="132" y1="82" x2="132" y2="60"/>
-              <text   class="lp-hero-fig-label" x="132" y="54" text-anchor="middle">Region I · 42</text>
+            <!-- Cluster B: center-right, biggest — Region II -->
+            <g class="lp-hero-fig-cluster" data-cluster="b">
+              <path class="lp-hero-fig-hull" d="M 252 108 Q 265 96, 282 92 Q 302 88, 322 92 Q 344 96, 358 108 Q 376 122, 380 138 Q 384 156, 376 170 Q 364 188, 348 196 Q 326 202, 302 196 Q 280 192, 262 182 Q 246 168, 248 144 Q 245 124, 252 108 Z"/>
+              <g class="lp-hero-fig-points">
+                <circle cx="266" cy="118" r="3"/>
+                <circle cx="290" cy="104" r="4.5"/>
+                <circle cx="318" cy="104" r="3.5"/>
+                <circle cx="350" cy="122" r="4"/>
+                <circle cx="370" cy="148" r="3.5"/>
+                <circle cx="354" cy="172" r="4"/>
+                <circle cx="320" cy="178" r="3"/>
+                <circle cx="282" cy="170" r="3.5"/>
+                <circle cx="304" cy="142" r="3"/>
+              </g>
+              <text class="lp-hero-fig-label" x="404" y="84" text-anchor="end">Region II · 58 papers</text>
             </g>
 
-            <!-- Region II (center-right, highest density) -->
-            <g class="lp-hero-fig-region" data-region="ii">
-              <ellipse class="lp-hero-fig-contour" cx="318" cy="156" rx="72" ry="56" transform="rotate(22 318 156)"/>
-              <ellipse class="lp-hero-fig-contour" cx="318" cy="156" rx="54" ry="42" transform="rotate(22 318 156)"/>
-              <ellipse class="lp-hero-fig-contour" cx="318" cy="156" rx="36" ry="28" transform="rotate(22 318 156)"/>
-              <ellipse class="lp-hero-fig-contour" cx="318" cy="156" rx="18" ry="12" transform="rotate(22 318 156)"/>
-              <ellipse class="lp-hero-fig-peak"    cx="318" cy="156" rx="6"  ry="4"  transform="rotate(22 318 156)"/>
-              <line   class="lp-hero-fig-pin" x1="376" y1="138" x2="396" y2="124"/>
-              <text   class="lp-hero-fig-label" x="402" y="120" text-anchor="end">Region II · 58</text>
+            <!-- Cluster C: bottom-left, small (the GAP) — Region III -->
+            <g class="lp-hero-fig-cluster lp-hero-fig-cluster--gap" data-cluster="c">
+              <path class="lp-hero-fig-hull" d="M 90 250 Q 110 244, 130 248 Q 144 260, 140 280 Q 130 294, 105 296 Q 84 294, 74 274 Q 70 258, 90 250 Z"/>
+              <path class="lp-hero-fig-hull-mark" d="M 90 250 Q 110 244, 130 248 Q 144 260, 140 280 Q 130 294, 105 296 Q 84 294, 74 274 Q 70 258, 90 250 Z"/>
+              <g class="lp-hero-fig-points">
+                <circle cx="102" cy="262" r="3"/>
+                <circle cx="124" cy="268" r="3.5"/>
+                <circle cx="110" cy="284" r="2.5"/>
+              </g>
+              <text class="lp-hero-fig-label" x="170" y="294" text-anchor="start">Region III · 9 papers</text>
+              <g class="lp-hero-fig-gap-badge">
+                <rect x="170" y="302" width="100" height="22" rx="4"/>
+                <text x="220" y="316" text-anchor="middle">Gap · Nov 0.84</text>
+              </g>
             </g>
 
-            <!-- Region III (bottom-center, smaller cluster) -->
-            <g class="lp-hero-fig-region" data-region="iii">
-              <ellipse class="lp-hero-fig-contour" cx="186" cy="272" rx="50" ry="32" transform="rotate(-6 186 272)"/>
-              <ellipse class="lp-hero-fig-contour" cx="186" cy="272" rx="32" ry="18" transform="rotate(-6 186 272)"/>
-              <ellipse class="lp-hero-fig-peak"    cx="186" cy="272" rx="10" ry="5"  transform="rotate(-6 186 272)"/>
-              <line   class="lp-hero-fig-pin" x1="186" y1="294" x2="186" y2="316"/>
-              <text   class="lp-hero-fig-label" x="186" y="324" text-anchor="middle">Region III · 19</text>
+            <!-- Cluster D: bottom-right, medium — Region IV -->
+            <g class="lp-hero-fig-cluster" data-cluster="d">
+              <path class="lp-hero-fig-hull" d="M 262 264 Q 280 258, 300 254 Q 322 252, 340 262 Q 354 274, 358 288 Q 360 304, 348 318 Q 330 326, 308 326 Q 286 326, 272 312 Q 254 296, 254 280 Q 254 270, 262 264 Z"/>
+              <g class="lp-hero-fig-points">
+                <circle cx="274" cy="274" r="3"/>
+                <circle cx="300" cy="266" r="4"/>
+                <circle cx="328" cy="274" r="3.5"/>
+                <circle cx="346" cy="296" r="3"/>
+                <circle cx="330" cy="314" r="3.5"/>
+                <circle cx="296" cy="312" r="3"/>
+                <circle cx="276" cy="298" r="2.5"/>
+              </g>
+              <text class="lp-hero-fig-label" x="306" y="242" text-anchor="middle">Region IV · 27 papers</text>
             </g>
 
-            <!-- Gap: a sparse coordinate between Region I and Region II, X-marked -->
-            <g class="lp-hero-fig-gap">
-              <circle class="lp-hero-fig-gap-ring" cx="234" cy="206" r="16"/>
-              <line   class="lp-hero-fig-gap-x" x1="225" y1="197" x2="243" y2="215"/>
-              <line   class="lp-hero-fig-gap-x" x1="243" y1="197" x2="225" y2="215"/>
-              <line   class="lp-hero-fig-gap-leader" x1="248" y1="212" x2="310" y2="246"/>
-            </g>
-
-            <g class="lp-hero-fig-gap-label">
-              <rect x="312" y="232" width="98" height="26" rx="4"/>
-              <text x="361" y="249" text-anchor="middle">Gap · Nov 0.84</text>
-            </g>
           </svg>
           <figcaption class="lp-hero-preview-caption">
             <span class="lp-hero-preview-tick">·</span>
-            Three thematic regions surfaced; one gap detected by novelty 0.84.
+            Four UMAP clusters surfaced from HDBSCAN; one flagged as a gap on novelty 0.84.
           </figcaption>
         </figure>
       </div>
