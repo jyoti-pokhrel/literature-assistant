@@ -414,7 +414,7 @@
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><polygon points="15.5 8.5 11 11 8.5 15.5 13 13 15.5 8.5"></polygon></svg>
           <span>Explore</span>
         </button>
-        <button type="button" class="sidebar-nav-item" :class="{ active: $store.app.currentView === 'citations' }" @click="$store.app.currentView = 'citations'; $store.app.mode = 'workspace'" title="Citation Network Analyser">
+        <button type="button" class="sidebar-nav-item" :class="{ active: $store.app.currentView === 'citations' }" @click="$store.app.openCitations()" title="Citation Network Analyser">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="6" cy="6" r="2.2"></circle><circle cx="18" cy="6" r="2.2"></circle><circle cx="6" cy="18" r="2.2"></circle><circle cx="18" cy="18" r="2.2"></circle><circle cx="12" cy="12" r="2.4"></circle><line x1="7.7" y1="7.7" x2="10.3" y2="10.3"></line><line x1="16.3" y1="7.7" x2="13.7" y2="10.3"></line><line x1="7.7" y1="16.3" x2="13.7" y2="10.3"></line><line x1="16.3" y1="16.3" x2="13.7" y2="13.7"></line></svg>
           <span>Citation Network Analyser</span>
         </button>
