@@ -401,7 +401,6 @@ document.addEventListener('alpine:init', () => {
             this.setMode('workspace');
             this.currentView = 'explore';
             this.error = '';
-            this.closeSidebar();
 
             this.goToPath(window.ResearchAgent.routes.explore, { replace });
             // exploreFeed component's init() handles profile load + first page
@@ -521,7 +520,6 @@ document.addEventListener('alpine:init', () => {
             this.activeSearchKey = '';
             this.resetExplorer();
             this.resetExplore();
-            this.closeSidebar();
             this.openWorkspace({ showForm: true });
         },
 
@@ -558,7 +556,6 @@ document.addEventListener('alpine:init', () => {
             this.isLoading = true;
             this.progressEvents = [];
             this.resetExplorer();
-            this.closeSidebar();
 
             if (pushRoute) {
                 const route = this.buildSearchRoute(normalized);
@@ -667,7 +664,6 @@ document.addEventListener('alpine:init', () => {
             this.currentView = 'results';
             this.isLoading = true;
             this.error = '';
-            this.closeSidebar();
 
             try {
                 const data = await window.searchAPI.fetchPublicReport(reportId);
