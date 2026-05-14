@@ -238,8 +238,10 @@
                         .attr("opacity", 0)
                         .attr("d", d => lineGenerator(d.polygon))
                         .attr("fill", d => colorForCluster(d.cluster.cluster_id))
-                        .style("mix-blend-mode", "multiply")
-                        .call(e => e.transition("hull-enter").duration(750).attr("opacity", 0.15)),
+                        .attr("stroke", d => colorForCluster(d.cluster.cluster_id))
+                        .attr("stroke-width", 1)
+                        .attr("stroke-opacity", 0.32)
+                        .call(e => e.transition("hull-enter").duration(750).attr("opacity", 0.22)),
                     update => {
                         update.transition("hull-update").duration(750).attr("d", d => lineGenerator(d.polygon));
                         return update;
@@ -278,7 +280,7 @@
                         .attr("stroke-width", "1.5px")
                         .attr("data-paper-id", (d) => d.__paperId)
                         .style("cursor", "pointer")
-                        .call(e => e.transition("node-enter").duration(750).delay((d, i) => i * 2).attr("r", 6.5)),
+                        .call(e => e.transition("node-enter").duration(750).delay((d, i) => i * 2).attr("r", 7.5)),
                     update => {
                         update.transition("node-update").duration(750)
                             .attr("cx", (d) => xScale(Number(d.x)))
