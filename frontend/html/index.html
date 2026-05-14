@@ -17,7 +17,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/css/tokens.css?v=20260506n" />
-  <link rel="stylesheet" href="/css/style.css?v=20260515q" />
+  <link rel="stylesheet" href="/css/style.css?v=20260515r" />
   <link rel="stylesheet" href="/css/workspace.css?v=20260506n" />
   <link rel="stylesheet" href="/css/dashboard.css?v=20260514x" />
   <link rel="stylesheet" href="/css/citations.css?v=20260512c" />
@@ -69,10 +69,7 @@
 
           <div class="lp-search-container reveal reveal-d3" x-data="{ query: '' }">
             <form class="lp-search-form glass-glow" @submit.prevent="if(query.trim()) { $store.app.form.topic = query; $store.app.openWorkspace(); setTimeout(() => document.getElementById('main-prompt')?.focus(), 100); }">
-              <svg class="lp-search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-                <circle cx="11" cy="11" r="8"></circle>
-                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-              </svg>
+              <span class="lp-search-prompt" aria-hidden="true">❯</span>
               <label for="hero-search-input" class="sr-only">Search topic</label>
               <input
                 id="hero-search-input"
@@ -81,7 +78,10 @@
                 placeholder="Sample efficiency in reinforcement learning"
                 x-model="query"
               >
-              <button type="submit" class="lp-search-btn" aria-label="Search for research">Search</button>
+              <button type="submit" class="lp-search-btn" aria-label="Search for research">
+                <span class="lp-search-btn-label">Search</span>
+                <span class="lp-search-btn-kbd" aria-hidden="true">↵</span>
+              </button>
             </form>
           </div>
         </div>
