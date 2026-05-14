@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Log In - Research Agent</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/tokens.css">
+  <link rel="stylesheet" href="/css/style.css">
+  <style>
+    :root {
+      --auth-bg: #fdfdfd;
+      --auth-card-bg: #ffffff;
+      --auth-text: #000000;
+      --auth-muted: #666666;
+      --auth-border: #e2e2e2;
+      --auth-input-bg: #ffffff;
+      --auth-primary: #000000;
+      --auth-primary-hover: #333333;
+      --auth-google-bg: #f5f5f5;
+      --auth-google-hover: #ebebeb;
+      --auth-focus: #000000;
+    }
+    
+    [data-theme='dark'] {
+      --auth-bg: #0a0a0c;
+      --auth-card-bg: #111111;
+      --auth-text: #ffffff;
+      --auth-muted: #a1a1a1;
+      --auth-border: #2a2a2a;
+      --auth-input-bg: #0a0a0c;
+      --auth-primary: #ffffff;
+      --auth-primary-hover: #e0e0e0;
+      --auth-google-bg: #1a1a1a;
+      --auth-google-hover: #2a2a2a;
+      --auth-focus: #ffffff;
+    }
+
+    body {
+      background-color: var(--auth-bg);
+      color: var(--auth-text);
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      margin: 0;
+    }
+
+    .auth-nav {
+      padding: 1.5rem 2.5rem;
+      display: flex;
+      align-items: center;
+    }
+
+    .auth-brand {
+      font-weight: 700;
+      font-size: 1.2rem;
+      text-decoration: none;
+      color: var(--auth-text);
+      letter-spacing: -0.02em;
+    }
+
+    .auth-container {
+      flex: 1;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 2rem;
+    }
+
+    .auth-card {
+      background: var(--auth-card-bg);
+      border: 1px solid var(--auth-border);
+      border-radius: 12px;
+      padding: 3rem;
+      width: 100%;
+      max-width: 420px;
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.03);
+      animation: fadeUp 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .auth-header {
+      margin-bottom: 2rem;
+      text-align: center;
+    }
+
+    .auth-title {
+      font-size: 1.75rem;
+      font-weight: 700;
+      margin: 0 0 0.5rem 0;
+      letter-spacing: -0.02em;
+    }
+
+    .auth-subtitle {
+      color: var(--auth-muted);
+      font-size: 0.95rem;
+      margin: 0;
+    }
+
+    .auth-form-group {
+      margin-bottom: 1.25rem;
+    }
+
+    .auth-label {
+      display: block;
+      font-size: 0.85rem;
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+    }
+
+    .auth-input {
+      width: 100%;
+      padding: 0.8rem 1rem;
+      border: 1px solid var(--auth-border);
+      border-radius: 8px;
+      background: var(--auth-input-bg);
+      color: var(--auth-text);
+      font-family: inherit;
+      font-size: 0.95rem;
+      transition: all 0.2s ease;
+      box-sizing: border-box;
+    }
+
+    .auth-input:focus {
+      outline: none;
+      border-color: var(--auth-focus);
+      box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.05);
+    }
+    
+    [data-theme='dark'] .auth-input:focus {
+      box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.1);
+    }
+
+    .auth-button {
+      width: 100%;
+      padding: 0.85rem;
+      background: var(--auth-primary);
+      color: var(--auth-bg);
+      border: none;
+      border-radius: 8px;
+      font-family: inherit;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s ease;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .auth-button:hover {
+      background: var(--auth-primary-hover);
+    }
+
+    .auth-button:disabled {
+      opacity: 0.7;
+      cursor: not-allowed;
+    }
+
+    .auth-divider {
+      display: flex;
+      align-items: center;
+      text-align: center;
+      margin: 1.5rem 0;
+      color: var(--auth-muted);
+      font-size: 0.85rem;
+    }
+
+    .auth-divider::before,
+    .auth-divider::after {
+      content: '';
+      flex: 1;
+      border-bottom: 1px solid var(--auth-border);
+    }
+
+    .auth-divider::not(:empty)::before { margin-right: .5rem; }
+    .auth-divider::not(:empty)::after { margin-left: .5rem; }
+
+    .auth-google-btn {
+      width: 100%;
+      padding: 0.85rem;
+      background: var(--auth-google-bg);
+      color: var(--auth-text);
+      border: 1px solid var(--auth-border);
+      border-radius: 8px;
+      font-family: inherit;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s ease;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 0.75rem;
+      text-decoration: none;
+    }
+
+    .auth-google-btn:hover {
+      background: var(--auth-google-hover);
+    }
+
+    .auth-links {
+      margin-top: 1.5rem;
+      text-align: center;
+      font-size: 0.9rem;
+      color: var(--auth-muted);
+    }
+
+    .auth-link {
+      color: var(--auth-text);
+      text-decoration: none;
+      font-weight: 600;
+      transition: opacity 0.2s ease;
+    }
+
+    .auth-link:hover {
+      opacity: 0.7;
+      text-decoration: underline;
+    }
+
+    .forgot-link {
+      display: block;
+      text-align: right;
+      font-size: 0.85rem;
+      margin-top: -0.75rem;
+      margin-bottom: 1.25rem;
+      color: var(--auth-muted);
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+
+    .forgot-link:hover {
+      color: var(--auth-text);
+    }
+
+    .auth-error {
+      background: #ffeeee;
+      color: #cc0000;
+      padding: 0.75rem;
+      border-radius: 6px;
+      font-size: 0.9rem;
+      margin-bottom: 1.25rem;
+      display: none;
+      border: 1px solid #ffcccc;
+    }
+    
+    [data-theme='dark'] .auth-error {
+      background: rgba(204, 0, 0, 0.1);
+      border-color: rgba(204, 0, 0, 0.3);
+      color: #ff6666;
+    }
+
+    .password-container {
+      position: relative;
+    }
+
+    .password-toggle {
+      position: absolute;
+      right: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: var(--auth-muted);
+      padding: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: color 0.2s;
+      z-index: 10;
+    }
+
+    .password-toggle:hover {
+      color: var(--auth-text);
+    }
+
+    .password-toggle svg {
+      width: 20px;
+      height: 20px;
+    }
+
+    .auth-input-password {
+      padding-right: 45px !important;
+    }
+
+    /* Hide default browser password reveal icon */
+    input::-ms-reveal,
+    input::-ms-clear {
+      display: none;
+    }
+
+  </style>
+
+  <script>
+    (function () {
+      var storedTheme = localStorage.getItem('theme');
+      document.documentElement.setAttribute('data-theme', storedTheme === 'dark' ? 'dark' : 'light');
+    })();
+  </script>
+</head>
+<body>
+  <nav class="auth-nav">
+    <a href="/index.html" class="auth-brand">Research Agent</a>
+  </nav>
+
+  <div class="auth-container">
+    <div class="auth-card">
+      <div class="auth-header">
+        <h1 class="auth-title">Log In</h1>
+        <p class="auth-subtitle">Welcome back to your research workspace</p>
+      </div>
+
+      <div id="error-msg" class="auth-error"></div>
+
+      <form id="login-form">
+        <div class="auth-form-group">
+          <label class="auth-label" for="username">Email or Username</label>
+          <input class="auth-input" type="text" id="username" name="username" placeholder="Enter your email or username" required>
+        </div>
+
+        <div class="auth-form-group">
+          <label class="auth-label" for="password">Password</label>
+          <div class="password-container">
+            <input class="auth-input auth-input-password" type="password" id="password" name="password" placeholder="Enter your password" required>
+            <button type="button" class="password-toggle" id="password-toggle" aria-label="Toggle password visibility">
+              <svg id="eye-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+              </svg>
+              <svg id="eye-off-icon" style="display: none;" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.542-7 1.274-4.057 5.064-7 9.542-7 1.154 0 2.254.194 3.275.55M10.125 10.125a3 3 0 104.25 4.25"></path>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3l18 18"></path>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <a href="forgot-password.html" class="forgot-link">Forgot password?</a>
+
+        <button type="submit" class="auth-button" id="submit-btn">Log In</button>
+      </form>
+
+      <div class="auth-divider">or</div>
+
+      <a href="/auth/google" class="auth-google-btn">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+          <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+          <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+          <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+        </svg>
+        Continue with Google
+      </a>
+
+      <div class="auth-links">
+        Don't have an account? <a href="signup.html" class="auth-link">Sign up</a>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Handle OAuth Callback if redirected with token
+    window.onload = function() {
+      // Password toggle logic
+      const passwordInput = document.getElementById('password');
+      const passwordToggle = document.getElementById('password-toggle');
+      const eyeIcon = document.getElementById('eye-icon');
+      const eyeOffIcon = document.getElementById('eye-off-icon');
+
+      if (passwordToggle) {
+        passwordToggle.addEventListener('click', () => {
+          const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+          passwordInput.setAttribute('type', type);
+          
+          if (type === 'password') {
+            eyeIcon.style.display = 'block';
+            eyeOffIcon.style.display = 'none';
+          } else {
+            eyeIcon.style.display = 'none';
+            eyeOffIcon.style.display = 'block';
+          }
+        });
+      }
+
+      // Token arrives in the URL fragment (#token=...&username=...) to keep it
+      // out of browser history, Referer headers, and server access logs.
+      const hash = window.location.hash.startsWith('#') ? window.location.hash.slice(1) : window.location.hash;
+      const urlParams = new URLSearchParams(hash || window.location.search);
+      const token = urlParams.get('token');
+      const username = urlParams.get('username');
+      
+      if (token && username) {
+        localStorage.setItem('access_token', token);
+        localStorage.setItem('username', username);
+        // Clean URL
+        window.history.replaceState({}, document.title, window.location.pathname);
+        // Redirect to workspace
+        window.location.href = '/workspace';
+
+      }
+    };
+
+    document.getElementById('login-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const username = document.getElementById('username').value;
+      const password = document.getElementById('password').value;
+      const errorMsg = document.getElementById('error-msg');
+      const submitBtn = document.getElementById('submit-btn');
+
+      errorMsg.style.display = 'none';
+      submitBtn.disabled = true;
+      submitBtn.innerText = 'Logging in...';
+
+      const formData = new URLSearchParams();
+      formData.append('username', username);
+      formData.append('password', password);
+
+      try {
+        const response = await fetch('/login', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+          },
+          body: formData
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.detail || 'Login failed');
+        }
+
+        // Save token and redirect
+        localStorage.setItem('access_token', data.access_token);
+        localStorage.setItem('username', data.username);
+        window.location.href = '/workspace';
+
+
+      } catch (err) {
+        errorMsg.innerText = err.message;
+        errorMsg.style.display = 'block';
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.innerText = 'Log In';
+      }
+    });
+  </script>
+</body>
+</html>

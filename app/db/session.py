@@ -73,6 +73,10 @@ cached_searches_collection = db["cached_searches"] if db is not None else None
 projects_collection = db["projects"] if db is not None else None
 library_items_collection = db["library_items"] if db is not None else None
 feedback_collection = db["feedback"] if db is not None else None
+otps_collection = db["otps"] if db is not None else None
+reset_tokens_collection = db["reset_tokens"] if db is not None else None
+search_history_collection = db["search_history"] if db is not None else None
+chat_history_collection = db["chat_history"] if db is not None else None
 
 
 async def ping() -> bool:
@@ -139,7 +143,30 @@ async def init_indexes() -> None:
     await _safe_create_index(reports_collection, [("owner", 1), ("created_at", -1)])
     await _safe_create_index(gap_reports_collection, [("owner", 1), ("created_at", -1)])
 
+    # users — role index used by admin panel filters
+    await _safe_create_index(users_collection, "role")
+
+    # OTPs: TTL via expires_at (the document sets expires_at = now + 5min)
+    await _safe_create_index(otps_collection, "expires_at", expireAfterSeconds=0)
+    await _safe_create_index(otps_collection, "email")
+
+    # Reset tokens: TTL + lookup by token
+    await _safe_create_index(reset_tokens_collection, "expires_at", expireAfterSeconds=0)
+    await _safe_create_index(reset_tokens_collection, "email")
+    await _safe_create_index(reset_tokens_collection, "token", unique=True)
+
+    # Search / chat history
+    await _safe_create_index(search_history_collection, "username")
+    await _safe_create_index(search_history_collection, "created_at")
+    await _safe_create_index(chat_history_collection, "username")
+    await _safe_create_index(chat_history_collection, "created_at")
+
 
 async def close_db() -> None:
     if client is not None:
         client.close()
+
+
+def get_db():
+    """Return the active Motor database handle (or None if Mongo is not configured)."""
+    return db
