@@ -8829,3 +8829,18 @@ body.landing-state #landing-page {
         max-width: 640px;
     }
 }
+
+
+/* ============================================================
+   Map tab: hide the annotated-note rail; the workspace grid
+   collapses to a single column so the map and confidence panel
+   take the full width.
+   ============================================================ */
+
+#thread-view .results-twoup.is-rail-hidden {
+    grid-template-columns: minmax(0, 1fr);
+}
+
+#thread-view .results-twoup.is-rail-hidden .results-tabpanes {
+    padding-right: 0;
+}

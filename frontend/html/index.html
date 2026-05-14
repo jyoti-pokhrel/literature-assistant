@@ -17,7 +17,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/css/tokens.css?v=20260506n" />
-  <link rel="stylesheet" href="/css/style.css?v=20260514u" />
+  <link rel="stylesheet" href="/css/style.css?v=20260514v" />
   <link rel="stylesheet" href="/css/workspace.css?v=20260506n" />
   <link rel="stylesheet" href="/css/dashboard.css?v=20260511b" />
   <link rel="stylesheet" href="/css/citations.css?v=20260512c" />
@@ -817,7 +817,7 @@
               </button>
             </div>
 
-            <div class="results-workspace-content results-twoup">
+            <div class="results-workspace-content results-twoup" :class="{ 'is-rail-hidden': activeTab === 'map' }">
               <div class="results-tabpanes">
                 <!-- Tab A: Gaps as entries -->
                 <div x-show="activeTab === 'gaps'" x-transition.opacity.duration.500ms>
@@ -893,7 +893,7 @@
               </div>
 
               <!-- Permanent right rail: annotated note -->
-              <aside class="gap-rail">
+              <aside class="gap-rail" x-show="activeTab !== 'map'">
                       <template x-if="!$store.app.explorer.panelOpen || (!selectedGap() && !selectedPaper())">
                         <div class="gap-rail-placeholder">
                           <span class="t-mono">Annotated note</span>
