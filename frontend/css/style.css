@@ -10367,3 +10367,157 @@ body.landing-state #landing-page {
         transition: none;
     }
 }
+
+
+/* ============================================================
+   Hero search box v3 — typewriter line (no box)
+   ============================================================ */
+
+.lp-hero--split .lp-search-form {
+    position: relative;
+    isolation: isolate;
+    background: transparent;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+    padding: 0.55rem 0.4rem 0.85rem;
+    align-items: baseline;
+    gap: 0.85rem;
+}
+
+/* Kill the previous conic-gradient border shimmer */
+.lp-hero--split .lp-search-form::before {
+    content: none;
+}
+
+/* Animated underline (the new home for the ribbon-flow gradient) */
+.lp-hero--split .lp-search-form::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 1.5px;
+    background-image: linear-gradient(
+        90deg,
+        rgba(5, 6, 8, 0.92) 0%,
+        rgba(5, 6, 8, 0.20) 25%,
+        rgba(5, 6, 8, 0.92) 50%,
+        rgba(5, 6, 8, 0.20) 75%,
+        rgba(5, 6, 8, 0.92) 100%
+    );
+    background-size: 200% 100%;
+    background-repeat: repeat-x;
+    animation: lp-search-line-flow 4.2s linear infinite;
+    pointer-events: none;
+    transition: height 220ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.lp-hero--split .lp-search-form:focus-within::after {
+    height: 2.5px;
+    animation-duration: 2.6s;
+}
+
+@keyframes lp-search-line-flow {
+    0%   { background-position: 0% 0%; }
+    100% { background-position: -200% 0%; }
+}
+
+/* Bigger, lighter input typography — input reads as hero copy, not UI */
+.lp-hero--split .lp-search-input {
+    flex: 1;
+    background: transparent;
+    border: 0;
+    outline: none;
+    font-family: var(--font-sans);
+    font-size: clamp(1.15rem, 1.7vw, 1.4rem);
+    font-weight: 500;
+    letter-spacing: -0.018em;
+    line-height: 1.35;
+    color: rgba(5, 6, 8, 0.94);
+    min-width: 0;
+    padding: 0.15rem 0;
+}
+
+.lp-hero--split .lp-search-input::placeholder {
+    color: rgba(139, 149, 164, 0.66);
+    font-weight: 400;
+    letter-spacing: -0.012em;
+}
+
+/* Prompt glyph: bigger, more confident */
+.lp-hero--split .lp-search-form .lp-search-prompt {
+    font-family: var(--font-mono);
+    font-size: clamp(1.35rem, 2vw, 1.65rem);
+    font-weight: 500;
+    color: rgba(5, 6, 8, 0.58);
+    transform: translateY(0);
+    line-height: 1;
+}
+
+.lp-hero--split .lp-search-form:focus-within .lp-search-prompt {
+    color: rgba(5, 6, 8, 0.96);
+    transform: translate3d(3px, 0, 0);
+}
+
+/* Submit stays as ghost text with kbd chip, but lift it visually */
+.lp-hero--split .lp-search-btn {
+    padding: 0.45rem 0.6rem 0.45rem 0.85rem;
+    font-size: 0.92rem;
+    font-weight: 600;
+    color: rgba(5, 6, 8, 0.6);
+    border-radius: 8px;
+    transition:
+        color 240ms cubic-bezier(0.22, 1, 0.36, 1),
+        background 240ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.lp-hero--split .lp-search-form:focus-within .lp-search-btn,
+.lp-hero--split .lp-search-btn:hover {
+    color: rgba(5, 6, 8, 0.96);
+    background: rgba(5, 6, 8, 0.04);
+}
+
+/* Dark theme */
+:root[data-theme='dark'] .lp-hero--split .lp-search-form::after {
+    background-image: linear-gradient(
+        90deg,
+        rgba(246, 248, 252, 0.92) 0%,
+        rgba(246, 248, 252, 0.18) 25%,
+        rgba(246, 248, 252, 0.92) 50%,
+        rgba(246, 248, 252, 0.18) 75%,
+        rgba(246, 248, 252, 0.92) 100%
+    );
+}
+
+:root[data-theme='dark'] .lp-hero--split .lp-search-input {
+    color: rgba(246, 248, 252, 0.96);
+}
+
+:root[data-theme='dark'] .lp-hero--split .lp-search-input::placeholder {
+    color: rgba(174, 182, 196, 0.55);
+}
+
+:root[data-theme='dark'] .lp-hero--split .lp-search-form .lp-search-prompt {
+    color: rgba(246, 248, 252, 0.56);
+}
+
+:root[data-theme='dark'] .lp-hero--split .lp-search-form:focus-within .lp-search-prompt {
+    color: rgba(246, 248, 252, 0.98);
+}
+
+:root[data-theme='dark'] .lp-hero--split .lp-search-btn {
+    color: rgba(246, 248, 252, 0.6);
+}
+
+:root[data-theme='dark'] .lp-hero--split .lp-search-form:focus-within .lp-search-btn,
+:root[data-theme='dark'] .lp-hero--split .lp-search-btn:hover {
+    color: rgba(246, 248, 252, 0.98);
+    background: rgba(255, 255, 255, 0.06);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .lp-hero--split .lp-search-form::after {
+        animation: none;
+    }
+}
