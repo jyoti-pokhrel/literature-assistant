@@ -9771,3 +9771,291 @@ body.landing-state #landing-page {
         animation: none;
     }
 }
+
+
+/* ============================================================
+   Hero — confident two-column with line-art sketch
+   (replaces the single-column / figure-removed layout)
+   ============================================================ */
+
+.lp-hero--split .lp-hero-layout {
+    grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
+    column-gap: clamp(2rem, 5vw, 4.5rem);
+    align-items: center;
+    max-width: 1180px;
+}
+
+.lp-hero--split .lp-hero-copy {
+    max-width: 36rem;
+}
+
+.lp-hero--split .lp-hero-title {
+    max-width: 14ch;
+    font-size: clamp(2.75rem, 6.2vw, 5rem);
+    line-height: 1.02;
+    letter-spacing: -0.038em;
+}
+
+/* Accent: replaces italic-serif with a hand-drawn squiggle underline */
+
+.lp-hero-accent {
+    position: relative;
+    display: inline-block;
+    font-family: var(--font-sans);
+    font-style: normal;
+    font-weight: 700;
+    color: rgba(5, 6, 8, 0.96);
+    background: none;
+    -webkit-text-fill-color: currentColor;
+}
+
+.lp-hero-accent-underline {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: -0.18em;
+    width: 100%;
+    height: 0.32em;
+    overflow: visible;
+    pointer-events: none;
+}
+
+.lp-hero-accent-underline path {
+    fill: none;
+    stroke: rgba(5, 6, 8, 0.92);
+    stroke-width: 2.4;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-dasharray: 240;
+    stroke-dashoffset: 240;
+    animation: lp-accent-draw 900ms cubic-bezier(0.22, 1, 0.36, 1) 1600ms forwards;
+}
+
+@keyframes lp-accent-draw {
+    to { stroke-dashoffset: 0; }
+}
+
+:root[data-theme='dark'] .lp-hero-accent-underline path {
+    stroke: rgba(246, 248, 252, 0.94);
+}
+
+/* Proof metrics — replaces the "Indexed across" pill row */
+
+.lp-hero-proof {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, auto));
+    gap: clamp(1.4rem, 3.4vw, 2.6rem);
+    margin: 1.6rem 0 0;
+    padding-top: 1.3rem;
+    border-top: 1px solid rgba(5, 6, 8, 0.08);
+    justify-content: start;
+}
+
+.lp-hero-proof-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.18rem;
+}
+
+.lp-hero-proof-item dt {
+    font-family: var(--font-sans);
+    font-size: clamp(1.3rem, 1.8vw, 1.55rem);
+    font-weight: 700;
+    color: rgba(5, 6, 8, 0.96);
+    letter-spacing: -0.022em;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+}
+
+.lp-hero-proof-item dd {
+    margin: 0;
+    font-family: var(--font-sans);
+    font-size: 0.78rem;
+    font-weight: 500;
+    color: rgba(74, 85, 100, 0.78);
+    letter-spacing: -0.005em;
+    line-height: 1.4;
+}
+
+:root[data-theme='dark'] .lp-hero-proof {
+    border-top-color: rgba(255, 255, 255, 0.1);
+}
+
+:root[data-theme='dark'] .lp-hero-proof-item dt {
+    color: rgba(246, 248, 252, 0.96);
+}
+
+:root[data-theme='dark'] .lp-hero-proof-item dd {
+    color: rgba(174, 182, 196, 0.78);
+}
+
+/* Line-art sketch on the right -------------------------------- */
+
+.lp-hero-sketch {
+    margin: 0;
+    width: 100%;
+    max-width: 520px;
+    justify-self: end;
+    aspect-ratio: 11 / 9;
+}
+
+.lp-hero-sketch-svg {
+    width: 100%;
+    height: 100%;
+    display: block;
+    overflow: visible;
+}
+
+.lp-sk-hull {
+    fill: none;
+    stroke: rgba(5, 6, 8, 0.88);
+    stroke-width: 1.4;
+    stroke-linejoin: round;
+    opacity: 0;
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: lp-sk-hull-in 900ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.lp-sk-hull--gap {
+    stroke-dasharray: 5 4;
+    stroke-width: 1.6;
+}
+
+.lp-sk-cluster:nth-of-type(1) .lp-sk-hull { animation-delay: 360ms; }
+.lp-sk-cluster:nth-of-type(2) .lp-sk-hull { animation-delay: 520ms; }
+.lp-sk-cluster:nth-of-type(3) .lp-sk-hull { animation-delay: 760ms; }
+
+.lp-sk-paper {
+    fill: rgba(5, 6, 8, 0.92);
+    opacity: 0;
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: lp-sk-paper-in 460ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.lp-sk-cluster:nth-of-type(1) .lp-sk-paper:nth-child(2) { animation-delay: 540ms; }
+.lp-sk-cluster:nth-of-type(1) .lp-sk-paper:nth-child(3) { animation-delay: 580ms; }
+.lp-sk-cluster:nth-of-type(1) .lp-sk-paper:nth-child(4) { animation-delay: 620ms; }
+.lp-sk-cluster:nth-of-type(1) .lp-sk-paper:nth-child(5) { animation-delay: 660ms; }
+.lp-sk-cluster:nth-of-type(1) .lp-sk-paper:nth-child(6) { animation-delay: 700ms; }
+.lp-sk-cluster:nth-of-type(1) .lp-sk-paper:nth-child(7) { animation-delay: 740ms; }
+
+.lp-sk-cluster:nth-of-type(2) .lp-sk-paper:nth-child(2) { animation-delay: 700ms; }
+.lp-sk-cluster:nth-of-type(2) .lp-sk-paper:nth-child(3) { animation-delay: 740ms; }
+.lp-sk-cluster:nth-of-type(2) .lp-sk-paper:nth-child(4) { animation-delay: 780ms; }
+.lp-sk-cluster:nth-of-type(2) .lp-sk-paper:nth-child(5) { animation-delay: 820ms; }
+.lp-sk-cluster:nth-of-type(2) .lp-sk-paper:nth-child(6) { animation-delay: 860ms; }
+.lp-sk-cluster:nth-of-type(2) .lp-sk-paper:nth-child(7) { animation-delay: 900ms; }
+.lp-sk-cluster:nth-of-type(2) .lp-sk-paper:nth-child(8) { animation-delay: 940ms; }
+.lp-sk-cluster:nth-of-type(2) .lp-sk-paper:nth-child(9) { animation-delay: 980ms; }
+.lp-sk-cluster:nth-of-type(2) .lp-sk-paper:nth-child(10) { animation-delay: 1020ms; }
+
+.lp-sk-cluster:nth-of-type(3) .lp-sk-paper:nth-child(2) { animation-delay: 940ms; }
+.lp-sk-cluster:nth-of-type(3) .lp-sk-paper:nth-child(3) { animation-delay: 980ms; }
+.lp-sk-cluster:nth-of-type(3) .lp-sk-paper:nth-child(4) { animation-delay: 1020ms; }
+
+.lp-sk-label {
+    font-family: var(--font-mono);
+    font-size: 9.5px;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    fill: rgba(5, 6, 8, 0.88);
+    opacity: 0;
+    animation: lp-sk-fade 500ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.lp-sk-cluster:nth-of-type(1) .lp-sk-label { animation-delay: 820ms; }
+.lp-sk-cluster:nth-of-type(2) .lp-sk-label { animation-delay: 1080ms; }
+.lp-sk-cluster:nth-of-type(3) .lp-sk-label { animation-delay: 1280ms; }
+
+.lp-sk-tick,
+.lp-sk-leader {
+    stroke: rgba(5, 6, 8, 0.5);
+    stroke-width: 1;
+    stroke-linecap: round;
+    opacity: 0;
+    animation: lp-sk-fade 500ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.lp-sk-cluster:nth-of-type(1) .lp-sk-tick { animation-delay: 800ms; }
+.lp-sk-cluster:nth-of-type(2) .lp-sk-tick { animation-delay: 1060ms; }
+.lp-sk-cluster:nth-of-type(3) .lp-sk-leader { animation-delay: 1260ms; }
+
+.lp-sk-label--gap {
+    fill: rgba(5, 6, 8, 0.94);
+}
+
+@keyframes lp-sk-hull-in {
+    0%   { opacity: 0; transform: scale(0.94); }
+    100% { opacity: 1; transform: scale(1); }
+}
+
+@keyframes lp-sk-paper-in {
+    0%   { opacity: 0; transform: scale(0.4); }
+    100% { opacity: 1; transform: scale(1); }
+}
+
+@keyframes lp-sk-fade {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}
+
+:root[data-theme='dark'] .lp-sk-hull {
+    stroke: rgba(246, 248, 252, 0.92);
+}
+
+:root[data-theme='dark'] .lp-sk-paper {
+    fill: rgba(246, 248, 252, 0.96);
+}
+
+:root[data-theme='dark'] .lp-sk-label {
+    fill: rgba(246, 248, 252, 0.9);
+}
+
+:root[data-theme='dark'] .lp-sk-tick,
+:root[data-theme='dark'] .lp-sk-leader {
+    stroke: rgba(246, 248, 252, 0.55);
+}
+
+:root[data-theme='dark'] .lp-sk-label--gap {
+    fill: rgba(246, 248, 252, 0.96);
+}
+
+/* Responsive */
+
+@media (max-width: 880px) {
+    .lp-hero--split .lp-hero-layout {
+        grid-template-columns: minmax(0, 1fr);
+        row-gap: clamp(2rem, 4vw, 3rem);
+    }
+    .lp-hero-sketch {
+        order: 2;
+        max-width: 420px;
+        justify-self: start;
+    }
+    .lp-hero-proof {
+        gap: clamp(1rem, 4vw, 1.6rem);
+    }
+}
+
+@media (max-width: 540px) {
+    .lp-hero-sketch { display: none; }
+    .lp-hero-proof {
+        grid-template-columns: repeat(2, minmax(0, auto));
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .lp-hero-accent-underline path,
+    .lp-sk-hull,
+    .lp-sk-paper,
+    .lp-sk-label,
+    .lp-sk-tick,
+    .lp-sk-leader {
+        animation: none !important;
+        opacity: 1 !important;
+        transform: none !important;
+        stroke-dashoffset: 0 !important;
+    }
+}

@@ -17,7 +17,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/css/tokens.css?v=20260506n" />
-  <link rel="stylesheet" href="/css/style.css?v=20260515g" />
+  <link rel="stylesheet" href="/css/style.css?v=20260515i" />
   <link rel="stylesheet" href="/css/workspace.css?v=20260506n" />
   <link rel="stylesheet" href="/css/dashboard.css?v=20260514x" />
   <link rel="stylesheet" href="/css/citations.css?v=20260512c" />
@@ -61,7 +61,7 @@
         <div class="lp-hero-copy">
           <p class="lp-hero-folio reveal">001 · Literature workbench</p>
           <h1 class="lp-hero-title reveal reveal-d1">
-            Find what research is <span class="lp-hero-accent">missing.</span>
+            Find what research is <span class="lp-hero-accent">missing.<svg class="lp-hero-accent-underline" viewBox="0 0 220 18" preserveAspectRatio="none" aria-hidden="true" focusable="false"><path d="M 4 12 C 28 4, 56 16, 92 9 C 122 4, 158 16, 196 10 C 208 8, 214 11, 218 13"/></svg></span>
           </h1>
           <p class="lp-hero-subtitle reveal reveal-d2">
             Search trusted indexes, then surface citation-backed gaps, limitations, and underexplored directions, mapped across the literature.
@@ -83,15 +83,66 @@
               >
               <button type="submit" class="lp-search-btn" aria-label="Search for research">Search</button>
             </form>
-            <div class="lp-search-sources" aria-label="Research sources">
-              <span class="lp-source-label">Indexed across</span>
-              <span class="lp-source-name">Semantic Scholar</span>
-              <span class="lp-source-name">arXiv</span>
-              <span class="lp-source-name">OpenAlex</span>
-            </div>
+            <dl class="lp-hero-proof reveal reveal-d4" aria-label="Index status">
+              <div class="lp-hero-proof-item">
+                <dt>1.24M</dt>
+                <dd>papers indexed</dd>
+              </div>
+              <div class="lp-hero-proof-item">
+                <dt>4</dt>
+                <dd>trusted indexes</dd>
+              </div>
+              <div class="lp-hero-proof-item">
+                <dt>Beta</dt>
+                <dd>85% gap accuracy</dd>
+              </div>
+            </dl>
           </div>
         </div>
 
+        <figure class="lp-hero-sketch reveal reveal-d2" aria-hidden="true">
+          <svg class="lp-hero-sketch-svg" viewBox="0 0 440 360" preserveAspectRatio="xMidYMid meet" aria-hidden="true" focusable="false">
+
+            <!-- Region I (top, dense) -->
+            <g class="lp-sk-cluster">
+              <path class="lp-sk-hull" d="M 90 78 C 110 62, 142 56, 178 64 C 214 72, 234 92, 232 116 C 228 142, 200 156, 162 152 C 122 146, 88 130, 84 108 C 82 96, 84 86, 90 78 Z"/>
+              <circle class="lp-sk-paper" cx="118" cy="92" r="3"/>
+              <circle class="lp-sk-paper" cx="146" cy="80" r="3.5"/>
+              <circle class="lp-sk-paper" cx="174" cy="92" r="3"/>
+              <circle class="lp-sk-paper" cx="200" cy="108" r="3.5"/>
+              <circle class="lp-sk-paper" cx="160" cy="124" r="3"/>
+              <circle class="lp-sk-paper" cx="124" cy="118" r="2.5"/>
+              <text class="lp-sk-label" x="232" y="62" text-anchor="start">REGION I</text>
+              <line class="lp-sk-tick" x1="232" y1="64" x2="232" y2="76"/>
+            </g>
+
+            <!-- Region II (right, biggest) -->
+            <g class="lp-sk-cluster">
+              <path class="lp-sk-hull" d="M 268 156 C 292 144, 326 142, 354 156 C 386 174, 402 206, 396 240 C 388 274, 360 296, 322 300 C 282 304, 250 286, 240 256 C 232 226, 240 196, 254 174 C 258 168, 262 162, 268 156 Z"/>
+              <circle class="lp-sk-paper" cx="280" cy="172" r="3.5"/>
+              <circle class="lp-sk-paper" cx="312" cy="160" r="4"/>
+              <circle class="lp-sk-paper" cx="346" cy="174" r="3"/>
+              <circle class="lp-sk-paper" cx="370" cy="206" r="3.5"/>
+              <circle class="lp-sk-paper" cx="368" cy="246" r="3"/>
+              <circle class="lp-sk-paper" cx="340" cy="280" r="4"/>
+              <circle class="lp-sk-paper" cx="298" cy="284" r="3"/>
+              <circle class="lp-sk-paper" cx="266" cy="252" r="3.5"/>
+              <circle class="lp-sk-paper" cx="298" cy="226" r="3"/>
+              <text class="lp-sk-label" x="408" y="200" text-anchor="end">REGION II</text>
+              <line class="lp-sk-tick" x1="396" y1="202" x2="406" y2="202"/>
+            </g>
+
+            <!-- Region III (bottom-left, the gap — dashed) -->
+            <g class="lp-sk-cluster lp-sk-cluster--gap">
+              <path class="lp-sk-hull lp-sk-hull--gap" d="M 64 244 C 80 230, 108 226, 132 238 C 154 252, 156 282, 138 300 C 116 318, 84 314, 64 296 C 50 282, 48 260, 64 244 Z"/>
+              <circle class="lp-sk-paper" cx="84" cy="252" r="3"/>
+              <circle class="lp-sk-paper" cx="112" cy="266" r="3.5"/>
+              <circle class="lp-sk-paper" cx="96" cy="288" r="2.5"/>
+              <text class="lp-sk-label lp-sk-label--gap" x="44" y="232" text-anchor="start">GAP · 0.84</text>
+              <line class="lp-sk-leader" x1="74" y1="236" x2="84" y2="248"/>
+            </g>
+          </svg>
+        </figure>
       </div>
     </section>
 
