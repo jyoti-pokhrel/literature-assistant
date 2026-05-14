@@ -10634,3 +10634,15 @@ body.landing-state #landing-page {
     background: rgba(5, 6, 8, 0.06);
     color: rgba(5, 6, 8, 0.66);
 }
+
+
+/* ============================================================
+   Hero — taller stage. Bumps top padding so the next section
+   does not peek into the viewport when the hero is in view.
+   ============================================================ */
+
+.lp-hero--split {
+    padding-top: clamp(10rem, 18vw, 14rem);
+    padding-bottom: clamp(6rem, 10vw, 8.5rem);
+    min-height: 92vh;
+}
