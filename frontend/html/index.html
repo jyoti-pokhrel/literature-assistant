@@ -987,8 +987,7 @@
               <h2 class="results-query-title" x-text="topTopicsList() || 'Personalized feed'"></h2>
               <p class="results-query-meta">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-                <span x-show="!$store.app.explore.coldStart" x-text="$store.app.explore.papers.length + (($store.app.explore.hasMore) ? '+ papers · scroll for more' : ' papers · end of results')"></span>
-                <span x-show="$store.app.explore.coldStart">Pick a few topics to get started</span>
+                <span x-text="$store.app.explore.papers.length + (($store.app.explore.hasMore) ? '+ papers · scroll for more' : ' papers · end of results')"></span>
               </p>
             </div>
             <div class="header-actions">
@@ -1003,29 +1002,9 @@
           </header>
 
           <div style="padding: 0 2.5rem 2.5rem;">
-            <div x-show="$store.app.explore.coldStart" style="padding:2.5rem 2rem; background:var(--glass-bg); border:1px solid var(--border-color); border-radius:14px; margin-bottom:2rem;">
-              <h3 style="font-size:1.15rem; font-weight:700; color:var(--text-main); margin-bottom:0.4rem;">Tell us what you're into</h3>
-              <p style="font-size:0.9rem; color:var(--text-muted); margin-bottom:1.2rem;">Pick up to three research topics and we'll build a personalized feed. Your searches and gap feedback will refine it over time.</p>
-              <div style="display:flex; flex-direction:column; gap:0.6rem; max-width:520px;">
-                <template x-for="i in 3" :key="i">
-                  <input
-                    type="text"
-                    :placeholder="'Topic ' + i + (i === 1 ? ' (e.g. graph neural networks)' : '')"
-                    x-model="seedDraft[i - 1]"
-                    @keydown.enter.prevent="saveSeeds()"
-                    class="form-input"
-                    style="padding:0.65rem 0.9rem; border-radius:8px; border:1px solid var(--border-color); background:var(--card-bg); color:var(--text-main);" />
-                </template>
-                <p x-show="seedError" x-text="seedError" style="color:var(--danger, #c33); font-size:0.85rem; margin-top:0.3rem;"></p>
-                <div style="display:flex; gap:0.6rem; margin-top:0.6rem;">
-                  <button class="btn-primary-glow" :disabled="savingSeeds" @click="saveSeeds()" x-text="savingSeeds ? 'Building your feed…' : 'Build my feed'"></button>
-                </div>
-              </div>
-            </div>
-
             <div x-show="$store.app.explore.error" class="search-error" x-text="$store.app.explore.error" style="margin-bottom:1rem; padding:0.75rem 1rem; background:var(--glass-bg); border:1px solid var(--border-color); border-radius:8px;"></div>
 
-            <div x-show="!$store.app.explore.coldStart" class="results-list" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(450px, 1fr)); gap:1.5rem;">
+            <div class="results-list" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(450px, 1fr)); gap:1.5rem;">
               <template x-for="(paper, index) in $store.app.explore.papers" :key="(paper.external_id || paper.url || paper.title) + ':' + index">
                 <article class="gap-card-premium" style="display:flex; flex-direction:column; gap:0.5rem; padding:1.25rem 1.5rem;">
                   <h3 x-text="paper.title" style="font-size:1.05rem; font-weight:700; color:var(--text-main); line-height:1.35;"></h3>
@@ -1039,28 +1018,32 @@
                   </p>
                   <p x-show="paper.reason" class="reason-line" x-text="paper.reason" style="font-size:0.8rem; color:var(--accent, var(--text-main)); font-weight:600; letter-spacing:0.01em;"></p>
                   <p x-show="paper.abstract" x-text="paper.abstract" style="font-size:0.9rem; color:var(--text-muted); line-height:1.5; max-height:6em; overflow:hidden; display:-webkit-box; -webkit-line-clamp:4; line-clamp:4; -webkit-box-orient:vertical;"></p>
-                  <div style="display:flex; gap:0.5rem; margin-top:0.25rem;">
+                  <div style="display:flex; gap:0.5rem; margin-top:0.25rem; align-items:center; flex-wrap:wrap;">
                     <template x-if="paper.url">
-                      <a :href="paper.url" target="_blank" rel="noopener noreferrer" class="btn-glass" style="padding:0.4rem 0.8rem; font-size:0.85rem;">Open ↗</a>
+                      <button type="button" class="btn-glass" @click="recordInteraction(paper, 'open')" style="padding:0.4rem 0.8rem; font-size:0.85rem;">Open ↗</button>
                     </template>
                     <template x-if="paper.pdf_url">
                       <a :href="paper.pdf_url" target="_blank" rel="noopener noreferrer" class="btn-glass" style="padding:0.4rem 0.8rem; font-size:0.85rem;">PDF</a>
                     </template>
+                    <span style="flex:1;"></span>
+                    <button type="button" class="btn-glass" @click="recordInteraction(paper, 'like')" title="More like this" style="padding:0.4rem 0.7rem; font-size:0.9rem;">👍</button>
+                    <button type="button" class="btn-glass" @click="recordInteraction(paper, 'dislike')" title="Less like this" style="padding:0.4rem 0.7rem; font-size:0.9rem;">👎</button>
+                    <button type="button" class="btn-glass" @click="recordInteraction(paper, 'hide')" title="Hide this" style="padding:0.4rem 0.7rem; font-size:0.9rem;">✕</button>
                   </div>
                 </article>
               </template>
             </div>
 
-            <div x-show="!$store.app.explore.coldStart && $store.app.explore.isLoadingPage" style="text-align:center; padding:2rem 0; color:var(--text-muted);">
+            <div x-show="$store.app.explore.isLoadingPage" style="text-align:center; padding:2rem 0; color:var(--text-muted);">
               <span class="dash-thinking-dots"><span></span><span></span><span></span></span>
               <p style="margin-top:0.5rem;">Ranking recommendations…</p>
             </div>
 
-            <div x-show="!$store.app.explore.coldStart && !$store.app.explore.hasMore && $store.app.explore.papers.length && !$store.app.explore.isLoadingPage" style="text-align:center; padding:2rem 0; color:var(--text-muted); font-size:0.9rem;">
+            <div x-show="!$store.app.explore.hasMore && $store.app.explore.papers.length && !$store.app.explore.isLoadingPage" style="text-align:center; padding:2rem 0; color:var(--text-muted); font-size:0.9rem;">
               That's all we have for you right now. Try a new search to expand the pool.
             </div>
 
-            <div x-show="!$store.app.explore.coldStart && !$store.app.explore.papers.length && !$store.app.explore.isLoadingPage && !$store.app.explore.error" style="text-align:center; padding:3rem 1rem; color:var(--text-muted); max-width: 540px; margin: 0 auto;">
+            <div x-show="!$store.app.explore.papers.length && !$store.app.explore.isLoadingPage && !$store.app.explore.error" style="text-align:center; padding:3rem 1rem; color:var(--text-muted); max-width: 540px; margin: 0 auto;">
               <p style="font-size: 0.95rem; margin-bottom: 1rem;">No recommendations yet.</p>
               <template x-if="diagnostics && Array.isArray(diagnostics.notes) && diagnostics.notes.length">
                 <ul style="text-align: left; font-size: 0.85rem; line-height: 1.6; background: var(--glass-bg); border: 1px solid var(--border-color); border-radius: 10px; padding: 1rem 1.25rem; list-style: disc; padding-left: 2rem;">
@@ -1074,7 +1057,7 @@
 
             <div
               x-ref="exploreSentinel"
-              x-show="!$store.app.explore.coldStart && $store.app.explore.hasMore"
+              x-show="$store.app.explore.hasMore"
               x-init="
                 const sentinel = $el;
                 const observer = new IntersectionObserver((entries) => {
@@ -1296,14 +1279,14 @@
   <script src="https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.7/dist/gsap.min.js"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/@alpinejs/collapse@3.14.9/dist/cdn.min.js"></script>
-  <script defer src="/js/alpine/stores/appStore.js?v=20260514c"></script>
+  <script defer src="/js/alpine/stores/appStore.js?v=20260514d"></script>
   <script defer src="/js/d3/clusterMap.js?v=20260503a"></script>
   <script defer src="/js/d3/charts.js?v=20260502b"></script>
   <script defer src="/js/d3/citationGraph.js?v=20260512c"></script>
   <script defer src="/js/alpine/components/searchForm.js?v=20260423a"></script>
   <script defer src="/js/alpine/components/resultsPage.js?v=20260502b"></script>
   <script defer src="/js/alpine/components/gapExplorer.js?v=20260506n"></script>
-  <script defer src="/js/alpine/components/exploreFeed.js?v=20260514b"></script>
+  <script defer src="/js/alpine/components/exploreFeed.js?v=20260514d"></script>
   <script defer src="/js/alpine/components/historySidebar.js?v=20260423a"></script>
   <script defer src="/js/alpine/components/citationGraph.js?v=20260512c"></script>
   <script defer src="/js/alpine/app.js?v=20260507b"></script>
