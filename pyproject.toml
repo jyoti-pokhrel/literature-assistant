@@ -62,6 +62,7 @@ dependencies = [
 dev = [
     "pytest>=8.3.0",
     "pytest-asyncio>=0.24.0",
+    "ruff",
 ]
 
 [tool.pytest.ini_options]
