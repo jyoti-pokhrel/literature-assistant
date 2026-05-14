@@ -401,14 +401,30 @@ document.addEventListener('alpine:init', () => {
         },
 
         selectCluster(cluster) {
+            const clusterId = cluster?.cluster_id ?? null;
+            // Find a representative gap for the clicked cluster so the
+            // sidebar spider has something to render: prefer the cluster's
+            // linked gap_id, fall back to the highest-confidence gap whose
+            // cluster_id matches.
+            let representativeGap = null;
+            if (cluster?.gap_id) {
+                representativeGap = this.gaps().find((g) => g.gap_id === cluster.gap_id) || null;
+            }
+            if (!representativeGap && clusterId !== null) {
+                const matched = this.gaps()
+                    .filter((g) => String(g.cluster_id) === String(clusterId))
+                    .sort((a, b) => Number(b.confidence_score ?? 0) - Number(a.confidence_score ?? 0));
+                representativeGap = matched[0] || null;
+            }
+
             Object.assign(this.$store.app.explorer, {
-                selectedGapId: null,
+                selectedGapId: representativeGap ? this.gapKey(representativeGap) : null,
                 selectedPaperId: null,
-                selectedClusterId: cluster?.cluster_id ?? null,
-                panelType: 'cluster',
+                selectedClusterId: clusterId,
+                panelType: representativeGap ? 'gap' : 'cluster',
                 panelOpen: true,
             });
-            this.$store.app.explorer.filters.clusterId = cluster?.cluster_id === undefined ? '' : String(cluster.cluster_id);
+            this.$store.app.explorer.filters.clusterId = clusterId === null ? '' : String(clusterId);
             window.ClusterMap?.highlightPapers((cluster?.papers || []).map((paper, index) => this.paperKey(paper, index)));
         },
 
