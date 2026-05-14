@@ -17,7 +17,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/css/tokens.css?v=20260506n" />
-  <link rel="stylesheet" href="/css/style.css?v=20260515g" />
+  <link rel="stylesheet" href="/css/style.css?v=20260515h" />
   <link rel="stylesheet" href="/css/workspace.css?v=20260506n" />
   <link rel="stylesheet" href="/css/dashboard.css?v=20260514x" />
   <link rel="stylesheet" href="/css/citations.css?v=20260512c" />
@@ -59,7 +59,11 @@
     <section class="lp-hero lp-hero--split">
       <div class="lp-hero-layout">
         <div class="lp-hero-copy">
-          <p class="lp-hero-folio reveal">001 · Literature workbench</p>
+          <div class="lp-hero-masthead reveal" aria-hidden="false">
+            <span class="lp-hero-masthead-rule" aria-hidden="true"></span>
+            <span class="lp-hero-masthead-text">Vol. 1 · May 2026 · Literature Workbench</span>
+            <span class="lp-hero-masthead-rule" aria-hidden="true"></span>
+          </div>
           <h1 class="lp-hero-title reveal reveal-d1">
             Find what research is <span class="lp-hero-accent">missing.</span>
           </h1>
@@ -83,14 +87,29 @@
               >
               <button type="submit" class="lp-search-btn" aria-label="Search for research">Search</button>
             </form>
-            <div class="lp-search-sources" aria-label="Research sources">
-              <span class="lp-source-label">Indexed across</span>
-              <span class="lp-source-name">Semantic Scholar</span>
-              <span class="lp-source-name">arXiv</span>
-              <span class="lp-source-name">OpenAlex</span>
+            <div class="lp-hero-credibility reveal reveal-d3" aria-label="Index status">
+              <span class="lp-hero-credibility-row">
+                <span class="lp-hero-credibility-num">1.24M</span>
+                <span class="lp-hero-credibility-label">papers</span>
+                <span class="lp-hero-credibility-sep" aria-hidden="true">·</span>
+                <span class="lp-hero-credibility-num">4</span>
+                <span class="lp-hero-credibility-label">indexes</span>
+                <span class="lp-hero-credibility-sep" aria-hidden="true">·</span>
+                <span class="lp-hero-credibility-status">
+                  <span class="lp-hero-credibility-status-dot" aria-hidden="true"></span>
+                  last update 2m ago
+                </span>
+              </span>
+              <span class="lp-hero-credibility-sources">
+                <span class="lp-source-label">Across</span>
+                <span class="lp-source-name">Semantic Scholar</span>
+                <span class="lp-source-name">arXiv</span>
+                <span class="lp-source-name">OpenAlex</span>
+              </span>
             </div>
           </div>
         </div>
+        <span class="lp-hero-floor-rule" aria-hidden="true"></span>
 
       </div>
     </section>
