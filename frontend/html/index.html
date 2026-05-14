@@ -17,7 +17,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/css/tokens.css?v=20260506n" />
-  <link rel="stylesheet" href="/css/style.css?v=20260514x" />
+  <link rel="stylesheet" href="/css/style.css?v=20260514w" />
   <link rel="stylesheet" href="/css/workspace.css?v=20260506n" />
   <link rel="stylesheet" href="/css/dashboard.css?v=20260511b" />
   <link rel="stylesheet" href="/css/citations.css?v=20260512c" />
@@ -857,14 +857,12 @@
                     <div class="cluster-map-container" x-ref="clusterMap"></div>
                     <aside class="map-side map-side--confidence" x-show="gaps().length > 0">
                       <header class="map-side-head">
-                        <h4 class="map-side-label">Gap profile</h4>
-                        <p class="map-side-sub" x-show="selectedGap()">
-                          <span class="map-side-sub-id" x-text="selectedGap()?.gap_id || 'GAP'"></span>
-                          <span class="map-side-sub-dot" aria-hidden="true" x-show="selectedGap()?.gap_title">·</span>
-                          <span class="map-side-sub-title" x-text="selectedGap()?.gap_title || ''"></span>
-                        </p>
-                        <p class="map-side-sub map-side-sub--empty" x-show="!selectedGap()">
-                          Select a gap from the list or click a cluster on the map.
+                        <h4 class="map-side-label">Gap confidence</h4>
+                        <p class="map-side-sub">
+                          <span x-text="gaps().length"></span>
+                          <span x-show="gaps().length === 1">gap</span>
+                          <span x-show="gaps().length !== 1">gaps</span>
+                          <span>scored on novelty and support</span>
                         </p>
                       </header>
                       <div class="d3-chart-container map-side-chart" x-ref="chartConfidence"></div>

@@ -16,7 +16,6 @@ document.addEventListener('alpine:init', () => {
                 });
             });
             this.$watch('$store.app.theme', () => this.$nextTick(() => this.renderCharts()));
-            this.$watch('$store.app.explorer.selectedGapId', () => this.$nextTick(() => this.renderCharts()));
             this.$watch('$store.app.explorer.filters.minConfidence', () => this.syncMapFilterHighlight());
             this.$watch('$store.app.explorer.filters.maxConfidence', () => this.syncMapFilterHighlight());
             this.$watch('$store.app.explorer.filters.clusterId', () => this.syncMapFilterHighlight());
@@ -126,7 +125,6 @@ document.addEventListener('alpine:init', () => {
                     papers: this.papers(),
                     clusters: this.clusters(),
                     patternAnalysis: this.patternAnalysis(),
-                    selectedGap: this.selectedGap(),
                 }
             );
         },
