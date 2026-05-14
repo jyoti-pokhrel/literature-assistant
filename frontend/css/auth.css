@@ -1,0 +1,385 @@
+/* =========================================================================
+   auth.css — shared shell for /html/{login,signup,verify-otp,forgot-password,
+   reset-password,admin}.html. Uses only tokens.css variables: glass card on
+   the ambient mesh, Plus Jakarta Sans body + Instrument Serif wordmark.
+   Loads AFTER tokens.css (mesh + reduced-motion live there).
+   ========================================================================= */
+
+/* ---- Page shell --------------------------------------------------------- */
+.auth-page {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    margin: 0;
+    color: var(--ink);
+}
+
+.auth-nav {
+    padding: var(--s-3) var(--s-5);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.auth-brand {
+    font-weight: 700;
+    font-size: 1.05rem;
+    letter-spacing: -0.02em;
+    text-decoration: none;
+    color: var(--ink);
+}
+
+.auth-nav-link {
+    font-size: 0.85rem;
+    color: var(--ink-2);
+    text-decoration: none;
+    transition: color var(--t-fast) var(--ease);
+}
+.auth-nav-link:hover { color: var(--ink); }
+
+.auth-container {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: var(--s-3) var(--s-3) var(--s-5);
+}
+
+/* ---- Card --------------------------------------------------------------- */
+.auth-card {
+    width: 100%;
+    max-width: 440px;
+    padding: var(--s-5) var(--s-5);
+    background: var(--glass-strong);
+    backdrop-filter: var(--glass-blur-strong);
+    -webkit-backdrop-filter: var(--glass-blur-strong);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-glass-strong);
+    opacity: 0;
+    animation: reveal-up 1100ms var(--ease-out) 60ms forwards;
+    will-change: opacity, transform, filter;
+}
+
+.auth-header {
+    margin-bottom: var(--s-4);
+    text-align: center;
+}
+.auth-kicker {
+    font-family: 'Instrument Serif', 'Times New Roman', serif;
+    font-style: italic;
+    font-weight: 400;
+    font-size: 1rem;
+    color: var(--ink-3);
+    display: block;
+    margin-bottom: var(--s-1);
+}
+.auth-title {
+    font-size: 1.625rem;
+    font-weight: 700;
+    margin: 0 0 0.5rem 0;
+    letter-spacing: -0.025em;
+    line-height: 1.15;
+}
+.auth-subtitle {
+    color: var(--ink-2);
+    font-size: 0.95rem;
+    margin: 0;
+    line-height: 1.5;
+}
+.auth-subtitle strong {
+    color: var(--ink);
+    font-weight: 600;
+}
+
+/* ---- Form fields -------------------------------------------------------- */
+.auth-form-group {
+    margin-bottom: var(--s-2);
+}
+.auth-form-group + .auth-form-group { margin-top: var(--s-2); }
+
+.auth-label {
+    display: block;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--ink-2);
+    margin-bottom: 0.4rem;
+    letter-spacing: 0.01em;
+    text-transform: uppercase;
+}
+
+.auth-input {
+    width: 100%;
+    padding: 0.85rem 1rem;
+    border: 1px solid var(--rule-strong);
+    border-radius: var(--radius-md);
+    background: var(--glass-2);
+    color: var(--ink);
+    font-family: var(--font-sans);
+    font-size: 0.95rem;
+    transition:
+        border-color var(--t-fast) var(--ease),
+        background var(--t-fast) var(--ease),
+        box-shadow var(--t-fast) var(--ease);
+    box-sizing: border-box;
+}
+.auth-input::placeholder { color: var(--ink-3); }
+.auth-input:hover { border-color: var(--accent-line); }
+.auth-input:focus,
+.auth-input:focus-visible {
+    outline: none;
+    border-color: var(--accent-line);
+    background: var(--glass-strong);
+    box-shadow: 0 0 0 4px var(--accent-soft);
+}
+
+/* Centered OTP field — same input, different rhythm */
+.auth-input-otp {
+    font-size: 1.5rem;
+    font-weight: 600;
+    letter-spacing: 0.35em;
+    text-align: center;
+    padding: 1rem;
+}
+
+/* Password field — toggle button sits inside */
+.password-container {
+    position: relative;
+}
+.password-toggle {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    color: var(--ink-3);
+    padding: 6px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-sm);
+    transition: color var(--t-fast) var(--ease), background var(--t-fast) var(--ease);
+}
+.password-toggle:hover { color: var(--ink); background: var(--accent-soft); }
+.password-toggle:focus-visible {
+    outline: 2px solid var(--accent-line);
+    outline-offset: 2px;
+}
+.password-toggle svg { width: 18px; height: 18px; }
+.auth-input-password { padding-right: 44px; }
+input::-ms-reveal,
+input::-ms-clear { display: none; }
+
+/* ---- Buttons ------------------------------------------------------------ */
+.auth-button {
+    width: 100%;
+    padding: 0.9rem 1rem;
+    background: var(--accent);
+    color: var(--bg);
+    border: 1px solid transparent;
+    border-radius: var(--radius-md);
+    font-family: var(--font-sans);
+    font-size: 0.95rem;
+    font-weight: 600;
+    letter-spacing: -0.005em;
+    cursor: pointer;
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    gap: 0.5rem;
+    box-shadow:
+        0 4px 14px rgba(5, 6, 8, 0.18),
+        inset 0 1px 0 rgba(255, 255, 255, 0.18);
+    transition:
+        transform var(--t-fast) var(--ease),
+        box-shadow var(--t-fast) var(--ease),
+        background var(--t-fast) var(--ease);
+}
+.auth-button:hover {
+    transform: translateY(-1px);
+    box-shadow:
+        0 6px 20px rgba(5, 6, 8, 0.26),
+        inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+.auth-button:active {
+    transform: translateY(0);
+    box-shadow:
+        0 2px 10px rgba(5, 6, 8, 0.2),
+        inset 0 1px 0 rgba(255, 255, 255, 0.18);
+}
+.auth-button:focus-visible {
+    outline: 2px solid var(--accent-line);
+    outline-offset: 3px;
+}
+.auth-button:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* Google OAuth — glass aesthetic, matches .btn-glass family */
+.auth-google-btn {
+    width: 100%;
+    padding: 0.85rem 1rem;
+    background: var(--glass);
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
+    color: var(--ink);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-md);
+    font-family: var(--font-sans);
+    font-size: 0.92rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    gap: 0.65rem;
+    text-decoration: none;
+    box-shadow: var(--shadow-glass);
+    transition:
+        background var(--t-fast) var(--ease),
+        border-color var(--t-fast) var(--ease),
+        transform var(--t-fast) var(--ease);
+}
+.auth-google-btn:hover {
+    background: var(--glass-strong);
+    border-color: var(--accent-line);
+    transform: translateY(-1px);
+}
+.auth-google-btn:focus-visible {
+    outline: 2px solid var(--accent-line);
+    outline-offset: 2px;
+}
+
+/* ---- Divider with dotted leader ---------------------------------------- */
+.auth-divider {
+    display: flex;
+    align-items: center;
+    text-align: center;
+    margin: var(--s-3) 0;
+    color: var(--ink-3);
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+}
+.auth-divider::before,
+.auth-divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--rule);
+    margin: 0 var(--s-1);
+}
+
+/* ---- Secondary links --------------------------------------------------- */
+.auth-links {
+    margin-top: var(--s-3);
+    text-align: center;
+    font-size: 0.9rem;
+    color: var(--ink-2);
+}
+.auth-link {
+    color: var(--ink);
+    text-decoration: none;
+    font-weight: 600;
+    border-bottom: 1px solid transparent;
+    transition: border-color var(--t-fast) var(--ease);
+}
+.auth-link:hover { border-bottom-color: var(--accent-line); }
+
+.forgot-link {
+    display: block;
+    text-align: right;
+    font-size: 0.82rem;
+    margin: -0.25rem 0 var(--s-2);
+    color: var(--ink-3);
+    text-decoration: none;
+    transition: color var(--t-fast) var(--ease);
+}
+.forgot-link:hover { color: var(--ink); }
+
+.back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    margin-top: var(--s-3);
+    width: 100%;
+    justify-content: center;
+    font-size: 0.88rem;
+    color: var(--ink-2);
+    text-decoration: none;
+    font-weight: 500;
+    transition: color var(--t-fast) var(--ease), transform var(--t-fast) var(--ease);
+}
+.back-link::before {
+    content: '←';
+    transition: transform var(--t-fast) var(--ease-spring);
+}
+.back-link:hover { color: var(--ink); }
+.back-link:hover::before { transform: translateX(-3px); }
+
+.resend-link {
+    display: block;
+    text-align: center;
+    margin-top: var(--s-3);
+    width: 100%;
+    font-size: 0.88rem;
+    color: var(--ink-2);
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    font-family: var(--font-sans);
+    font-weight: 500;
+    transition: color var(--t-fast) var(--ease);
+}
+.resend-link:hover { color: var(--ink); }
+.resend-link:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+    color: var(--ink-3);
+}
+
+/* ---- Inline alerts (error / success) ----------------------------------- */
+.auth-alert {
+    padding: 0.75rem 0.9rem;
+    border-radius: var(--radius-sm);
+    font-size: 0.88rem;
+    margin-bottom: var(--s-2);
+    display: none;
+    border: 1px solid transparent;
+    line-height: 1.4;
+}
+.auth-alert.is-visible { display: block; }
+
+.auth-error {
+    background: rgba(204, 0, 0, 0.06);
+    border-color: rgba(204, 0, 0, 0.22);
+    color: #b3261e;
+}
+:root[data-theme='dark'] .auth-error {
+    background: rgba(255, 102, 102, 0.08);
+    border-color: rgba(255, 102, 102, 0.28);
+    color: #ff8a8a;
+}
+
+.auth-success {
+    background: rgba(5, 100, 60, 0.06);
+    border-color: rgba(5, 100, 60, 0.2);
+    color: #0a6c43;
+}
+:root[data-theme='dark'] .auth-success {
+    background: rgba(52, 211, 153, 0.08);
+    border-color: rgba(52, 211, 153, 0.28);
+    color: #6ee7b7;
+}
+
+/* ---- Reduced motion ---------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+    .auth-card {
+        opacity: 1;
+        animation: none;
+    }
+}

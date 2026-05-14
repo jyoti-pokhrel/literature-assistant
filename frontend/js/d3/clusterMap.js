@@ -81,44 +81,37 @@
             .style("transform", "translateY(10px)")
             .style("transition", "opacity 0.2s cubic-bezier(0.16, 1, 0.3, 1), transform 0.2s cubic-bezier(0.16, 1, 0.3, 1)");
 
-        // Overlay Controls
+        // Overlay zoom controls. Class hooks (cit-canvas-overlay, cit-zoom)
+        // are shared with the citation graph so both maps render the same
+        // bottom-right pill stack — see citations.css.
         const overlay = d3.select(container)
             .append("div")
-            .attr("class", "cluster-map-controls")
-            .style("position", "absolute")
-            .style("bottom", "20px")
-            .style("right", "20px")
-            .style("display", "flex")
-            .style("gap", "8px")
-            .style("z-index", "10");
+            .attr("class", "cit-canvas-overlay cit-zoom")
+            .attr("role", "group")
+            .attr("aria-label", "Zoom controls");
 
         const zoom = d3.zoom().scaleExtent([0.5, 8]);
 
-        const btnStyle = "background: var(--glass-bg); border: 1px solid var(--border-color); color: var(--text-main); width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s; backdrop-filter: blur(8px);";
-        
         overlay.append("button")
-            .attr("title", "Zoom In")
-            .attr("style", btnStyle)
-            .html(`<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>`)
-            .on("click", (e) => { e.stopPropagation(); svg.transition().duration(500).call(zoom.scaleBy, 1.5); })
-            .on("mouseover", function() { d3.select(this).style("background", "var(--hover-bg)"); })
-            .on("mouseout", function() { d3.select(this).style("background", "var(--glass-bg)"); });
+            .attr("type", "button")
+            .attr("title", "Zoom in")
+            .attr("aria-label", "Zoom in")
+            .html(`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>`)
+            .on("click", (e) => { e.stopPropagation(); svg.transition().duration(500).call(zoom.scaleBy, 1.5); });
 
         overlay.append("button")
-            .attr("title", "Zoom Out")
-            .attr("style", btnStyle)
-            .html(`<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"></line></svg>`)
-            .on("click", (e) => { e.stopPropagation(); svg.transition().duration(500).call(zoom.scaleBy, 0.667); })
-            .on("mouseover", function() { d3.select(this).style("background", "var(--hover-bg)"); })
-            .on("mouseout", function() { d3.select(this).style("background", "var(--glass-bg)"); });
+            .attr("type", "button")
+            .attr("title", "Zoom out")
+            .attr("aria-label", "Zoom out")
+            .html(`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"></line></svg>`)
+            .on("click", (e) => { e.stopPropagation(); svg.transition().duration(500).call(zoom.scaleBy, 0.667); });
 
         overlay.append("button")
-            .attr("title", "Reset View")
-            .attr("style", btnStyle)
-            .html(`<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>`)
-            .on("click", (e) => { e.stopPropagation(); svg.transition().duration(750).call(zoom.transform, d3.zoomIdentity); })
-            .on("mouseover", function() { d3.select(this).style("background", "var(--hover-bg)"); })
-            .on("mouseout", function() { d3.select(this).style("background", "var(--glass-bg)"); });
+            .attr("type", "button")
+            .attr("title", "Recenter")
+            .attr("aria-label", "Recenter")
+            .html(`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v3"></path><path d="M12 18v3"></path><path d="M3 12h3"></path><path d="M18 12h3"></path><circle cx="12" cy="12" r="5"></circle></svg>`)
+            .on("click", (e) => { e.stopPropagation(); svg.transition().duration(750).call(zoom.transform, d3.zoomIdentity); });
 
         const svg = d3.select(container)
             .append("svg")
@@ -238,8 +231,10 @@
                         .attr("opacity", 0)
                         .attr("d", d => lineGenerator(d.polygon))
                         .attr("fill", d => colorForCluster(d.cluster.cluster_id))
-                        .style("mix-blend-mode", "multiply")
-                        .call(e => e.transition("hull-enter").duration(750).attr("opacity", 0.15)),
+                        .attr("stroke", d => colorForCluster(d.cluster.cluster_id))
+                        .attr("stroke-width", 1.25)
+                        .attr("stroke-opacity", 0.5)
+                        .call(e => e.transition("hull-enter").duration(750).attr("opacity", 0.42)),
                     update => {
                         update.transition("hull-update").duration(750).attr("d", d => lineGenerator(d.polygon));
                         return update;
@@ -278,7 +273,7 @@
                         .attr("stroke-width", "1.5px")
                         .attr("data-paper-id", (d) => d.__paperId)
                         .style("cursor", "pointer")
-                        .call(e => e.transition("node-enter").duration(750).delay((d, i) => i * 2).attr("r", 6.5)),
+                        .call(e => e.transition("node-enter").duration(750).delay((d, i) => i * 2).attr("r", 7.5)),
                     update => {
                         update.transition("node-update").duration(750)
                             .attr("cx", (d) => xScale(Number(d.x)))
@@ -357,12 +352,12 @@
                 .transition("hull-highlight").duration(300)
                 .attr("opacity", (d) => {
                     if (hasHover) {
-                        return String(d.cluster.cluster_id) === String(hoveredCluster) ? 0.3 : 0.05;
+                        return String(d.cluster.cluster_id) === String(hoveredCluster) ? 0.58 : 0.18;
                     }
                     if (hasSelection) {
-                        return 0.05; // Dim hulls when specific papers are selected
+                        return 0.2;
                     }
-                    return 0.15; // default
+                    return 0.42; // default — visible enough to read clusters at a glance
                 });
         }
 

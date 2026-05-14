@@ -2,12 +2,16 @@ import os
 from typing import List
 
 import httpx
+from dotenv import load_dotenv
 from httpx import HTTPStatusError
 
 from app.schemas.paper import RetrievedPaper
 from app.services.extraction.normalizer import _venue_terms, clean_text, filter_papers
 from app.core.http import get_http_client
 from app.services.retrieval.cache import semantic_scholar_cache
+
+
+load_dotenv()
 
 SEMANTIC_SCHOLAR_URL = "https://api.semanticscholar.org/graph/v1/paper/search"
 SEMANTIC_SCHOLAR_FIELDS = ",".join(

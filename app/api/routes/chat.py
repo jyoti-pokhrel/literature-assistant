@@ -15,7 +15,10 @@ async def save_chat_message(chat_data: ChatSessionCreate, current_user: dict = D
     """Automatically called after each chat interaction to save/update session history."""
     try:
         db = get_db()
+        chat_item = chat_data.model_dump()
+        chat_item["username"] = current_user["username"]
         now = datetime.now(timezone.utc)
+        chat_item["created_at"] = now
         
         # Check if session already exists
         session = await db.chat_history.find_one({

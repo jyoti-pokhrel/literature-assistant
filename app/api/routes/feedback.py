@@ -1,3 +1,5 @@
+import asyncio
+import logging
 from datetime import datetime, timezone
 
 from bson import ObjectId
@@ -5,10 +7,59 @@ from fastapi import APIRouter, Depends, HTTPException, status
 
 from app.api.dependencies import get_current_user
 from app.db.guards import require_collection
-from app.db.session import gap_reports_collection
+from app.db.session import gap_feedback_signals_collection, gap_reports_collection
 from app.models.gap_feedback import GapFeedbackPatch
+from app.services.recommendations import profile_builder
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/synthesis/report", tags=["Feedback"])
+
+
+def _gap_title(gap: dict) -> str:
+    for key in ("title", "gap_title", "summary"):
+        value = gap.get(key)
+        if isinstance(value, str) and value.strip():
+            return value.strip()
+    return ""
+
+
+def _gap_description(gap: dict) -> str:
+    for key in ("description", "details", "explanation", "summary"):
+        value = gap.get(key)
+        if isinstance(value, str) and value.strip():
+            return value.strip()
+    return ""
+
+
+async def _log_feedback_signal(
+    username: str,
+    report_id: str,
+    gap_id: str,
+    gap: dict,
+    feedback: dict,
+) -> None:
+    if gap_feedback_signals_collection is None or not username:
+        return
+    try:
+        await gap_feedback_signals_collection.update_one(
+            {"username": username, "report_id": report_id, "gap_id": gap_id},
+            {
+                "$set": {
+                    "username": username,
+                    "report_id": report_id,
+                    "gap_id": gap_id,
+                    "gap_title": _gap_title(gap),
+                    "gap_description": _gap_description(gap),
+                    "vote": feedback.get("vote"),
+                    "pursue": bool(feedback.get("pursue")),
+                    "updated_at": datetime.now(timezone.utc),
+                }
+            },
+            upsert=True,
+        )
+    except Exception:
+        logger.exception("Failed to log gap feedback signal for %s", username)
 
 
 def _is_valid_object_id(s: str) -> bool:
@@ -82,6 +133,11 @@ async def upsert_gap_feedback(
 
     update_path = f"gaps.{target_idx}.feedback"
     await coll.update_one({"_id": doc["_id"]}, {"$set": {update_path: existing}})
+
+    username = current_user.get("username") or "local-test-user"
+    await _log_feedback_signal(username, str(doc["_id"]), gap_id, gaps[target_idx], existing)
+    asyncio.create_task(profile_builder.invalidate(username))
+
     return {"gap_id": gap_id, "feedback": existing}
 
 

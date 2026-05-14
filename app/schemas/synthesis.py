@@ -28,7 +28,7 @@ def sanitize_string(v: Any) -> str:
     return s
 
 
-# ── Core models ───────────────────────────────────────────────────────────────
+#Core models
 
 class CitationRef(BaseModel):
     paper_id: Optional[str] = None
@@ -83,12 +83,13 @@ class SynthesisGap(BaseModel):
 class ClusterSummary(BaseModel):
     """Summarises one HDBSCAN cluster — returned in SynthesisResponse.clusters[]."""
     cluster_id: int
-    theme_label: str
-    paper_count: int
+    theme_label: str = "unspecified"
+    paper_count: int = 0
     top_limitations: List[str] = Field(default_factory=list)
     top_future_work: List[str] = Field(default_factory=list)
     gap_id: Optional[str] = None  # linked SynthesisGap.gap_id
     papers: List[Dict[str, Any]] = Field(default_factory=list)  # papers with x/y for the literature map
+    trend_status: str = "Established"
 
     @field_validator("theme_label", mode="before")
     @classmethod
@@ -158,15 +159,16 @@ class VisualizationData(BaseModel):
         return cleaned
 
 
-# ── Request / Response ────────────────────────────────────────────────────────
+#Request / Response
 
 class SynthesisRequest(BaseModel):
     topic: str = Field(..., min_length=3, examples=["multi agent rl"])
     year: Optional[str] = Field(default=None, examples=["2025", "2023-2026"])
     venue: Optional[str] = Field(default=None, examples=["NeurIPS", "ICLR"])
     strict_venue: bool = Field(default=False, examples=[False])
-    max_results: int = Field(default=10, ge=1, le=50)
-    top_k_gaps: int = Field(default=5, ge=1, le=10)
+    max_results: int = Field(default=15, ge=1, le=100)
+    top_k_gaps: int = Field(default=8, ge=1, le=15)
+    regenerate: bool = Field(default=False, description="If true, bypasses the cache")
 
     @field_validator("topic")
     @classmethod
@@ -222,6 +224,8 @@ class SynthesisResponse(BaseModel):
     share_url: Optional[str] = None
     copy_text: Optional[str] = None
     papers: List[Dict[str, Any]] = Field(default_factory=list)
+    is_cached: bool = False
+    generated_at: Optional[str] = None
 
 
 class SynthesisHistoryItem(BaseModel):
@@ -257,4 +261,3 @@ class SynthesisJobStatus(BaseModel):
     error: Optional[str] = None
     created_at: str
     updated_at: str
-

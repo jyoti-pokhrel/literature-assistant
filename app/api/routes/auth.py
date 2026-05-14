@@ -234,9 +234,7 @@ async def reset_password(data: ResetPassword):
     """
     db = get_db()
     
-    print(f"DEBUG: Attempting to reset password with token: {data.token}")
     token_doc = await db.reset_tokens.find_one({"token": data.token})
-    print(f"DEBUG: Token doc found: {token_doc is not None}")
     
     if not token_doc:
         raise HTTPException(status_code=400, detail="Invalid token")
@@ -246,11 +244,8 @@ async def reset_password(data: ResetPassword):
         expires_at = expires_at.replace(tzinfo=timezone.utc)
         
     current_time = datetime.now(timezone.utc)
-    print(f"DEBUG: Token expires at: {expires_at}")
-    print(f"DEBUG: Current time: {current_time}")
     
     if expires_at < current_time:
-        print("DEBUG: Token has expired")
         raise HTTPException(status_code=410, detail="Token expired")
         
     if not is_valid_password(data.new_password):
@@ -297,8 +292,6 @@ async def google_auth(request: Request):
     query_string = urlencode(params)
     url = f"https://accounts.google.com/o/oauth2/v2/auth?{query_string}"
     
-    print(f"DEBUG: Redirecting to Google with URI: {redirect_uri}")
-    print(f"DEBUG: FULL URL: {url}")
     
     from fastapi.responses import RedirectResponse
     return RedirectResponse(url)
@@ -328,16 +321,33 @@ async def google_auth_callback(code: str):
     async with httpx.AsyncClient() as client:
         response = await client.post(token_url, data=data)
         if response.status_code != 200:
-            raise HTTPException(status_code=400, detail="Google authentication failed")
-            
+            import logging
+            body = response.text[:500]
+            logging.getLogger(__name__).error(
+                "Google token exchange failed: status=%s body=%s redirect_uri=%s client_id_set=%s client_secret_set=%s",
+                response.status_code, body, redirect_uri,
+                bool(settings.GOOGLE_CLIENT_ID), bool(settings.GOOGLE_CLIENT_SECRET),
+            )
+            try:
+                err = response.json()
+                msg = f"Google rejected token exchange: {err.get('error', 'unknown')} — {err.get('error_description', '')}"
+            except Exception:
+                msg = "Google authentication failed (token exchange)"
+            raise HTTPException(status_code=400, detail=msg)
+
         access_token = response.json().get("access_token")
-        
+
         # Get user info
         user_info_url = "https://www.googleapis.com/oauth2/v3/userinfo"
         headers = {"Authorization": f"Bearer {access_token}"}
         user_info_response = await client.get(user_info_url, headers=headers)
-        
+
         if user_info_response.status_code != 200:
+            import logging
+            logging.getLogger(__name__).error(
+                "Google userinfo failed: status=%s body=%s",
+                user_info_response.status_code, user_info_response.text[:500],
+            )
             raise HTTPException(status_code=400, detail="Could not retrieve user info from Google")
             
         user_info = user_info_response.json()
@@ -370,12 +380,11 @@ async def google_auth_callback(code: str):
             
         token = create_access_token(data={"sub": user["username"]})
         
-        # Read from settings (which pulls from your .env)
+        # Land on a dedicated callback page that just stores the token and
+        # routes to /workspace (or ?next=). Avoids flashing the login form.
         FRONTEND_URL = settings.FRONTEND_URL
         encoded_username = quote(user['username'], safe='')
-        final_redirect = f"{FRONTEND_URL}/html/login.html?token={token}&username={encoded_username}"
-        
-        print(f"DEBUG: Redirecting user to frontend: {final_redirect}")
-        
+        final_redirect = f"{FRONTEND_URL}/html/oauth-callback.html#token={token}&username={encoded_username}"
+
         from fastapi.responses import RedirectResponse
         return RedirectResponse(final_redirect)

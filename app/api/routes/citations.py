@@ -9,7 +9,7 @@ import httpx
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import StreamingResponse
 
-from app.api.dependencies import get_current_user
+from app.api.dependencies import get_current_user, get_optional_user
 from app.schemas.citation import (
     CitationEdge,
     CitationNode,
@@ -64,7 +64,7 @@ def _serialize_one_hop(payload: OneHopPayload) -> dict:
 )
 async def resolve_endpoint(
     body: ResolveRequest,
-    current_user: dict = Depends(get_current_user),
+    _user: dict | None = Depends(get_optional_user),
 ) -> ResolveResponse:
     async with httpx.AsyncClient(timeout=10.0) as client:
         ref = await resolve_input(body.input, client=client)
@@ -156,7 +156,7 @@ async def _ref_from_paper_id(paper_id: str) -> Optional[CanonicalRef]:
 )
 async def network_endpoint(
     body: NetworkRequest,
-    current_user: dict = Depends(get_current_user),
+    _user: dict | None = Depends(get_optional_user),
 ) -> StreamingResponse:
     queue: asyncio.Queue = asyncio.Queue()
 
@@ -187,7 +187,7 @@ async def network_endpoint(
 async def expand_endpoint(
     paper_id: str,
     body: ExpandRequest,
-    current_user: dict = Depends(get_current_user),
+    _user: dict | None = Depends(get_optional_user),
 ) -> ExpandResponse:
     # `paper_id` is the original seed; `node_id` is the node we want to expand.
     target = body.node_id

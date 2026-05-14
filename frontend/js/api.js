@@ -31,6 +31,40 @@ function getHeaders({ hasBody = false, includeAuth = true } = {}) {
     return headers;
 }
 
+// Routes outside the workspace where a 401 should NOT trigger a redirect
+// (the user is already in the auth flow, or viewing a public surface).
+const AUTH_REDIRECT_SAFE_PREFIXES = ["/html/login.html", "/html/signup.html", "/html/verify-otp.html", "/html/forgot-password.html", "/html/reset-password.html", "/html/oauth-callback.html", "/synthesis/share/"];
+
+function shouldInterceptAuthRedirect() {
+    const path = window.location?.pathname || "";
+    return !AUTH_REDIRECT_SAFE_PREFIXES.some((prefix) => path.startsWith(prefix));
+}
+
+function handleUnauthorized() {
+    if (!shouldInterceptAuthRedirect()) return;
+    try {
+        sessionStorage.setItem("auth:session-expired", "1");
+    } catch (_e) { /* private mode — ignore */ }
+    localStorage.removeItem("access_token");
+    localStorage.removeItem("username");
+    const next = window.location.pathname + window.location.search;
+    const sameOrigin = next.startsWith("/") && !next.startsWith("//");
+    const query = sameOrigin ? `?next=${encodeURIComponent(next)}` : "";
+    window.location.replace(`/html/login.html${query}`);
+}
+
+async function authenticatedFetch(url, options = {}) {
+    options.headers = {
+        ...options.headers,
+        ...getHeaders({ hasBody: !!options.body })
+    };
+    const response = await fetch(url, options);
+    if (response.status === 401) {
+        handleUnauthorized();
+    }
+    return response;
+}
+
 async function signup(username, email, password, role) {
     const response = await fetch(`${BASE_URL}/signup`, {
         method: "POST",
@@ -55,14 +89,15 @@ async function login(username, password) {
     return data
 }
 
-function logout() {
+function signOut() {
     localStorage.removeItem("access_token")
     localStorage.removeItem("username")
     window.location.href = window.location.protocol.startsWith("http") ? "/" : "index.html"
 }
 
 function isLoggedIn() {
-    return localStorage.getItem("access_token") !== null
+    const token = localStorage.getItem("access_token")
+    return !!(token && token !== "undefined" && token !== "null")
 }
 
 async function fetchPapers() {

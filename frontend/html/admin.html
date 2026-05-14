@@ -73,8 +73,8 @@
                     User Management
                 </button>
                 <hr class="my-4 opacity-10">
-                <button @click="logout()" class="btn-ghost w-full text-left justify-start text-red-400">
-                    Logout
+                <button @click="signOut()" class="btn-ghost w-full text-left justify-start text-red-400">
+                    Sign out
                 </button>
             </nav>
         </aside>
@@ -225,7 +225,7 @@
                     }
                 },
                 
-                logout() {
+                signOut() {
                     localStorage.removeItem('access_token');
                     localStorage.removeItem('username');
                     window.location.href = '/html/login.html';
