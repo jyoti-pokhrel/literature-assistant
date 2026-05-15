@@ -18,6 +18,9 @@ async def get_me(current_user: dict = Depends(get_current_user)):
 
     Frontend hydrates avatar, role, and admin-only UI from this response.
     """
+    quota_limit = current_user.get("quota_limit", 100)
+    quota_used = current_user.get("quota_used", 0)
+    
     return {
         "username": current_user.get("username"),
         "email": current_user.get("email"),
@@ -25,6 +28,26 @@ async def get_me(current_user: dict = Depends(get_current_user)):
         "is_verified": current_user.get("is_verified", False),
         "auth_provider": current_user.get("auth_provider"),
         "created_at": current_user.get("created_at"),
+        "quota": {
+            "limit": quota_limit,
+            "used": quota_used,
+            "remaining": max(0, quota_limit - quota_used),
+            "last_reset": current_user.get("last_quota_reset")
+        }
+    }
+
+
+@users_router.get("/quota")
+async def get_quota(current_user: dict = Depends(get_current_user)):
+    """Return the current user's usage quota."""
+    quota_limit = current_user.get("quota_limit", 100)
+    quota_used = current_user.get("quota_used", 0)
+    
+    return {
+        "limit": quota_limit,
+        "used": quota_used,
+        "remaining": max(0, quota_limit - quota_used),
+        "last_reset": current_user.get("last_quota_reset")
     }
 
 

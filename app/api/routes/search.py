@@ -4,7 +4,7 @@ from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, status
 
-from app.api.dependencies import get_current_user
+from app.api.dependencies import get_current_user, check_quota
 from app.db.session import get_db, search_history_collection
 from app.schemas.gap_analysis import GapAnalysisRequest, GapAnalysisResponse
 from app.schemas.paper import (
@@ -49,7 +49,7 @@ async def _record_search(
 )
 async def search_papers(
     payload: PaperSearchRequest,
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(check_quota),
 ):
     result = await retrieve_papers(
         payload.topic,
@@ -69,7 +69,7 @@ async def search_papers(
 )
 async def analyze_gaps_for_topic(
     payload: GapAnalysisRequest,
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(check_quota),
 ):
     result = await run_gap_analysis(
         topic=payload.topic,

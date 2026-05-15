@@ -9,10 +9,36 @@ from typing import Dict, List
 
 from bson import ObjectId
 from dotenv import load_dotenv
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, WebSocket, WebSocketDisconnect
 from fastapi.responses import Response, StreamingResponse
 
-from app.api.dependencies import get_current_user
+from app.api.dependencies import get_current_user, check_quota
+
+# ... existing imports ...
+
+class ConnectionManager:
+    def __init__(self):
+        self.active_connections: Dict[str, List[WebSocket]] = {}
+
+    async def connect(self, job_id: str, websocket: WebSocket):
+        await websocket.accept()
+        if job_id not in self.active_connections:
+            self.active_connections[job_id] = []
+        self.active_connections[job_id].append(websocket)
+
+    def disconnect(self, job_id: str, websocket: WebSocket):
+        if job_id in self.active_connections:
+            self.active_connections[job_id].remove(websocket)
+            if not self.active_connections[job_id]:
+                del self.active_connections[job_id]
+
+    async def broadcast_progress(self, job_id: str, message: dict):
+        if job_id in self.active_connections:
+            for connection in self.active_connections[job_id]:
+                await connection.send_json(message)
+
+manager = ConnectionManager()
+router = APIRouter(prefix="/synthesis", tags=["Synthesis"])
 from app.db.session import gap_reports_collection, cached_searches_collection
 from app.schemas.synthesis import (
     SynthesisHistoryItem,
@@ -117,7 +143,7 @@ def _hydrate_report(doc: dict) -> dict:
 )
 async def detect_gaps(
     payload: SynthesisRequest,
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(check_quota),
 ) -> SynthesisResponse:
     from app.services.synthesis.report_pipeline import run_synthesis_pipeline
 
@@ -210,7 +236,7 @@ async def detect_gaps(
 )
 async def detect_gaps_async(
     payload: SynthesisRequest,
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(check_quota),
 ):
     from app.services.synthesis.report_pipeline import run_synthesis_pipeline
     import uuid
@@ -235,6 +261,14 @@ async def detect_gaps_async(
             job.progress = event.get("progress", job.progress)
             job.detail = event.get("label", job.detail)
             job.updated_at = datetime.datetime.now().isoformat()
+            
+            # Broadcast to WebSocket clients
+            await manager.broadcast_progress(job_id, {
+                "status": job.status,
+                "progress": job.progress,
+                "detail": job.detail,
+                "updated_at": job.updated_at
+            })
 
     async def run_task():
         try:
@@ -246,6 +280,15 @@ async def detect_gaps_async(
                 job.detail = "Synthesis complete"
                 job.result = result
                 job.updated_at = datetime.datetime.now().isoformat()
+                
+                # Final broadcast
+                await manager.broadcast_progress(job_id, {
+                    "status": job.status,
+                    "progress": job.progress,
+                    "detail": job.detail,
+                    "updated_at": job.updated_at,
+                    "report_id": result.report_id
+                })
                 
                 # Save search to history automatically on completion
                 filters = {
@@ -270,6 +313,13 @@ async def detect_gaps_async(
                 job.status = JobStatusEnum.FAILED
                 job.error = str(exc)
                 job.updated_at = datetime.datetime.now().isoformat()
+                
+                # Error broadcast
+                await manager.broadcast_progress(job_id, {
+                    "status": job.status,
+                    "error": job.error,
+                    "updated_at": job.updated_at
+                })
 
     asyncio.create_task(run_task())
     return {"job_id": job_id, "status": "accepted"}
@@ -290,6 +340,32 @@ async def get_job_status(job_id: str):
     return job
 
 
+@router.websocket("/ws/{job_id}")
+async def websocket_endpoint(websocket: WebSocket, job_id: str):
+    """WebSocket endpoint for real-time progress updates."""
+    await manager.connect(job_id, websocket)
+    try:
+        # Send initial status
+        job = job_store.get(job_id)
+        if job:
+            await websocket.send_json({
+                "status": job.status,
+                "progress": job.progress,
+                "detail": job.detail,
+                "updated_at": job.updated_at
+            })
+        
+        while True:
+            # Keep connection open; we only push updates from the background task
+            data = await websocket.receive_text()
+            # Could handle client messages here if needed
+    except WebSocketDisconnect:
+        manager.disconnect(job_id, websocket)
+    except Exception as e:
+        logger.error(f"WebSocket error for job {job_id}: {e}")
+        manager.disconnect(job_id, websocket)
+
+
 # BATCH GAP DETECTION
 @router.post(
     "/gaps/batch",
@@ -299,7 +375,7 @@ async def get_job_status(job_id: str):
 )
 async def detect_gaps_batch(
     payloads: List[SynthesisRequest],
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(check_quota),
 ) -> List[SynthesisResponse]:
     if len(payloads) > 5:
         raise HTTPException(
@@ -344,7 +420,7 @@ async def detect_gaps_batch(
 )
 async def stream_detect_gaps(
     payload: SynthesisRequest,
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(check_quota),
 ) -> StreamingResponse:
     from app.services.synthesis.report_pipeline import run_synthesis_pipeline
 

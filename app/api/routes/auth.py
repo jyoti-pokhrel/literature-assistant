@@ -87,6 +87,9 @@ async def signup(user: UserSignup, background_tasks: BackgroundTasks):
         "auth_provider": "local",
         "role": "researcher",
         "created_at": datetime.now(timezone.utc),
+        "quota_limit": settings.DEFAULT_QUOTA_LIMIT,
+        "quota_used": 0,
+        "last_quota_reset": datetime.now(timezone.utc),
     }
 
     await db.users.insert_one(user_doc)
@@ -437,6 +440,9 @@ async def google_auth_callback(code: str):
                 "auth_provider": "google",
                 "role": "researcher",
                 "created_at": datetime.now(timezone.utc),
+                "quota_limit": settings.DEFAULT_QUOTA_LIMIT,
+                "quota_used": 0,
+                "last_quota_reset": datetime.now(timezone.utc),
             }
             await db.users.insert_one(user_doc)
             user = user_doc

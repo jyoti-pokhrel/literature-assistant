@@ -100,6 +100,7 @@ async def init_indexes() -> None:
     await _safe_create_index(users_collection, "email", unique=True)
     await _safe_create_index(users_collection, "username", unique=True)
     await _safe_create_index(users_collection, "role")
+    await _safe_create_index(users_collection, "api_key", unique=True, sparse=True)
 
     await _safe_create_index(otps_collection, "expires_at", expireAfterSeconds=0)
     await _safe_create_index(otps_collection, "email")

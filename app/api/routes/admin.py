@@ -4,6 +4,8 @@ from datetime import datetime, timedelta, timezone
 from app.api.dependencies import get_current_admin
 from app.db.session import get_db
 
+from app.schemas.user import UserUpdate
+
 router = APIRouter(prefix="/admin", tags=["admin"])
 
 
@@ -24,6 +26,25 @@ async def get_all_users(
         user["_id"] = str(user["_id"])
         users.append(user)
     return users
+
+
+@router.patch("/users/{username}")
+async def update_user(
+    username: str, data: UserUpdate, admin: dict = Depends(get_current_admin)
+):
+    """Update a user's role or quota. Only accessible by admins."""
+    db = get_db()
+    update_data = {k: v for k, v in data.dict().items() if v is not None}
+
+    if not update_data:
+        raise HTTPException(status_code=400, detail="No update data provided")
+
+    result = await db.users.update_one({"username": username}, {"$set": update_data})
+
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    return {"message": "User updated successfully", "updated": update_data}
 
 
 @router.get("/stats")
