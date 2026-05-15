@@ -1,3 +1,4 @@
+from typing import Optional
 from pydantic import BaseModel, EmailStr, Field
 from datetime import datetime
 
@@ -47,6 +48,29 @@ class ForgotPassword(BaseModel):
 class ResetPassword(BaseModel):
     token: str
     new_password: str = Field(..., min_length=8)
+
+
+class UserQuota(BaseModel):
+    quota_limit: int
+    quota_used: int
+    remaining: int
+    last_reset: Optional[datetime]
+
+
+class UserUpdate(BaseModel):
+    role: Optional[str] = None
+    quota_limit: Optional[int] = None
+    is_verified: Optional[bool] = None
+
+
+class UserProfile(BaseModel):
+    username: str
+    email: str
+    role: str
+    is_verified: bool
+    auth_provider: str
+    created_at: Optional[datetime]
+    quota: Optional[UserQuota] = None
 
 
 class ChatSave(BaseModel):

@@ -148,9 +148,7 @@ async def save_explore_seeds(
     current_user: dict = Depends(get_current_user),
 ):
     _ensure_enabled()
-    profile = await profile_builder.set_seed_topics(
-        _username(current_user), payload.topics
-    )
+    profile = await profile_builder.set_seed_topics(_username(current_user), payload.topics, user_id=str(current_user["_id"]))
     summary = {
         "top_topics": profile.top_topics,
         "seed_topics": profile.seed_topics,
@@ -172,8 +170,11 @@ async def explore_feed(
     current_user: dict = Depends(get_current_user),
 ):
     _ensure_enabled()
+    # If personalized is enabled, we could use the pipeline.get_feed_page or keyword_recommender.
+    # The existing code uses recommend_for_user from keyword_recommender.
     papers, next_cursor, has_more, summary = await recommend_for_user(
         _username(current_user),
+        user_id=str(current_user["_id"]),
         cursor=payload.cursor,
         page_size=payload.page_size,
         client_topics=payload.recent_topics,
@@ -194,7 +195,7 @@ async def explore_feed(
 )
 async def explore_profile(current_user: dict = Depends(get_current_user)):
     _ensure_enabled()
-    profile = await profile_builder.load_profile(_username(current_user))
+    profile = await profile_builder.load_profile(_username(current_user), user_id=str(current_user["_id"]))
     summary = {
         "top_topics": profile.top_topics,
         "seed_topics": profile.seed_topics,
@@ -250,7 +251,7 @@ async def explore_diagnostics(current_user: dict = Depends(get_current_user)):
     else:
         notes.append("papers_collection is None")
 
-    profile = await profile_builder.load_profile(username)
+    profile = await profile_builder.load_profile(username, user_id=str(current_user["_id"]))
     profile_state = "cold_start" if profile.is_cold_start else "ready"
     profile_vector_dim = len(profile.vector) if profile.vector else None
     seen_count = len(profile.seen_paper_ids)
@@ -259,7 +260,7 @@ async def explore_diagnostics(current_user: dict = Depends(get_current_user)):
         for c in (profile.components or [])[:8]
     ]
 
-    affinity = await build_affinity(username)
+    affinity = await build_affinity(username, user_id=str(current_user["_id"]))
     affinity_summary = {
         "top_authors": list(affinity.authors.keys())[:5],
         "top_venues": list(affinity.venues.keys())[:5],
@@ -329,9 +330,10 @@ async def record_explore_interactions(
 
     username = _username(current_user)
     recorded = 0
+    uid = str(current_user["_id"])
     for event in payload.events:
-        await record_interaction(username, event.external_id, event.kind)
+        await record_interaction(username, event.external_id, event.kind, user_id=uid)
         recorded += 1
     # Profile vector is rebuilt lazily on next /explore/feed; mark it stale.
-    await profile_builder.invalidate(username)
+    await profile_builder.invalidate(username, user_id=uid)
     return ExploreInteractionsResponse(recorded=recorded)

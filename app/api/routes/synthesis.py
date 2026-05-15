@@ -3,27 +3,59 @@ from __future__ import annotations
 import asyncio
 import logging
 import json
+import datetime
 from pathlib import Path
-from typing import List
+from typing import Dict, List
 
 from bson import ObjectId
 from dotenv import load_dotenv
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, WebSocket, WebSocketDisconnect
 from fastapi.responses import Response, StreamingResponse
 
-from app.api.dependencies import get_current_user
+from app.api.dependencies import get_current_user, check_quota
+
+# ... existing imports ...
+
+class ConnectionManager:
+    def __init__(self):
+        self.active_connections: Dict[str, List[WebSocket]] = {}
+
+    async def connect(self, job_id: str, websocket: WebSocket):
+        await websocket.accept()
+        if job_id not in self.active_connections:
+            self.active_connections[job_id] = []
+        self.active_connections[job_id].append(websocket)
+
+    def disconnect(self, job_id: str, websocket: WebSocket):
+        if job_id in self.active_connections:
+            self.active_connections[job_id].remove(websocket)
+            if not self.active_connections[job_id]:
+                del self.active_connections[job_id]
+
+    async def broadcast_progress(self, job_id: str, message: dict):
+        if job_id in self.active_connections:
+            for connection in self.active_connections[job_id]:
+                await connection.send_json(message)
+
+manager = ConnectionManager()
+router = APIRouter(prefix="/synthesis", tags=["Synthesis"])
+from app.db.session import gap_reports_collection, cached_searches_collection
 from app.schemas.synthesis import (
     SynthesisHistoryItem,
     SynthesisHistoryResponse,
     SynthesisRequest,
     SynthesisResponse,
+    SynthesisJobStatus,
+    JobStatusEnum,
 )
-from app.db.session import gap_reports_collection, cached_searches_collection
+from app.services.retrieval.history import save_search_history
 
 load_dotenv(dotenv_path=Path(__file__).resolve().parent.parent.parent.parent / ".env")
 
 logger = logging.getLogger(__name__)
 
+# Global job store for tracking background tasks
+job_store: Dict[str, SynthesisJobStatus] = {}
 
 router = APIRouter(prefix="/synthesis", tags=["Synthesis"])
 
@@ -107,14 +139,13 @@ def _hydrate_report(doc: dict) -> dict:
     "/gaps",
     response_model=SynthesisResponse,
     status_code=status.HTTP_200_OK,
-    summary="Analyze research gaps for a single topic",
+    summary="Analyze research gaps for a single topic (Synchronous)",
 )
 async def detect_gaps(
     payload: SynthesisRequest,
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(check_quota),
 ) -> SynthesisResponse:
     from app.services.synthesis.report_pipeline import run_synthesis_pipeline
-    import datetime
 
     search_hash = _generate_search_hash(payload)
 
@@ -128,19 +159,32 @@ async def detect_gaps(
             # Enforce schema validation and inject cache meta
             response = SynthesisResponse(**cached_data)
             response.is_cached = True
-            response.generated_at = cached_report.get(
-                "created_at", datetime.datetime.utcnow().isoformat()
+            response.generated_at = cached_report.get("created_at", datetime.datetime.utcnow().isoformat())
+            
+            # Save search to history even if cached
+            filters = {
+                "year": payload.year,
+                "venue": payload.venue,
+                "strict_venue": payload.strict_venue,
+                "max_results": payload.max_results,
+                "type": "synthesis"
+            }
+            await save_search_history(
+                current_user["username"], 
+                payload.topic, 
+                filters, 
+                cached_data.get("papers_analyzed", 0),
+                report_id=cached_data.get("report_id"),
+                user_id=str(current_user["_id"])
             )
             return response
 
     try:
-        result = await run_synthesis_pipeline(payload)
-
+        result = await run_synthesis_pipeline(payload, username=current_user["username"], user_id=str(current_user["_id"]))
+        
         # Save to cache asynchronously if DB is configured
         if cached_searches_collection is not None:
             # Dump to JSON first to ensure all dictionary keys (like ints) become strings for MongoDB
-            import json
-
             result_dict = json.loads(result.model_dump_json())
 
             async def _save_cache():
@@ -159,7 +203,23 @@ async def detect_gaps(
                     logger.error("Failed to cache search: %s", e)
 
             asyncio.create_task(_save_cache())
-
+            
+        # Save search to history
+        filters = {
+            "year": payload.year,
+            "venue": payload.venue,
+            "strict_venue": payload.strict_venue,
+            "max_results": payload.max_results,
+            "type": "synthesis"
+        }
+        await save_search_history(
+            current_user["username"], 
+            payload.topic, 
+            filters, 
+            result.papers_analyzed,
+            report_id=result.report_id,
+            user_id=str(current_user["_id"])
+        )
         return result
     except Exception as exc:
         logger.exception("Synthesis pipeline error: %s", exc)
@@ -167,6 +227,143 @@ async def detect_gaps(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Synthesis failed: {exc}",
         )
+
+
+@router.post(
+    "/gaps/async",
+    status_code=status.HTTP_202_ACCEPTED,
+    summary="Analyze research gaps in the background (Asynchronous)",
+)
+async def detect_gaps_async(
+    payload: SynthesisRequest,
+    current_user: dict = Depends(check_quota),
+):
+    from app.services.synthesis.report_pipeline import run_synthesis_pipeline
+    import uuid
+    
+    job_id = str(uuid.uuid4())
+    now = datetime.datetime.now().isoformat()
+    
+    job_status = SynthesisJobStatus(
+        job_id=job_id,
+        status=JobStatusEnum.PENDING,
+        progress=0,
+        detail="Initializing background task",
+        created_at=now,
+        updated_at=now
+    )
+    job_store[job_id] = job_status
+
+    async def progress_callback(event: dict):
+        job = job_store.get(job_id)
+        if job:
+            job.status = JobStatusEnum.PROCESSING
+            job.progress = event.get("progress", job.progress)
+            job.detail = event.get("label", job.detail)
+            job.updated_at = datetime.datetime.now().isoformat()
+            
+            # Broadcast to WebSocket clients
+            await manager.broadcast_progress(job_id, {
+                "status": job.status,
+                "progress": job.progress,
+                "detail": job.detail,
+                "updated_at": job.updated_at
+            })
+
+    async def run_task():
+        try:
+            result = await run_synthesis_pipeline(payload, username=current_user["username"], progress_callback=progress_callback, user_id=str(current_user["_id"]))
+            job = job_store.get(job_id)
+            if job:
+                job.status = JobStatusEnum.COMPLETED
+                job.progress = 100
+                job.detail = "Synthesis complete"
+                job.result = result
+                job.updated_at = datetime.datetime.now().isoformat()
+                
+                # Final broadcast
+                await manager.broadcast_progress(job_id, {
+                    "status": job.status,
+                    "progress": job.progress,
+                    "detail": job.detail,
+                    "updated_at": job.updated_at,
+                    "report_id": result.report_id
+                })
+                
+                # Save search to history automatically on completion
+                filters = {
+                    "year": payload.year,
+                    "venue": payload.venue,
+                    "strict_venue": payload.strict_venue,
+                    "max_results": payload.max_results,
+                    "type": "synthesis"
+                }
+                await save_search_history(
+                    current_user["username"], 
+                    payload.topic, 
+                    filters, 
+                    result.papers_analyzed,
+                    report_id=result.report_id,
+                    user_id=str(current_user["_id"])
+                )
+        except Exception as exc:
+            logger.exception("Background synthesis failed for job %s: %s", job_id, exc)
+            job = job_store.get(job_id)
+            if job:
+                job.status = JobStatusEnum.FAILED
+                job.error = str(exc)
+                job.updated_at = datetime.datetime.now().isoformat()
+                
+                # Error broadcast
+                await manager.broadcast_progress(job_id, {
+                    "status": job.status,
+                    "error": job.error,
+                    "updated_at": job.updated_at
+                })
+
+    asyncio.create_task(run_task())
+    return {"job_id": job_id, "status": "accepted"}
+
+
+@router.get(
+    "/status/{job_id}",
+    response_model=SynthesisJobStatus,
+    summary="Check status of a background synthesis job",
+)
+async def get_job_status(job_id: str):
+    job = job_store.get(job_id)
+    if not job:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Job {job_id} not found"
+        )
+    return job
+
+
+@router.websocket("/ws/{job_id}")
+async def websocket_endpoint(websocket: WebSocket, job_id: str):
+    """WebSocket endpoint for real-time progress updates."""
+    await manager.connect(job_id, websocket)
+    try:
+        # Send initial status
+        job = job_store.get(job_id)
+        if job:
+            await websocket.send_json({
+                "status": job.status,
+                "progress": job.progress,
+                "detail": job.detail,
+                "updated_at": job.updated_at
+            })
+        
+        while True:
+            # Keep connection open; we only push updates from the background task
+            data = await websocket.receive_text()
+            # Could handle client messages here if needed
+    except WebSocketDisconnect:
+        manager.disconnect(job_id, websocket)
+    except Exception as e:
+        logger.error(f"WebSocket error for job {job_id}: {e}")
+        manager.disconnect(job_id, websocket)
 
 
 # BATCH GAP DETECTION
@@ -178,7 +375,7 @@ async def detect_gaps(
 )
 async def detect_gaps_batch(
     payloads: List[SynthesisRequest],
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(check_quota),
 ) -> List[SynthesisResponse]:
     if len(payloads) > 5:
         raise HTTPException(
@@ -223,7 +420,7 @@ async def detect_gaps_batch(
 )
 async def stream_detect_gaps(
     payload: SynthesisRequest,
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(check_quota),
 ) -> StreamingResponse:
     from app.services.synthesis.report_pipeline import run_synthesis_pipeline
 
@@ -233,8 +430,6 @@ async def stream_detect_gaps(
         await queue.put({"type": "progress", **event})
 
     async def run_pipeline() -> None:
-        import datetime
-
         search_hash = _generate_search_hash(payload)
 
         try:
@@ -250,18 +445,53 @@ async def stream_detect_gaps(
                     )
                     cached_data = cached_report["data"]
                     cached_data["is_cached"] = True
-                    cached_data["generated_at"] = cached_report.get(
-                        "created_at", datetime.datetime.utcnow().isoformat()
+                    cached_data["generated_at"] = cached_report.get("created_at", datetime.datetime.utcnow().isoformat())
+                    
+                    # Save search to history even if cached
+                    filters = {
+                        "year": payload.year,
+                        "venue": payload.venue,
+                        "strict_venue": payload.strict_venue,
+                        "max_results": payload.max_results,
+                        "type": "synthesis"
+                    }
+                    await save_search_history(
+                        current_user["username"], 
+                        payload.topic, 
+                        filters, 
+                        cached_data.get("papers_analyzed", 0),
+                        report_id=cached_data.get("report_id"),
+                        user_id=str(current_user["_id"])
                     )
                     await queue.put({"type": "result", "data": cached_data})
                     return
 
             # 2. Run normal pipeline if no cache
             result = await run_synthesis_pipeline(
-                payload, progress_callback=progress_callback
+                payload,
+                username=current_user["username"],
+                progress_callback=progress_callback,
+                user_id=str(current_user["_id"])
+            )
+            
+            # 3. Save search to history automatically
+            filters = {
+                "year": payload.year,
+                "venue": payload.venue,
+                "strict_venue": payload.strict_venue,
+                "max_results": payload.max_results,
+                "type": "synthesis"
+            }
+            await save_search_history(
+                current_user["username"], 
+                payload.topic, 
+                filters, 
+                result.papers_analyzed,
+                report_id=result.report_id,
+                user_id=str(current_user["_id"])
             )
 
-            # 3. Save to cache asynchronously
+            # 4. Save to cache asynchronously
             if cached_searches_collection is not None:
                 result_dict = json.loads(result.model_dump_json())
 
@@ -326,7 +556,7 @@ async def get_synthesis_history(
 
     cursor = (
         gap_reports_collection.find(
-            {}, {"topic": 1, "papers_analyzed": 1, "gaps": 1, "created_at": 1}
+            {"user_id": str(current_user["_id"])}, {"topic": 1, "papers_analyzed": 1, "gaps": 1, "created_at": 1}
         )
         .sort("created_at", -1)
         .limit(limit)

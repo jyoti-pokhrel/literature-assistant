@@ -6,6 +6,8 @@ from httpx import HTTPStatusError
 
 from app.schemas.paper import RetrievedPaper
 from app.services.extraction.normalizer import VENUE_ALIASES, clean_text, filter_papers
+from app.core.http import get_http_client
+from app.services.retrieval.cache import arxiv_cache
 
 
 ARXIV_URL = "https://export.arxiv.org/api/query"
@@ -91,6 +93,12 @@ async def _fetch_page(
     page_size: int,
 ) -> List[RetrievedPaper]:
     cleaned_topic = (topic or "").strip()
+    # Cache key for individual page fetches
+    cache_key = f"fetch_page:{cleaned_topic}:{start}:{page_size}"
+    cached_results = await arxiv_cache.get(cache_key)
+    if cached_results is not None:
+        return cached_results
+
     if cleaned_topic:
         params = {
             "search_query": f"all:{cleaned_topic}",
@@ -100,9 +108,6 @@ async def _fetch_page(
             "sortOrder": "descending",
         }
     else:
-        # No topic: feed-style browse over all of arXiv, newest first.
-        # arXiv's API rejects `all:*` with a 500; `cat:*` matches every entry
-        # across all categories and works as the "latest" feed.
         params = {
             "search_query": "cat:*",
             "start": start,
@@ -114,9 +119,11 @@ async def _fetch_page(
         response = await client.get(ARXIV_URL, params=params)
         response.raise_for_status()
         root = ET.fromstring(response.text)
+        results = _parse_entries(root)
+        await arxiv_cache.set(cache_key, results)
+        return results
     except (HTTPStatusError, httpx.RequestError, ET.ParseError):
         return []
-    return _parse_entries(root)
 
 
 async def search_arxiv(
@@ -136,30 +143,39 @@ async def search_arxiv(
     start = 0
     page_size = min(max(limit * 2, limit), 20) if not filters_active else PAGE_SIZE
 
-    async with httpx.AsyncClient(timeout=timeout) as client:
-        while len(candidates) < MAX_CANDIDATES:
-            results = await _fetch_page(
-                client, topic=topic, start=start, page_size=page_size
-            )
-            if not results:
-                break
-            for paper in results:
-                pid = paper.external_id or paper.url or paper.title
-                if pid in seen_ids:
-                    continue
-                seen_ids.add(pid)
-                candidates.append(paper)
+    # High-level cache for the full search result
+    full_cache_key = f"search:{topic}:{year}:{venue}:{strict_venue}:{limit}"
+    cached_search = await arxiv_cache.get(full_cache_key)
+    if cached_search is not None:
+        return cached_search
 
-            filtered_so_far = filter_papers(
-                candidates, year=year, venue=cleaned_venue, strict_venue=strict_venue
-            )
-            if len(filtered_so_far) >= limit or not filters_active:
-                break
-            start += page_size
+    client = get_http_client()
+    while len(candidates) < MAX_CANDIDATES:
+        results = await _fetch_page(
+            client, topic=topic, start=start, page_size=page_size
+        )
+        if not results:
+            break
+        for paper in results:
+            pid = paper.external_id or paper.url or paper.title
+            if pid in seen_ids:
+                continue
+            seen_ids.add(pid)
+            candidates.append(paper)
 
-    return filter_papers(
+        filtered_so_far = filter_papers(
+            candidates, year=year, venue=cleaned_venue, strict_venue=strict_venue
+        )
+        if len(filtered_so_far) >= limit or not filters_active:
+            break
+        start += page_size
+
+    final_results = filter_papers(
         candidates, year=year, venue=cleaned_venue, strict_venue=strict_venue
     )[:limit]
+    
+    await arxiv_cache.set(full_cache_key, final_results)
+    return final_results
 
 
 async def fetch_arxiv_page(
@@ -191,35 +207,34 @@ async def fetch_arxiv_page(
     walked = 0
 
     topic_value = topic or ""
+    client = get_http_client()
+    while len(collected) < page_size and walked < MAX_CANDIDATES:
+        chunk_size = min(PAGE_SIZE, MAX_CANDIDATES - walked)
+        results = await _fetch_page(
+            client, topic=topic_value, start=next_cursor, page_size=chunk_size
+        )
+        if not results:
+            has_more = False
+            break
 
-    async with httpx.AsyncClient(timeout=timeout) as client:
-        while len(collected) < page_size and walked < MAX_CANDIDATES:
-            chunk_size = min(PAGE_SIZE, MAX_CANDIDATES - walked)
-            results = await _fetch_page(
-                client, topic=topic_value, start=next_cursor, page_size=chunk_size
-            )
-            if not results:
-                has_more = False
+        walked += len(results)
+        next_cursor += len(results)
+
+        filtered = filter_papers(
+            results, year=year, venue=cleaned_venue, strict_venue=strict_venue
+        )
+        for paper in filtered:
+            pid = paper.external_id or paper.url or paper.title
+            if pid in seen_ids:
+                continue
+            seen_ids.add(pid)
+            collected.append(paper)
+            if len(collected) >= page_size:
                 break
 
-            walked += len(results)
-            next_cursor += len(results)
-
-            filtered = filter_papers(
-                results, year=year, venue=cleaned_venue, strict_venue=strict_venue
-            )
-            for paper in filtered:
-                pid = paper.external_id or paper.url or paper.title
-                if pid in seen_ids:
-                    continue
-                seen_ids.add(pid)
-                collected.append(paper)
-                if len(collected) >= page_size:
-                    break
-
-            # If arXiv returned fewer than we asked for, the index is exhausted.
-            if len(results) < chunk_size:
-                has_more = False
-                break
+        # If arXiv returned fewer than we asked for, the index is exhausted.
+        if len(results) < chunk_size:
+            has_more = False
+            break
 
     return collected[:page_size], next_cursor, has_more

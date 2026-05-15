@@ -42,13 +42,22 @@ async def lifespan(app: FastAPI):
     def _bg_warmup():
         try:
             from app.services.synthesis.embeddings import warm_up_model
+            from app.utils.warmup import warm_up_apis
 
             warm_up_model()
+            # Since warm_up_apis is async, we need to run it in a loop
+            # But we are already in an executor, so we might need a different approach
+            # or just run it as a separate task in the main loop
         except Exception as exc:
-            log.warning("Embedding warm-up failed: %s", exc)
+            log.warning("Warm-up failed: %s", exc)
 
     loop.run_in_executor(None, _bg_warmup)
-    log.info("Embedding warm-up scheduled in background; server is ready.")
+    
+    # Run API warm-up directly in the main loop as a background task
+    from app.utils.warmup import warm_up_apis
+    asyncio.create_task(warm_up_apis())
+    
+    log.info("Embedding and API warm-up scheduled; server is ready.")
     yield
 
 
@@ -145,7 +154,6 @@ async def _shutdown_db() -> None:
     from app.db.session import close_db
 
     await close_db()
-
 
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 app.mount("/css", StaticFiles(directory=FRONTEND_DIR / "css"), name="frontend-css")

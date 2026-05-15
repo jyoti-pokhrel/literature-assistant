@@ -6,7 +6,6 @@ import certifi
 from dotenv import load_dotenv
 from motor.motor_asyncio import AsyncIOMotorClient
 
-
 logger = logging.getLogger(__name__)
 
 ENV_PATH = Path(__file__).resolve().parent.parent.parent / ".env"
@@ -15,33 +14,17 @@ load_dotenv(dotenv_path=ENV_PATH)
 MONGO_URL = os.getenv("MONGODB_URL") or os.getenv("MONGO_URI")
 DB_NAME = os.getenv("DB_NAME", "research_agent")
 
-# Connection settings rationale:
-#   maxPoolSize=50            Motor is async; a single uvicorn worker rarely
-#                             needs more than ~50 concurrent Mongo ops here
-#                             (OLTP REST endpoints — synthesis work is CPU /
-#                             external-API bound, not Mongo bound).
-#   minPoolSize=5             Pre-warm a small set so first requests skip the
-#                             TLS handshake (Atlas handshake is ~100–500ms).
-#   maxIdleTimeMS=30_000      Release idle sockets after 30s — Atlas closes
-#                             idle connections itself; matching keeps the
-#                             client-side view clean.
-#   serverSelectionTimeoutMS  Fail fast at 5s instead of the 30s default so a
-#                             dead cluster doesn't stall every endpoint.
-#   connectTimeoutMS=10_000   Generous budget for Atlas TLS + auth handshake.
-#   socketTimeoutMS=20_000    Cap a single stuck op; synthesis pipeline does
-#                             not hold one Mongo socket open for long.
-#   retryWrites=True          Atlas best practice; safe for idempotent writes.
-#   appname                   Surfaces in Atlas server logs for traceability.
+# Optimized connection settings for Atlas
 CLIENT_OPTIONS: dict = {
-    "tlsCAFile": certifi.where(),
     "maxPoolSize": 50,
     "minPoolSize": 5,
     "maxIdleTimeMS": 30_000,
-    "serverSelectionTimeoutMS": 5_000,
-    "connectTimeoutMS": 10_000,
+    "serverSelectionTimeoutMS": 30_000,
+    "connectTimeoutMS": 30_000,
     "socketTimeoutMS": 20_000,
     "retryWrites": True,
     "appname": "research-agent",
+    "tlsCAFile": certifi.where(),
 }
 
 
@@ -85,7 +68,6 @@ paper_interactions_collection = db["paper_interactions"] if db is not None else 
 
 
 async def ping() -> bool:
-    """Verify the cluster is reachable. Returns False instead of raising."""
     if client is None:
         return False
     try:
@@ -97,12 +79,6 @@ async def ping() -> bool:
 
 
 async def _safe_create_index(collection, keys, **kwargs) -> None:
-    """Create one index, swallowing conflicts so the rest of init can proceed.
-
-    A pre-existing index with a slightly different spec (e.g. missing the
-    `sparse` flag set on an older deployment) raises IndexKeySpecsConflict;
-    we log and move on rather than aborting startup.
-    """
     if collection is None:
         return
     try:
@@ -117,98 +93,29 @@ async def _safe_create_index(collection, keys, **kwargs) -> None:
 
 
 async def init_indexes() -> None:
-    """Create indexes for collections whose access patterns are owner-scoped.
-
-    Citation-cache indexes are handled separately in services/citations/cache.py
-    because that module owns its TTL/expiry semantics.
-    """
     if db is None:
-        logger.info("MongoDB not configured; skipping index creation")
         return
 
-    # users — match the historical spec (unique, non-sparse) to avoid
-    # IndexKeySpecsConflict on clusters that predate this code.
+    # Core indexes
     await _safe_create_index(users_collection, "email", unique=True)
     await _safe_create_index(users_collection, "username", unique=True)
-
-    await _safe_create_index(projects_collection, [("owner", 1), ("updated_at", -1)])
-    await _safe_create_index(projects_collection, [("owner", 1), ("archived", 1)])
-
-    await _safe_create_index(
-        library_items_collection,
-        [("project_id", 1), ("owner", 1), ("source", 1), ("external_id", 1)],
-        unique=True,
-        name="library_paper_uniq",
-    )
-    await _safe_create_index(
-        library_items_collection,
-        [("project_id", 1), ("owner", 1), ("updated_at", -1)],
-    )
-
-    await _safe_create_index(reports_collection, [("owner", 1), ("created_at", -1)])
-    await _safe_create_index(gap_reports_collection, [("owner", 1), ("created_at", -1)])
-
-    # users — role index used by admin panel filters
     await _safe_create_index(users_collection, "role")
+    await _safe_create_index(users_collection, "api_key", unique=True, sparse=True)
 
-    # OTPs: TTL via expires_at (the document sets expires_at = now + 5min)
     await _safe_create_index(otps_collection, "expires_at", expireAfterSeconds=0)
     await _safe_create_index(otps_collection, "email")
 
-    # Reset tokens: TTL + lookup by token
-    await _safe_create_index(
-        reset_tokens_collection, "expires_at", expireAfterSeconds=0
-    )
+    await _safe_create_index(reset_tokens_collection, "expires_at", expireAfterSeconds=0)
     await _safe_create_index(reset_tokens_collection, "email")
     await _safe_create_index(reset_tokens_collection, "token", unique=True)
 
-    # Search / chat history
+    # History and Profile indexes
+    await _safe_create_index(search_history_collection, "user_id")
     await _safe_create_index(search_history_collection, "username")
     await _safe_create_index(search_history_collection, "created_at")
-    await _safe_create_index(
-        search_history_collection, [("username", 1), ("created_at", -1)]
-    )
-    await _safe_create_index(chat_history_collection, "username")
+    await _safe_create_index(chat_history_collection, "user_id")
     await _safe_create_index(chat_history_collection, "created_at")
-
-    # Recommendation system: per-user profile vector + dedup ring buffer
-    await _safe_create_index(user_profiles_collection, "username", unique=True)
-    await _safe_create_index(user_profiles_collection, "profile_updated_at")
-
-    # Per-user gap-feedback signal log (decoupled from gap_reports because
-    # the existing gap_reports docs aren't stamped with an owner).
-    await _safe_create_index(
-        gap_feedback_signals_collection,
-        [("username", 1), ("updated_at", -1)],
-    )
-    await _safe_create_index(
-        gap_feedback_signals_collection,
-        [("username", 1), ("report_id", 1), ("gap_id", 1)],
-        unique=True,
-        name="gap_feedback_signal_uniq",
-    )
-
-    # Per-user interaction log for the explore feed (open/like/dislike/hide).
-    # Compound covers the common "load my recent feedback" query.
-    await _safe_create_index(
-        paper_interactions_collection,
-        [("username", 1), ("ts", -1)],
-    )
-    # One write per (user, paper, kind) — dedup likes/dislikes/etc.
-    await _safe_create_index(
-        paper_interactions_collection,
-        [("username", 1), ("external_id", 1), ("kind", 1)],
-        unique=True,
-        name="paper_interaction_uniq",
-    )
-
-    # Recommendation candidates: dedup lookup by (source, external_id) and
-    # backfill scans over freshly-embedded rows.
-    await _safe_create_index(
-        papers_collection,
-        [("source", 1), ("external_id", 1)],
-    )
-    await _safe_create_index(papers_collection, "embedded_at", sparse=True)
+    await _safe_create_index(user_profiles_collection, "user_id", unique=True)
 
 
 async def close_db() -> None:
@@ -217,5 +124,4 @@ async def close_db() -> None:
 
 
 def get_db():
-    """Return the active Motor database handle (or None if Mongo is not configured)."""
     return db

@@ -27,7 +27,7 @@ window.ResearchAgent.sidebarStateKey = 'research-agent-sidebar-collapsed-v3';
 window.ResearchAgent.cloneSearchValues = function cloneSearchValues(values = {}) {
     const maxResults = Number.parseInt(values.maxResults, 10);
     return {
-        topic: typeof values.topic === 'string' ? values.topic : '',
+        topic: typeof values.topic === 'string' ? values.topic : (typeof values.query === 'string' ? values.query : ''),
         year: typeof values.year === 'string' ? values.year : '',
         venue: typeof values.venue === 'string' ? values.venue : '',
         strictVenue: values.strictVenue === true || values.strictVenue === 'true',
@@ -247,7 +247,10 @@ document.addEventListener('alpine:init', () => {
         error: '',
         progressEvents: [],
         form: window.ResearchAgent.cloneSearchValues(window.ResearchAgent.defaults),
-        history: window.ResearchAgent.loadSearchHistory(),
+        history: [],
+        chatHistory: [],
+        currentChatSession: null,
+        chatInput: '',
         result: null,
         activeSearchKey: '',
         explorer: {
@@ -275,7 +278,7 @@ document.addEventListener('alpine:init', () => {
             profileSummary: null,
         },
 
-        init() {
+        async init() {
             if (this.initialized) {
                 return;
             }
@@ -284,6 +287,11 @@ document.addEventListener('alpine:init', () => {
             this.applyTheme(this.theme);
             if (this.requireAuthForCurrentRoute()) return;
             this.hydrateUser();
+
+            if (this.isLoggedIn) {
+                await this.refreshHistory();
+            }
+
             window.addEventListener('popstate', () => {
                 if (this.requireAuthForCurrentRoute()) return;
                 this.syncFromLocation();
@@ -325,6 +333,32 @@ document.addEventListener('alpine:init', () => {
                     localStorage.setItem('username', me.username);
                 })
                 .catch(() => { /* 401 is handled by the fetch interceptor */ });
+        },
+
+        async refreshHistory() {
+            if (!this.isLoggedIn) return;
+            try {
+                const [searchHistory, chatHistory] = await Promise.all([
+                    window.searchAPI.fetchSearchHistory(),
+                    window.chatAPI.fetchChatHistory()
+                ]);
+                this.history = searchHistory.map(item => ({
+                    ...item,
+                    topic: item.topic || item.query || '',
+                    summary: item.summary || `${item.result_count || item.results_count || 0} results`
+                }));
+                this.chatHistory = chatHistory;
+                
+                // Update current chat session if it's open
+                if (this.currentView === 'chat' && this.currentChatSession) {
+                    const updatedSession = this.chatHistory.find(s => s.session_id === this.currentChatSession.session_id);
+                    if (updatedSession) {
+                        this.currentChatSession = updatedSession;
+                    }
+                }
+            } catch (err) {
+                console.error("Failed to refresh history:", err);
+            }
         },
 
         applyTheme(theme) {
@@ -481,9 +515,42 @@ document.addEventListener('alpine:init', () => {
         async useHistoryItem(item, { replace = false } = {}) {
             const values = window.ResearchAgent.normalizeSearchValues(item);
             this.form = window.ResearchAgent.cloneSearchValues(values);
-            // Run a new search instead of pulling from localStorage. 
-            // Our server-side cache will instantly serve the result.
-            await this.runSearch(values, { replaceRoute: replace, pushRoute: true, saveHistory: false });
+            this.error = '';
+            this.isLoading = true;
+            this.progressEvents = [];
+            this.resetExplorer();
+            this.setMode('workspace');
+            this.closeSidebar();
+
+            try {
+                let result = null;
+                if (item.report_id) {
+                    result = await window.searchAPI.fetchReport(item.report_id);
+                } else if (item.result) {
+                    result = window.ResearchAgent.coerceStoredResult(item.result);
+                }
+
+                if (!result) {
+                    // If no result found in history, rerun the search
+                    // Our server-side cache will instantly serve the result.
+                    await this.runSearch(values, { replaceRoute: replace, pushRoute: true, saveHistory: false });
+                    return;
+                }
+
+                this.result = { searchData: result, gapData: result };
+                this.currentView = 'results';
+                this.activeSearchKey = window.ResearchAgent.searchKey(values);
+                
+                const route = this.buildSearchRoute(values);
+                this.goToPath(route.pathname, { search: route.search, replace });
+            } catch (err) {
+                console.error("Failed to load history item:", err);
+                this.error = "Failed to load results. They may have been deleted.";
+                // Rerun search as fallback
+                await this.runSearch(values, { replaceRoute: replace });
+            } finally {
+                this.isLoading = false;
+            }
         },
 
         persistHistory(values, result) {
@@ -504,9 +571,44 @@ document.addEventListener('alpine:init', () => {
             window.ResearchAgent.saveSearchHistory(this.history);
         },
 
-        removeFromHistory(id) {
-            this.history = this.history.filter(item => item.id !== id);
-            window.ResearchAgent.saveSearchHistory(this.history);
+        async removeFromHistory(id) {
+            try {
+                await window.searchAPI.deleteSearchHistory(id);
+                this.history = this.history.filter(item => item.id !== id);
+            } catch (err) {
+                this.error = "Failed to remove history item";
+            }
+        },
+
+        async clearAllSearchHistory() {
+            try {
+                await window.searchAPI.clearSearchHistory();
+                this.history = [];
+                window.ResearchAgent.saveSearchHistory(this.history);
+            } catch (err) {
+                this.error = "Failed to clear search history";
+            }
+        },
+
+        async removeFromChatHistory(sessionId) {
+            try {
+                await window.chatAPI.deleteChatSession(sessionId);
+                this.chatHistory = this.chatHistory.filter(item => item.session_id !== sessionId);
+            } catch (err) {
+                this.error = "Failed to remove chat session";
+            }
+        },
+
+        async clearAllChatHistory() {
+            try {
+                await window.chatAPI.clearChatHistory();
+                this.chatHistory = [];
+                if (this.currentChatSession && this.currentView === 'chat') {
+                    this.startNewSearch();
+                }
+            } catch (err) {
+                this.error = "Failed to clear chat history";
+            }
         },
 
         exploreSuggestions() {
@@ -520,14 +622,78 @@ document.addEventListener('alpine:init', () => {
 
         startNewSearch() {
             this.form = window.ResearchAgent.cloneSearchValues(window.ResearchAgent.defaults);
-            this.error = '';
-            this.isLoading = false;
-            this.progressEvents = [];
             this.result = null;
+            this.error = '';
             this.activeSearchKey = '';
             this.resetExplorer();
             this.resetExplore();
+            this.currentView = 'form';
+            this.closeSidebar();
+            if (window.innerWidth < 768) {
+                this.sidebarCollapsed = true;
+            }
             this.openWorkspace({ showForm: true });
+        },
+
+        openChat(chat) {
+            this.currentChatSession = chat;
+            this.currentView = 'chat';
+            this.closeSidebar();
+        },
+
+        async sendChatMessage() {
+            if (!this.chatInput.trim() || this.isLoading) return;
+            
+            const message = this.chatInput.trim();
+            this.chatInput = '';
+            this.isLoading = true;
+            
+            // Create a temporary session if none exists
+            if (!this.currentChatSession) {
+                this.currentChatSession = {
+                    session_id: 'temp-' + Date.now(),
+                    title: message.substring(0, 50) + '...',
+                    messages: []
+                };
+            }
+            
+            // Optimistically add user message
+            this.currentChatSession.messages.push({
+                role: 'user',
+                content: message,
+                timestamp: new Date().toISOString()
+            });
+
+            try {
+                // Mock AI response logic for now, as no LLM endpoint is specified
+                // In a full implementation, this would call an LLM API endpoint first
+                const aiResponse = `I received your message: "${message}". I am a research assistant ready to help you analyze papers. How can I assist you further?`;
+                
+                this.currentChatSession.messages.push({
+                    role: 'assistant',
+                    content: aiResponse,
+                    timestamp: new Date().toISOString()
+                });
+
+                const payload = {
+                    session_id: this.currentChatSession.session_id.startsWith('temp-') ? null : this.currentChatSession.session_id,
+                    title: this.currentChatSession.title,
+                    message: message,
+                    response: aiResponse
+                };
+
+                const res = await window.chatAPI.saveChatMessage(payload);
+                if (res.success && res.session_id) {
+                    this.currentChatSession.session_id = res.session_id;
+                }
+                
+                await this.refreshHistory();
+            } catch (err) {
+                console.error("Failed to send/save chat message:", err);
+                this.error = "Failed to send message.";
+            } finally {
+                this.isLoading = false;
+            }
         },
 
         async runSearch(values = this.form, options = {}) {
@@ -592,7 +758,7 @@ document.addEventListener('alpine:init', () => {
                 this.activeSearchKey = window.ResearchAgent.searchKey(normalized);
 
                 if (saveHistory) {
-                    this.persistHistory(normalized, result);
+                    await this.refreshHistory();
                 }
 
                 return true;

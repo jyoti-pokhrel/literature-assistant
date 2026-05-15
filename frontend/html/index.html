@@ -420,34 +420,31 @@
         </button>
       </nav>
       <div class="sidebar-section">
-        <div class="sidebar-label">Recent searches</div>
+        <div class="sidebar-label" style="display: flex; justify-content: space-between; align-items: center;">
+          <span>Recent searches</span>
+          <button type="button" x-show="$store.app.history.length > 0" @click="$store.app.clearAllSearchHistory()" style="background: none; border: none; font-size: 0.75rem; color: var(--text-muted); cursor: pointer; transition: color 0.2s;" onmouseover="this.style.color='var(--danger-color)'" onmouseout="this.style.color='var(--text-muted)'">Clear All</button>
+        </div>
         <div id="search-history" x-data="{ activeMenu: null }">
           <template x-if="!$store.app.history.length">
             <div class="px-history-item">No searches yet</div>
           </template>
           <template x-for="item in $store.app.history" :key="item.id">
-            <div class="px-history-item-container" style="position: relative; display: block;" @click.outside="if(activeMenu === item.id) activeMenu = null">
+            <div class="px-history-item-container" style="position: relative; display: block;" onmouseover="this.querySelector('.delete-history-btn').style.opacity='1'" onmouseout="this.querySelector('.delete-history-btn').style.opacity='0'">
               <button type="button" class="px-history-item history-button" @click="open(item)" style="width: 100%; text-align: left; padding-right: 2.5rem;">
-                <strong x-text="item.topic"></strong>
-                <span x-text="item.summary"></span>
+                <span x-text="item.query || item.topic"></span>
               </button>
               
               <div class="history-item-actions" style="position: absolute; right: 0.5rem; top: 50%; transform: translateY(-50%); z-index: 5;">
-                <button type="button" @click.stop="activeMenu = activeMenu === item.id ? null : item.id" aria-label="Options" style="width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; opacity: 0.5; cursor: pointer; background: transparent; border: none; color: inherit; border-radius: 4px; transition: opacity 0.2s;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.5'">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"></circle><circle cx="5" cy="12" r="1"></circle><circle cx="19" cy="12" r="1"></circle></svg>
+                <button type="button" class="delete-history-btn" @click.stop="$store.app.removeFromHistory(item.id)" aria-label="Delete" style="width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; opacity: 0; cursor: pointer; background: transparent; border: none; color: var(--text-muted); border-radius: 4px; transition: all 0.2s;" onmouseover="this.style.color='var(--danger-color)'" onmouseout="this.style.color='var(--text-muted)'">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
                 </button>
-                
-                <div x-show="activeMenu === item.id" x-cloak style="position: absolute; right: 0; top: 100%; z-index: 20; background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.2); min-width: 120px; overflow: hidden; margin-top: 4px;">
-                  <button type="button" @click.stop="$store.app.removeFromHistory(item.id); activeMenu = null" style="width: 100%; text-align: left; padding: 0.6rem 0.75rem; background: transparent; border: none; color: var(--text-color); cursor: pointer; font-size: 0.85rem; display: flex; align-items: center; gap: 0.5rem; transition: background 0.2s;" onmouseover="this.style.background='var(--bg-hover)'" onmouseout="this.style.background='transparent'">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
-                    Remove
-                  </button>
-                </div>
               </div>
             </div>
           </template>
         </div>
       </div>
+
+
       <div class="sidebar-bottom" x-data="{ profileMenuOpen: false }" @click.outside="profileMenuOpen = false" @keydown.escape.window="profileMenuOpen = false">
         <button type="button" class="profile-card" :class="{ 'is-open': profileMenuOpen }" @click="profileMenuOpen = !profileMenuOpen" :aria-expanded="profileMenuOpen" aria-haspopup="menu">
           <span class="profile-avatar" x-text="($store.app.user.initial || '?')"></span>
@@ -509,8 +506,8 @@
           <!-- Resume zone — surfaces the latest thread when history exists -->
           <template x-if="$store.app.history.length > 0">
             <section class="dw-resume">
-              <h2 class="dw-resume-title" x-text="$store.app.history[0].topic"></h2>
-              <p class="dw-resume-meta-text" x-text="$store.app.history[0].summary || 'In progress'"></p>
+              <h2 class="dw-resume-title" x-text="$store.app.history[0].topic || $store.app.history[0].query"></h2>
+              <p class="dw-resume-meta-text" x-show="false" x-text="$store.app.history[0].summary || 'In progress'"></p>
               <div class="dw-resume-actions">
                 <button type="button" class="dw-resume-cta" @click="$store.app.useHistoryItem($store.app.history[0])">
                   Resume
@@ -609,12 +606,9 @@
                 </li>
               </template>
               <template x-for="(item, index) in $store.app.history.slice(0, 8)" :key="item.id">
-                <li class="dw-log-row" :class="{ 'is-featured': index === 0 }" tabindex="0" role="button" @click="$store.app.useHistoryItem(item)" @keydown.enter.prevent="$store.app.useHistoryItem(item)" @keydown.space.prevent="$store.app.useHistoryItem(item)">
+                <li class="dw-log-row" :class="{ 'is-featured': index === 0 }" tabindex="0" role="button" @click="$store.app.useHistoryItem(item)" @keydown.enter.prevent="$store.app.useHistoryItem(item)" @keydown.space.prevent="$store.app.useHistoryItem(item)" :style="{ position: 'relative', zIndex: ($store.app.activeHistoryMenuId === item.id ? '200' : '1') }">
                   <div class="dw-log-row-head">
-                    <span class="dw-log-idx" x-text="(index + 1).toString().padStart(2, '0')"></span>
-                    <span class="dw-log-title" x-text="item.topic"></span>
-                    <i class="dw-log-leader" aria-hidden="true"></i>
-                    <span class="dw-log-meta" x-text="item.summary"></span>
+                    <span class="dw-log-title" x-text="item.query || item.topic"></span>
                   </div>
                 </li>
               </template>
@@ -1053,6 +1047,40 @@
                       </template>
                     </aside>
             </div>
+          </div>
+        </section>
+
+        <!-- Zone 4: Chat View (ChatGPT-like) -->
+        <section id="chat-view" class="px-thread-view" x-cloak x-show="$store.app.currentView === 'chat'" style="max-width: 800px; margin: 0 auto; display: flex; flex-direction: column; height: 100%;">
+          <header class="results-header" style="padding: 1.5rem 0;">
+            <div class="results-header-text">
+              <span class="results-header-folio">Conversation</span>
+              <h2 class="results-query-title" x-text="$store.app.currentChatSession?.title || 'New Chat'"></h2>
+            </div>
+          </header>
+
+          <div class="chat-messages" style="flex: 1; overflow-y: auto; padding: 1rem 0; display: flex; flex-direction: column; gap: 1.5rem;">
+            <template x-for="msg in $store.app.currentChatSession?.messages || []" :key="msg.timestamp">
+              <div class="chat-message" :class="msg.role === 'user' ? 'chat-msg-user' : 'chat-msg-ai'" style="display: flex; gap: 1rem; max-width: 90%;" :style="msg.role === 'user' ? 'align-self: flex-end; flex-direction: row-reverse;' : 'align-self: flex-start;'">
+                <div class="chat-avatar" style="width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: 700; flex-shrink: 0;" :style="msg.role === 'user' ? 'background: var(--brand-primary); color: white;' : 'background: var(--bg-surface); border: 1px solid var(--border-color);'">
+                  <span x-text="msg.role === 'user' ? 'U' : 'AI'"></span>
+                </div>
+                <div class="chat-bubble glass-glow" style="padding: 0.85rem 1.1rem; border-radius: 12px; font-size: 0.95rem; line-height: 1.5; color: var(--text-color);" :style="msg.role === 'user' ? 'border-bottom-right-radius: 4px;' : 'border-bottom-left-radius: 4px;'">
+                  <p x-text="msg.content"></p>
+                </div>
+              </div>
+            </template>
+          </div>
+
+          <div class="chat-input-area" style="padding: 1.5rem 0 2.5rem;">
+            <form @submit.prevent="if($store.app.chatInput.trim()) $store.app.sendChatMessage()" class="dash-omnibar glass-glow" style="max-width: 100%;">
+              <div class="dash-omnibar-main" style="padding: 0.5rem 1rem;">
+                <input class="dash-omnibar-input" type="text" placeholder="Type a message..." x-model="$store.app.chatInput" autocomplete="off" />
+                <button type="submit" class="dash-omnibar-submit" :disabled="!$store.app.chatInput.trim() || $store.app.isLoading">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+                </button>
+              </div>
+            </form>
           </div>
         </section>
 

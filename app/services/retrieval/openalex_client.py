@@ -7,6 +7,8 @@ from httpx import HTTPStatusError
 
 from app.schemas.paper import RetrievedPaper
 from app.services.extraction.normalizer import clean_text, filter_papers
+from app.core.http import get_http_client
+from app.services.retrieval.cache import openalex_cache
 
 
 load_dotenv()
@@ -85,6 +87,12 @@ async def _fetch_page(
     per_page: int,
     headers: dict,
 ) -> List[RetrievedPaper]:
+    # Cache key for individual page fetches
+    cache_key = f"fetch_page:{topic}:{venue}:{year}:{page}:{per_page}"
+    cached_results = await openalex_cache.get(cache_key)
+    if cached_results is not None:
+        return cached_results
+
     params: dict = {
         "search": topic,
         "per-page": per_page,
@@ -96,7 +104,9 @@ async def _fetch_page(
     try:
         response = await client.get(OPENALEX_URL, params=params, headers=headers)
         response.raise_for_status()
-        return _parse_items(response.json())
+        results = _parse_items(response.json())
+        await openalex_cache.set(cache_key, results)
+        return results
     except (HTTPStatusError, httpx.RequestError):
         return []
 
@@ -124,36 +134,45 @@ async def search_openalex(
     seen_ids: set[str] = set()
     page = 1
 
-    async with httpx.AsyncClient(timeout=timeout) as client:
-        while len(candidates) < MAX_CANDIDATES:
-            results = await _fetch_page(
-                client,
-                topic=cleaned_topic,
-                venue=cleaned_venue,
-                year=year,
-                page=page,
-                per_page=per_page,
-                headers=headers,
-            )
-            if not results:
-                break
-            for paper in results:
-                pid = paper.external_id or paper.url or paper.title
-                if pid in seen_ids:
-                    continue
-                seen_ids.add(pid)
-                candidates.append(paper)
+    # High-level cache for the full search result
+    full_cache_key = f"search:{topic}:{year}:{venue}:{strict_venue}:{limit}"
+    cached_search = await openalex_cache.get(full_cache_key)
+    if cached_search is not None:
+        return cached_search
 
-            filtered_so_far = filter_papers(
-                candidates, year=year, venue=cleaned_venue, strict_venue=strict_venue
-            )
-            if len(filtered_so_far) >= limit or not filters_active:
-                break
-            page += 1
+    client = get_http_client()
+    while len(candidates) < MAX_CANDIDATES:
+        results = await _fetch_page(
+            client,
+            topic=cleaned_topic,
+            venue=cleaned_venue,
+            year=year,
+            page=page,
+            per_page=per_page,
+            headers=headers,
+        )
+        if not results:
+            break
+        for paper in results:
+            pid = paper.external_id or paper.url or paper.title
+            if pid in seen_ids:
+                continue
+            seen_ids.add(pid)
+            candidates.append(paper)
 
-    return filter_papers(
+        filtered_so_far = filter_papers(
+            candidates, year=year, venue=cleaned_venue, strict_venue=strict_venue
+        )
+        if len(filtered_so_far) >= limit or not filters_active:
+            break
+        page += 1
+
+    final_results = filter_papers(
         candidates, year=year, venue=cleaned_venue, strict_venue=strict_venue
     )[:limit]
+    
+    await openalex_cache.set(full_cache_key, final_results)
+    return final_results
 
 
 def _invert_abstract(inverted_index: dict | None) -> str | None:

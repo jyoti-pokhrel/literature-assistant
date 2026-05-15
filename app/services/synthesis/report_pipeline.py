@@ -212,7 +212,9 @@ def _build_cluster_summaries(
 
 async def run_synthesis_pipeline(
     request: SynthesisRequest,
+    username: str | None = None,
     progress_callback: ProgressCallback | None = None,
+    user_id: str | None = None,
 ) -> SynthesisResponse:
     loop = asyncio.get_event_loop()
 
@@ -436,12 +438,14 @@ async def run_synthesis_pipeline(
     created_at = datetime.now(NEPAL_TZ).isoformat()
 
     doc = {
-        "_id": report_id,
-        "report_id": report_id,
-        "topic": request.topic,
-        "filters": retrieval.filters,
-        "sources_used": retrieval.sources_used,
-        "papers_analyzed": len(normalized_papers),
+        "_id":              report_id,
+        "report_id":        report_id,
+        "user_id":          user_id,
+        "username":         username,
+        "topic":            request.topic,
+        "filters":          retrieval.filters,
+        "sources_used":     retrieval.sources_used,
+        "papers_analyzed":  len(normalized_papers),
         "pattern_analysis": pattern.model_dump(),
         "gaps": [g.model_dump() for g in gaps],
         "clusters": cluster_dashboard,
@@ -461,6 +465,7 @@ async def run_synthesis_pipeline(
 
     dataset_record = {
         "report_id": report_id,
+        "user_id": user_id,
         "topic": request.topic,
         "filters": retrieval.filters,
         "sources_used": retrieval.sources_used,

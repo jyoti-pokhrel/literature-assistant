@@ -40,6 +40,7 @@ class Settings:
     API_KEY_NAME = os.environ.get("API_KEY_NAME", "x-api-key")
 
     AUTH_DEV_BYPASS = os.environ.get("AUTH_DEV_BYPASS", "0") == "1"
+    DEFAULT_QUOTA_LIMIT = int(os.environ.get("DEFAULT_QUOTA_LIMIT", "100"))
 
 
 settings = Settings()

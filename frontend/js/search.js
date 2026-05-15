@@ -209,6 +209,38 @@ function sourceLabel(source) {
         .join(" ");
 }
 
+// ── Search History API ──────────────────────────────────────────────────
+
+async function fetchSearchHistory() {
+    const response = await authenticatedFetch(`${BASE_URL}/search/history`, {
+        method: "GET",
+    });
+    return await parseResponse(response, "Failed to fetch search history");
+}
+
+async function deleteSearchHistory(history_id) {
+    const response = await authenticatedFetch(`${BASE_URL}/search/history/${history_id}`, {
+        method: "DELETE",
+    });
+    return await parseResponse(response, "Failed to delete history");
+}
+
+async function clearSearchHistory() {
+    const response = await authenticatedFetch(`${BASE_URL}/search/history`, {
+        method: "DELETE",
+    });
+    return await parseResponse(response, "Failed to clear search history");
+}
+
+async function fetchReport(report_id) {
+    const response = await authenticatedFetch(`${BASE_URL}/synthesis/report/${report_id}`, {
+        method: "GET",
+    });
+    return await parseResponse(response, "Failed to fetch report");
+}
+
+// ── User Profile API ────────────────────────────────────────────────────
+
 async function fetchCurrentUser() {
     const response = await authenticatedFetch(`${BASE_URL}/users/me`);
     if (response.status === 401) return null;
@@ -225,9 +257,51 @@ window.searchAPI = {
     fetchExploreDiagnostics,
     recordExploreInteractions,
     fetchPublicReport,
+    fetchReport,
     buildSearchPayload,
     formatFilters,
     sourceLabel,
+    fetchSearchHistory,
+    deleteSearchHistory,
+    clearSearchHistory,
     authenticatedFetch,
     fetchCurrentUser,
+};
+
+// ── Chat API ────────────────────────────────────────────────────────────
+
+async function fetchChatHistory() {
+    const response = await authenticatedFetch(`${BASE_URL}/chat/history`, {
+        method: "GET",
+    });
+    return await parseResponse(response, "Failed to fetch chat history");
+}
+
+async function saveChatMessage(payload) {
+    const response = await authenticatedFetch(`${BASE_URL}/chat/save`, {
+        method: "POST",
+        body: JSON.stringify(payload),
+    });
+    return await parseResponse(response, "Failed to save chat");
+}
+
+async function deleteChatSession(session_id) {
+    const response = await authenticatedFetch(`${BASE_URL}/chat/session/${session_id}`, {
+        method: "DELETE",
+    });
+    return await parseResponse(response, "Failed to delete chat session");
+}
+
+async function clearChatHistory() {
+    const response = await authenticatedFetch(`${BASE_URL}/chat/clear`, {
+        method: "DELETE",
+    });
+    return await parseResponse(response, "Failed to clear chat history");
+}
+
+window.chatAPI = {
+    fetchChatHistory,
+    saveChatMessage,
+    deleteChatSession,
+    clearChatHistory,
 };

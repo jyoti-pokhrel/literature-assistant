@@ -89,6 +89,7 @@ class ProfileComponent:
 
 @dataclass
 class Profile:
+    user_id: str
     username: str
     vector: Optional[list[float]]
     seed_topics: list[str]
@@ -130,12 +131,13 @@ async def _embed_signal_texts(texts: list[str]) -> list[list[float]]:
 
 async def _compose_profile(
     username: str,
+    user_id: str,
     seed_topics: list[str],
     seed_vectors: list[list[float]],
     seen_paper_ids: list[str],
 ) -> Profile:
-    search_signals = await fetch_search_signals(username)
-    gap_signals = await fetch_gap_signals(username)
+    search_signals = await fetch_search_signals(username, user_id=user_id)
+    gap_signals = await fetch_gap_signals(username, user_id=user_id)
 
     components: list[ProfileComponent] = []
 
@@ -182,7 +184,7 @@ async def _compose_profile(
             )
         )
 
-    interaction_signals = await fetch_interaction_signals(username)
+    interaction_signals = await fetch_interaction_signals(username, user_id=user_id)
     for signal in interaction_signals:
         weight = _interaction_weight(signal)
         if weight == 0.0:
@@ -201,6 +203,7 @@ async def _compose_profile(
     total_weight = sum(abs(c.weight) for c in contributing)
     if total_weight <= 0 or not contributing:
         return Profile(
+            user_id=user_id,
             username=username,
             vector=None,
             seed_topics=seed_topics,
@@ -217,6 +220,7 @@ async def _compose_profile(
     norm = float(np.linalg.norm(centroid))
     if norm < 1e-6:
         return Profile(
+            user_id=user_id,
             username=username,
             vector=None,
             seed_topics=seed_topics,
@@ -241,6 +245,7 @@ async def _compose_profile(
             break
 
     return Profile(
+        user_id=user_id,
         username=username,
         vector=centroid.astype(np.float32).tolist(),
         seed_topics=seed_topics,
@@ -268,6 +273,7 @@ async def _persist_profile(profile: Profile) -> None:
         return
     update_doc = {
         "$set": {
+            "user_id": profile.user_id,
             "username": profile.username,
             "profile_vector": profile.vector,
             "profile_components": _serialize_components(profile.components),
@@ -275,23 +281,25 @@ async def _persist_profile(profile: Profile) -> None:
             "profile_updated_at": profile.updated_at,
         }
     }
+    query = {"user_id": profile.user_id} if profile.user_id else {"username": profile.username}
     await user_profiles_collection.update_one(
-        {"username": profile.username},
+        query,
         update_doc,
         upsert=True,
     )
 
 
-async def _load_doc(username: str) -> dict:
+async def _load_doc(username: str, user_id: str | None = None) -> dict:
     if user_profiles_collection is None:
         return {}
-    doc = await user_profiles_collection.find_one({"username": username})
+    query = {"user_id": user_id} if user_id else {"username": username}
+    doc = await user_profiles_collection.find_one(query)
     return doc or {}
 
 
-async def build_profile(username: str) -> Profile:
+async def build_profile(username: str, user_id: str | None = None) -> Profile:
     """Recompute and persist the profile vector for `username`."""
-    doc = await _load_doc(username)
+    doc = await _load_doc(username, user_id=user_id)
     seed_topics = list(doc.get("seed_topics") or [])
     seed_vectors = [list(v) for v in (doc.get("seed_topic_embeddings") or []) if v]
     seen_paper_ids = _decayed_seen_ids(doc)
@@ -299,25 +307,28 @@ async def build_profile(username: str) -> Profile:
     if len(seed_vectors) < len(seed_topics):
         seed_vectors = await embed_texts(seed_topics)
         if user_profiles_collection is not None:
+            query = {"user_id": user_id} if user_id else {"username": username}
             await user_profiles_collection.update_one(
-                {"username": username},
+                query,
                 {"$set": {"seed_topic_embeddings": seed_vectors}},
                 upsert=True,
             )
+    
+    # Ensure we have a user_id for the Profile object even if the doc didn't have it
+    effective_user_id = user_id or doc.get("user_id") or ""
 
-    profile = await _compose_profile(
-        username, seed_topics, seed_vectors, seen_paper_ids
-    )
+    profile = await _compose_profile(username, effective_user_id, seed_topics, seed_vectors, seen_paper_ids)
     await _persist_profile(profile)
     return profile
 
 
-async def load_profile(username: str) -> Profile:
+async def load_profile(username: str, user_id: str | None = None) -> Profile:
     """Return cached profile if fresh; otherwise rebuild.
-
+ 
     A cached vector is considered stale when `dirty: True` is set on the doc.
     """
-    doc = await _load_doc(username)
+    doc = await _load_doc(username, user_id=user_id)
+    effective_user_id = user_id or doc.get("user_id") or ""
     seed_topics = list(doc.get("seed_topics") or [])
     seen_paper_ids = _decayed_seen_ids(doc)
     vector = doc.get("profile_vector")
@@ -335,6 +346,7 @@ async def load_profile(username: str) -> Profile:
             for item in (doc.get("profile_components") or [])
         ]
         return Profile(
+            user_id=effective_user_id,
             username=username,
             vector=list(vector),
             seed_topics=seed_topics,
@@ -343,25 +355,28 @@ async def load_profile(username: str) -> Profile:
             updated_at=doc.get("profile_updated_at") or datetime.now(timezone.utc),
             seen_paper_ids=seen_paper_ids,
         )
-
-    profile = await build_profile(username)
+ 
+    profile = await build_profile(username, user_id=user_id)
     if user_profiles_collection is not None and is_dirty:
+        query = {"user_id": user_id} if user_id else {"username": username}
         await user_profiles_collection.update_one(
-            {"username": username},
+            query,
             {"$unset": {"dirty": ""}},
         )
     return profile
 
 
-async def set_seed_topics(username: str, topics: list[str]) -> Profile:
+async def set_seed_topics(username: str, topics: list[str], user_id: str | None = None) -> Profile:
     """Save the 3 cold-start topics and compute the initial profile."""
     cleaned = [t.strip() for t in topics if t and t.strip()]
     seed_vectors = await embed_texts(cleaned)
     if user_profiles_collection is not None:
+        query = {"user_id": user_id} if user_id else {"username": username}
         await user_profiles_collection.update_one(
-            {"username": username},
+            query,
             {
                 "$set": {
+                    "user_id": user_id,
                     "username": username,
                     "seed_topics": cleaned,
                     "seed_topic_embeddings": seed_vectors,
@@ -369,16 +384,17 @@ async def set_seed_topics(username: str, topics: list[str]) -> Profile:
             },
             upsert=True,
         )
-    return await build_profile(username)
+    return await build_profile(username, user_id=user_id)
 
 
-async def invalidate(username: str) -> None:
+async def invalidate(username: str, user_id: str | None = None) -> None:
     """Mark the profile stale so the next load rebuilds it."""
-    if user_profiles_collection is None or not username:
+    if user_profiles_collection is None or (not username and not user_id):
         return
     try:
+        query = {"user_id": user_id} if user_id else {"username": username}
         await user_profiles_collection.update_one(
-            {"username": username},
+            query,
             {"$set": {"dirty": True}},
             upsert=True,
         )
@@ -387,23 +403,24 @@ async def invalidate(username: str) -> None:
 
 
 async def record_impressions(
-    username: str, external_ids: list[str], max_keep: int = SEEN_MAX_KEEP
+    username: str, external_ids: list[str], user_id: str | None = None, max_keep: int = SEEN_MAX_KEEP
 ) -> None:
     """Append timestamped impressions; trim to `max_keep`.
-
+ 
     Stores `seen_impressions = [{id, ts}, ...]` rather than a bare id list so
     `load_profile` can filter out impressions older than SEEN_EXPIRY_DAYS,
     letting old papers resurface.
     """
-    if user_profiles_collection is None or not username or not external_ids:
+    if user_profiles_collection is None or (not username and not user_id) or not external_ids:
         return
     now = datetime.now(timezone.utc)
     entries = [{"id": eid, "ts": now} for eid in external_ids if eid]
     if not entries:
         return
     try:
+        query = {"user_id": user_id} if user_id else {"username": username}
         await user_profiles_collection.update_one(
-            {"username": username},
+            query,
             {
                 "$push": {
                     "seen_impressions": {
@@ -411,7 +428,11 @@ async def record_impressions(
                         "$slice": -max_keep,
                     }
                 },
-                "$set": {"seen_impressions_updated_at": now},
+                "$set": {
+                    "user_id": user_id,
+                    "username": username,
+                    "seen_impressions_updated_at": now
+                },
             },
             upsert=True,
         )
