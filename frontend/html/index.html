@@ -574,7 +574,7 @@
                 </label>
                 <label class="dw-command-field">
                   <span class="dw-command-field-label">Max papers</span>
-                  <input id="max-results-filter" type="number" min="1" max="50" inputmode="numeric" placeholder="20" x-model.number="$store.app.form.maxResults" />
+                  <input id="max-results-filter" type="number" min="1" max="50" inputmode="numeric" placeholder="40" x-model.number="$store.app.form.maxResults" />
                 </label>
               </div>
             </form>
@@ -605,27 +605,10 @@
                   <span>Nothing yet — point the search above at a topic to begin.</span>
                 </li>
               </template>
-              <template x-for="(item, index) in $store.app.history" :key="item.id">
+              <template x-for="(item, index) in $store.app.history.slice(0, 8)" :key="item.id">
                 <li class="dw-log-row" :class="{ 'is-featured': index === 0 }" tabindex="0" role="button" @click="$store.app.useHistoryItem(item)" @keydown.enter.prevent="$store.app.useHistoryItem(item)" @keydown.space.prevent="$store.app.useHistoryItem(item)" :style="{ position: 'relative', zIndex: ($store.app.activeHistoryMenuId === item.id ? '200' : '1') }">
                   <div class="dw-log-row-head">
                     <span class="dw-log-title" x-text="item.query || item.topic"></span>
-                  </div>
-                  
-                  <div class="dw-log-row-actions" @click.stop @click.outside="if($store.app.activeHistoryMenuId === item.id) $store.app.activeHistoryMenuId = null">
-                    <span class="dw-log-resume" x-show="index === 0">Resume →</span>
-
-                    <!-- Kebab menu for removal -->
-                    <div class="dw-log-kebab-wrap">
-                      <button type="button" class="dw-log-kebab" @click="$store.app.activeHistoryMenuId = ($store.app.activeHistoryMenuId === item.id ? null : item.id)">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"></circle><circle cx="5" cy="12" r="1"></circle><circle cx="19" cy="12" r="1"></circle></svg>
-                      </button>
-                      <div class="dw-log-menu" x-show="$store.app.activeHistoryMenuId === item.id" x-cloak>
-                        <button type="button" class="dw-log-menu-item" @click="$store.app.removeFromHistory(item.id); $store.app.activeHistoryMenuId = null">
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
-                          Remove
-                        </button>
-                      </div>
-                    </div>
                   </div>
                 </li>
               </template>
@@ -784,15 +767,6 @@
             <!-- Zone 2: The Executive Summary (BLUF) -->
             <section class="results-summary">
                 <p class="synthesis-bluf" x-html="renderTextWithCitations($store.app.result?.gapData?.synthesis?.summary_text) || '<strong>Synthesized ' + papers().length + ' papers</strong> and identified <strong>' + validGaps().length + ' core research gaps</strong> across ' + clusters().length + ' thematic clusters.'"></p>
-                
-                <div x-show="$store.app.result?.gapData?.stats?.cluster_accuracy !== undefined" 
-                     style="display: flex !important; flex-direction: row !important; align-items: center !important; gap: 10px; margin-top: 1.25rem; padding-bottom: 0.75rem; border-bottom: 1px solid var(--border-color); opacity: 0.9;">
-                  <span style="font-size: 0.7rem; font-weight: 800; letter-spacing: 0.05em; color: var(--text-muted); text-transform: uppercase; white-space: nowrap;">Cluster Quality:</span>
-                  <div style="background: rgba(59, 130, 246, 0.08); padding: 2px 10px; border-radius: 4px; font-size: 0.75rem; font-weight: 700; color: var(--accent); border: 1px solid rgba(59, 130, 246, 0.15); display: inline-flex; align-items: center; gap: 4px; white-space: nowrap;">
-                    <span x-text="Number($store.app.result.gapData.stats.cluster_accuracy * 100).toFixed(0) + '%'"></span>
-                  </div>
-                  <div style="width: 1px; height: 14px; background: var(--border-color); margin-left: 4px; opacity: 0.5;"></div>
-                </div>
             </section>
 
             <!-- Zone 3: The Deep-Dive Workspace (Tabbed Navigation) -->
@@ -830,13 +804,15 @@
                     <ol class="gap-entries">
                         <template x-for="(gap, index) in filteredGaps()" :key="gapKey(gap, index)">
                           <li class="gap-entry" :class="{ 'is-selected': $store.app.explorer.selectedGapId === gapKey(gap, index) }" @click="selectGap(gap)">
-                            <div class="gap-entry-folio-row" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem;">
+                            <div class="gap-entry-folio-row" style="justify-content: space-between;">
                               <div style="display: flex; align-items: center; gap: 12px;">
                                 <span class="gap-entry-folio" x-text="`Cluster ${(gap.cluster_id ?? '–').toString().padStart(2, '0')}`"></span>
-                                <!-- Temporal Signal -->
-                                <span class="gap-meta-pill" 
-                                      :class="{ 'pill-emerging': clusterTrend(findCluster(gap.cluster_id)) === 'Emerging', 'pill-active': clusterTrend(findCluster(gap.cluster_id)) === 'Active', 'pill-saturated': clusterTrend(findCluster(gap.cluster_id)) === 'Saturated' }"
-                                      x-text="clusterTrend(findCluster(gap.cluster_id))"></span>
+                                <span class="gap-trend-pill" :data-trend="clusterTrend(findCluster(gap.cluster_id))">
+                                  <svg class="pill-trend-icon" width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                    <path :d="clusterTrendIcon(findCluster(gap.cluster_id))"/>
+                                  </svg>
+                                  <span x-text="`${clusterTrend(findCluster(gap.cluster_id))} Gap`"></span>
+                                </span>
                               </div>
                               <div style="font-size: 0.75rem; color: var(--text-muted); font-weight: 500; letter-spacing: -0.01em;">
                                 <span x-text="supportCountLabel(gap)"></span>
@@ -1124,18 +1100,6 @@
                 <span class="explore-chip" x-text="topic"></span>
               </template>
             </div>
-            <div class="explore-shell-meta">
-              <span x-text="$store.app.explore.papers.length + ' papers'"></span>
-              <span class="explore-shell-meta-dot" aria-hidden="true"></span>
-              <span x-text="$store.app.explore.hasMore ? 'scroll for more' : 'end of results'"></span>
-              <template x-if="$store.app.explore.profileSummary?.approach">
-                <span style="display:inline-flex; gap:0.85rem; align-items:center;">
-                  <span class="explore-shell-meta-dot" aria-hidden="true"></span>
-                  <span x-text="$store.app.explore.profileSummary.approach === 'tfidf' ? 'keyword match' : 'highly cited'"></span>
-                </span>
-              </template>
-            </div>
-
             <div x-show="$store.app.explore.error" class="explore-error" x-text="$store.app.explore.error"></div>
           </header>
 

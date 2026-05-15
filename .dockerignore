@@ -1,0 +1,57 @@
+# Version control
+.git
+.gitignore
+.gitattributes
+
+# Editor / IDE / agent state
+.vscode
+.idea
+.cursor
+.claude
+.kilo
+.aider*
+.continue
+.windsurf
+
+# Local virtualenvs and caches
+.venv
+venv
+env
+__pycache__
+*.pyc
+*.pyo
+.mypy_cache
+.ruff_cache
+.pytest_cache
+.tox
+
+# Node — frontend is loaded via CDN at runtime; node_modules is dev-only.
+node_modules
+npm-debug.log
+yarn-error.log
+
+# Tests are not part of the runtime image
+tests
+playwright-report
+test-results
+
+# Secrets and local config
+.env
+.env.local
+.env.*.local
+
+# Build artifacts
+dist
+build
+*.egg-info
+
+# Docs / markdown — keep CLAUDE.md out of the image
+*.md
+docs
+
+# OS junk
+.DS_Store
+Thumbs.db
+
+# Large data file — uncomment if the runtime doesn't need the seeded dataset.
+# data/research_gap_dataset.jsonl

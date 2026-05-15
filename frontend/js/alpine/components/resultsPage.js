@@ -11,14 +11,10 @@ document.addEventListener('alpine:init', () => {
             const gapData = this.$store.app.result?.gapData;
             const filters = this.activeFilters();
             const paperCount = searchData?.count ?? searchData?.papers?.length ?? gapData?.papers_analyzed ?? 0;
-            const quality = gapData?.stats?.cluster_accuracy ?? null;
 
             let text = `${paperCount} paper${paperCount === 1 ? '' : 's'}`;
             if (filters.length) {
                 text += ` · ${filters.join(' · ')}`;
-            }
-            if (quality !== null) {
-                text += ` · Cluster Quality: ${Number(quality * 100).toFixed(0)}%`;
             }
 
             return text;

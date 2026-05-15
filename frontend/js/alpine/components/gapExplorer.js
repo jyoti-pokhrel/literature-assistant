@@ -220,14 +220,21 @@ document.addEventListener('alpine:init', () => {
             return this.clusters().find((cluster) => String(cluster.cluster_id) === String(clusterId)) || null;
         },
 
+        clusterTrend(cluster) {
+            return cluster?.trend_status || 'Established';
+        },
+
+        clusterTrendIcon(cluster) {
+            const trend = this.clusterTrend(cluster);
+            if (trend === 'Emerging') return 'M2 8 L8 2 M4 2 L8 2 L8 6';
+            if (trend === 'Saturated') return 'M2 2 L8 8 M4 8 L8 8 L8 4';
+            return 'M2 5 L8 5';
+        },
+
         clusterColor(clusterId) {
             const colors = window.ClusterMap?.colors || ['#4e79a7'];
             const index = Math.abs(Number(clusterId) || 0) % colors.length;
             return colors[index];
-        },
-
-        clusterTrend(cluster) {
-            return cluster?.trend_status || 'Established';
         },
 
         confidence(gap) {

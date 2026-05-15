@@ -18,7 +18,7 @@ window.ResearchAgent.defaults = Object.freeze({
     year: '',
     venue: '',
     strictVenue: false,
-    maxResults: 10,
+    maxResults: 40,
 });
 
 window.ResearchAgent.searchHistoryKey = 'research-agent-search-history-v2';
@@ -192,7 +192,7 @@ window.ResearchAgent.buildExploreSuggestions = function buildExploreSuggestions(
     const suggestions = [];
     const seen = new Set();
     const pushSuggestion = (topic, reason) => {
-        const normalized = window.ResearchAgent.normalizeSearchValues({ topic, maxResults: 10 });
+        const normalized = window.ResearchAgent.normalizeSearchValues({ topic, maxResults: window.ResearchAgent.defaults.maxResults });
         if (!normalized.topic || seen.has(normalized.topic.toLowerCase())) {
             return;
         }
