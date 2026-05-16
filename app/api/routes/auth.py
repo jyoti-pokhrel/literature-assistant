@@ -16,6 +16,7 @@ from app.schemas.user import (
 )
 from app.utils.helpers import generate_otp, generate_reset_token, is_valid_password
 from app.utils.email import send_otp_email, send_reset_email
+from app.utils.activity import log_activity
 
 """
 Authentication Module
@@ -105,6 +106,8 @@ async def signup(user: UserSignup, background_tasks: BackgroundTasks):
 
     background_tasks.add_task(send_otp_email, user.email, otp)
 
+    await log_activity(username=user.username, action=f"User signed up: {user.username}", activity_type="account")
+
     return {
         "success": True,
         "message": "OTP sent to email. Please verify to complete signup.",
@@ -146,6 +149,8 @@ async def verify_otp(data: VerifyOTP):
     # Get user for token generation
     user = await db.users.find_one({"email": data.email})
     access_token = create_access_token(data={"sub": user["username"]})
+
+    await log_activity(user_id=str(user["_id"]), username=user["username"], action="Email verified via OTP", activity_type="account")
 
     return {
         "success": True,
@@ -225,6 +230,8 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends()):
         )
 
     access_token = create_access_token(data={"sub": user["username"]})
+
+    await log_activity(user_id=str(user["_id"]), username=user["username"], action="User logged in", activity_type="login")
 
     return {
         "success": True,
@@ -447,6 +454,7 @@ async def google_auth_callback(code: str):
             await db.users.insert_one(user_doc)
             user = user_doc
 
+        await log_activity(user_id=str(user["_id"]), username=user["username"], action="Logged in via Google", activity_type="login")
         token = create_access_token(data={"sub": user["username"]})
 
         # Land on a dedicated callback page that just stores the token and

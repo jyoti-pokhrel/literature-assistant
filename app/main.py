@@ -2,7 +2,7 @@ from pathlib import Path
 import asyncio
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.openapi.utils import get_openapi
 from fastapi.responses import FileResponse
@@ -22,6 +22,7 @@ from app.api.routes import (
     synthesis,
     user,
 )
+from app.api.dependencies import get_current_admin
 
 # .env loading logic
 env_path = Path(__file__).resolve().parent.parent / ".env"
@@ -217,8 +218,8 @@ def frontend_share_link(report_id: str):
 ADMIN_PAGE = FRONTEND_DIR / "html" / "admin.html"
 
 
-@app.get("/admin-panel", include_in_schema=False)
-def frontend_admin_panel():
+@app.get("/admin", include_in_schema=False)
+async def frontend_admin_panel(admin: dict = Depends(get_current_admin)):
     if not ADMIN_PAGE.exists():
         from fastapi import HTTPException
 

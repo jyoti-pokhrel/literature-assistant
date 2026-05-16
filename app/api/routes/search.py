@@ -4,7 +4,7 @@ from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, status
 
-from app.api.dependencies import get_current_user, check_quota
+from app.api.dependencies import get_current_user, check_quota, check_search_limit
 from app.db.session import get_db, search_history_collection
 from app.schemas.gap_analysis import GapAnalysisRequest, GapAnalysisResponse
 from app.schemas.paper import (
@@ -15,6 +15,7 @@ from app.services.orchestration.pipeline import run_gap_analysis
 from app.services.recommendations import profile_builder
 from app.services.retrieval.fetcher import retrieve_papers
 from app.services.retrieval.history import save_search_history
+from app.utils.activity import log_activity
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -42,6 +43,13 @@ async def _record_search(
         results_count=result.count,
         user_id=str(current_user["_id"])
     )
+    await log_activity(
+        user_id=str(current_user["_id"]),
+        username=username,
+        action=f"Searched: {payload.topic}",
+        activity_type="search",
+        details={"topic": payload.topic, "count": result.count}
+    )
 
 
 @router.post(
@@ -49,7 +57,7 @@ async def _record_search(
 )
 async def search_papers(
     payload: PaperSearchRequest,
-    current_user: dict = Depends(check_quota),
+    current_user: dict = Depends(check_search_limit),
 ):
     result = await retrieve_papers(
         payload.topic,
@@ -69,7 +77,7 @@ async def search_papers(
 )
 async def analyze_gaps_for_topic(
     payload: GapAnalysisRequest,
-    current_user: dict = Depends(check_quota),
+    current_user: dict = Depends(check_search_limit),
 ):
     result = await run_gap_analysis(
         topic=payload.topic,
@@ -92,6 +100,13 @@ async def analyze_gaps_for_topic(
         },
         results_count=getattr(result, "papers_analyzed", 0),
         user_id=str(current_user["_id"])
+    )
+    await log_activity(
+        user_id=str(current_user["_id"]),
+        username=username,
+        action=f"Ran gap analysis: {payload.topic}",
+        activity_type="search",
+        details={"topic": payload.topic}
     )
     asyncio.create_task(profile_builder.invalidate(username, user_id=str(current_user["_id"])))
     return result
