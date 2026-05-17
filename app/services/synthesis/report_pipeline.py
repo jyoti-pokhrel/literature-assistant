@@ -53,15 +53,19 @@ def _build_cluster_dashboard(
     reduced,
     gaps: list[SynthesisGap],
 ) -> list[dict]:
-
+    """Builds a detailed cluster map with coordinates for the UI."""
     cluster_map: dict[int, list[dict]] = {}
-
     raw_labels = labels.tolist() if hasattr(labels, "tolist") else labels
 
     for index, (paper, label) in enumerate(zip(normalized_papers, raw_labels)):
         cluster_id = int(label)
-        if cluster_id == -1:
+        # We include -1 (noise) in cluster 0 if everything else failed
+        # but normally we skip noise for distinct cluster shapes
+        if cluster_id == -1 and any(l != -1 for l in raw_labels):
             continue
+        
+        # Normalize cluster_id: if all are -1, group them in 0
+        effective_id = max(0, cluster_id)
 
         point = (
             reduced[index].tolist()
@@ -69,7 +73,7 @@ def _build_cluster_dashboard(
             else list(reduced[index])
         )
 
-        cluster_map.setdefault(cluster_id, []).append(
+        cluster_map.setdefault(effective_id, []).append(
             {
                 "paper_id": paper.get("paper_id"),
                 "title": paper.get("title"),
@@ -81,23 +85,26 @@ def _build_cluster_dashboard(
             }
         )
 
+    # Fallback if no clusters formed or labels were all noise
     if not cluster_map and normalized_papers:
-        cluster_map[0] = [
-            {
+        # Spread papers in a circle if they all have 0,0 coordinates
+        import math
+        cluster_map[0] = []
+        for i, p in enumerate(normalized_papers):
+            angle = (2 * math.pi * i) / len(normalized_papers)
+            radius = 0.5
+            cluster_map[0].append({
                 "paper_id": p.get("paper_id"),
                 "title": p.get("title"),
                 "year": p.get("year"),
                 "venue": p.get("venue"),
                 "source": p.get("source"),
-                "x": 0.0,
-                "y": 0.0,
-            }
-            for p in normalized_papers
-        ]
+                "x": round(radius * math.cos(angle), 4),
+                "y": round(radius * math.sin(angle), 4),
+            })
 
     gaps_by_cluster: dict[int, list[dict]] = {}
     for gap in gaps:
-        # Filter out hallucinated gaps from the dashboard/map
         if (gap.llm_verification.get("status", "").lower() == "hallucinated") or (
             gap.citation_validation.get("status", "").lower() == "hallucinated"
         ):
@@ -108,9 +115,7 @@ def _build_cluster_dashboard(
                 "gap_id": gap.gap_id,
                 "gap_title": gap.gap_title,
                 "confidence_score": gap.confidence_score,
-                "validation_status": gap.citation_validation.get("status")
-                if gap.citation_validation
-                else "unknown",
+                "validation_status": gap.citation_validation.get("status") if gap.citation_validation else "unknown",
             }
         )
 
@@ -172,39 +177,60 @@ async def _save_report_to_mongo(doc: dict) -> str:
 
 
 def _build_cluster_summaries(
-    cluster_map: dict[int, list[dict]],
+    cluster_map_raw: dict[int, list[dict]],
     cluster_themes: dict[int, dict],
     gaps: list[SynthesisGap],
+    dashboard_clusters: list[dict] = None,
 ) -> list[ClusterSummary]:
-
+    """Builds the final list of ClusterSummary objects for the response."""
     gap_by_cluster = {g.cluster_id: g.gap_id for g in gaps}
-    summaries: list[ClusterSummary] = []
+    
+    # Use dashboard papers if available (they have coordinates)
+    papers_by_id = {}
+    if dashboard_clusters:
+        papers_by_id = {c["cluster_id"]: c.get("papers", []) for c in dashboard_clusters}
 
-    for cluster_id, papers in cluster_map.items():
-        themes = cluster_themes.get(cluster_id, {})
+    summaries: list[ClusterSummary] = []
+    
+    # Use keys from cluster_map_raw to ensure we cover all clusters
+    for cluster_id, raw_papers in cluster_map_raw.items():
+        effective_id = max(0, cluster_id)
+        themes = cluster_themes.get(effective_id, {})
         label = themes.get("theme_label", "")
         if not label or "unspecified" in label.lower():
-            label = f"Research Theme #{cluster_id}"
+            label = f"Research Theme #{effective_id}"
 
         lims = themes.get("top_limitations", [])
         if not lims or not lims[0] or "unspecified" in str(lims[0]).lower():
             lims = ["Insufficient data available for targeted analysis."]
 
-        trend_status = themes.get("trend_status", "Established")
-
         summaries.append(
             ClusterSummary(
-                cluster_id=cluster_id,
+                cluster_id=effective_id,
                 theme_label=label,
-                paper_count=len(papers),
+                paper_count=len(raw_papers),
                 top_limitations=lims,
                 top_future_work=themes.get("top_future_work", []),
-                gap_id=gap_by_cluster.get(cluster_id),
-                trend_status=trend_status,
+                gap_id=gap_by_cluster.get(effective_id),
+                papers=papers_by_id.get(effective_id, []),
+                trend_status=themes.get("trend_status", "Established"),
             )
         )
 
-    return sorted(summaries, key=lambda s: s.cluster_id)
+    # De-duplicate by cluster_id if noise was merged
+    unique_summaries = {}
+    for s in summaries:
+        if s.cluster_id not in unique_summaries:
+            unique_summaries[s.cluster_id] = s
+        else:
+            unique_summaries[s.cluster_id].paper_count += s.paper_count
+            # Merge papers if they aren't already there
+            existing_ids = {p.get("paper_id") for p in unique_summaries[s.cluster_id].papers}
+            for p in s.papers:
+                if p.get("paper_id") not in existing_ids:
+                    unique_summaries[s.cluster_id].papers.append(p)
+
+    return sorted(unique_summaries.values(), key=lambda s: s.cluster_id)
 
 
 # Main pipeline
@@ -383,13 +409,6 @@ async def run_synthesis_pipeline(
         progress=90,
     )
 
-    cluster_summaries_future = loop.run_in_executor(
-        None,
-        _build_cluster_summaries,
-        cluster_map,
-        cluster_themes,
-        gaps,
-    )
     # Filter out hallucinated gaps for visualizations
     valid_viz_gaps = [
         g
@@ -417,18 +436,22 @@ async def run_synthesis_pipeline(
         gaps,
     )
 
-    cluster_summaries, viz_dict, cluster_dashboard = await asyncio.gather(
-        cluster_summaries_future, viz_dict_future, cluster_dashboard_future
+    viz_dict, cluster_dashboard = await asyncio.gather(
+        viz_dict_future, cluster_dashboard_future
     )
 
     visualizations = VisualizationData(
         **{k: viz_dict.get(k) for k in VisualizationData.model_fields}
     )
 
-    # Attach paper coordinates to cluster summaries
-    dashboard_by_id = {d["cluster_id"]: d for d in cluster_dashboard}
-    for summary in cluster_summaries:
-        summary.papers = dashboard_by_id.get(summary.cluster_id, {}).get("papers", [])
+    cluster_summaries = await loop.run_in_executor(
+        None,
+        _build_cluster_summaries,
+        cluster_map,
+        cluster_themes,
+        gaps,
+        cluster_dashboard,
+    )
 
     # Assemble metadata
     report_id = str(uuid.uuid4())

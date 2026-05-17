@@ -140,6 +140,43 @@ async def check_quota(current_user: dict = Depends(get_current_user)):
     return current_user
 
 
+async def check_search_limit(current_user: dict = Depends(get_current_user)):
+    """Dependency to enforce a strict limit of 10 searches per user."""
+    if current_user.get("role") == "admin":
+        return current_user
+
+    username = current_user.get("username")
+    search_count = current_user.get("search_count", 0)
+
+    if search_count >= 10:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail=f"Search limit reached ({search_count}/10). Please contact admin for more access.",
+        )
+
+    # Increment search count in the database using a fresh reference
+    try:
+        from app.db.session import get_db
+        db = get_db()
+        if db is not None:
+            result = await db.users.update_one(
+                {"username": username},
+                {"$inc": {"search_count": 1}}
+            )
+            if result.modified_count > 0:
+                current_user["search_count"] = search_count + 1
+            else:
+                # If the field didn't exist, $inc will create it. 
+                # If modified_count is 0, it might mean the user wasn't found (unlikely)
+                # or no change was made.
+                current_user["search_count"] = search_count + 1
+    except Exception as e:
+        import logging
+        logging.getLogger(__name__).error(f"Failed to increment search count for {username}: {e}")
+
+    return current_user
+
+
 async def require_admin(current_user: dict = Depends(get_current_user)):
     if current_user.get("role") != "admin":
         raise HTTPException(status_code=403, detail="Admin privileges required")

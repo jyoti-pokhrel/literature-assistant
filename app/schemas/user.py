@@ -61,6 +61,7 @@ class UserUpdate(BaseModel):
     role: Optional[str] = None
     quota_limit: Optional[int] = None
     is_verified: Optional[bool] = None
+    is_active: Optional[bool] = None
 
 
 class UserProfile(BaseModel):

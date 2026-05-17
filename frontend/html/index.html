@@ -446,6 +446,7 @@
 
 
       <div class="sidebar-bottom" x-data="{ profileMenuOpen: false }" @click.outside="profileMenuOpen = false" @keydown.escape.window="profileMenuOpen = false">
+        </template>
         <button type="button" class="profile-card" :class="{ 'is-open': profileMenuOpen }" @click="profileMenuOpen = !profileMenuOpen" :aria-expanded="profileMenuOpen" aria-haspopup="menu">
           <span class="profile-avatar" x-text="($store.app.user.initial || '?')"></span>
           <span class="profile-meta">
@@ -455,17 +456,20 @@
           <svg class="profile-caret" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 15 12 9 18 15"></polyline></svg>
         </button>
         <div class="profile-menu glass-strong" x-show="profileMenuOpen" x-cloak x-transition.opacity.duration.150ms role="menu">
+          <template x-if="$store.app.user.isAdmin">
+            <a class="profile-menu-item" role="menuitem" href="/admin" @click="profileMenuOpen = false">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+              <span>Admin Panel</span>
+            </a>
+          </template>
+          <template x-if="$store.app.user.isAdmin">
+            <div class="profile-menu-divider" aria-hidden="true"></div>
+          </template>
           <button type="button" class="profile-menu-item" role="menuitem" @click="$store.app.toggleTheme(); profileMenuOpen = false">
             <svg x-show="$store.app.theme === 'light'" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
             <svg x-show="$store.app.theme === 'dark'" x-cloak width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4.2"></circle><line x1="12" y1="2.5" x2="12" y2="5"></line><line x1="12" y1="19" x2="12" y2="21.5"></line><line x1="2.5" y1="12" x2="5" y2="12"></line><line x1="19" y1="12" x2="21.5" y2="12"></line><line x1="5.6" y1="5.6" x2="7.4" y2="7.4"></line><line x1="16.6" y1="16.6" x2="18.4" y2="18.4"></line><line x1="5.6" y1="18.4" x2="7.4" y2="16.6"></line><line x1="16.6" y1="7.4" x2="18.4" y2="5.6"></line></svg>
             <span x-text="$store.app.theme === 'light' ? 'Switch to dark' : 'Switch to light'"></span>
           </button>
-          <template x-if="$store.app.user.isAdmin">
-            <a class="profile-menu-item" role="menuitem" href="/admin-panel" @click="profileMenuOpen = false">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2l8 4v6c0 5-3.5 9-8 10-4.5-1-8-5-8-10V6l8-4z"></path></svg>
-              <span>Admin panel</span>
-            </a>
-          </template>
           <div class="profile-menu-divider" aria-hidden="true"></div>
           <button type="button" class="profile-menu-item is-danger" role="menuitem" @click="profileMenuOpen = false; $store.app.signOut()">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
