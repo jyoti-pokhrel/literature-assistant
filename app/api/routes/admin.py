@@ -1,7 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from datetime import datetime, timedelta, timezone
-from typing import Optional, List
-from bson import ObjectId
+from typing import Optional
 
 from app.api.dependencies import get_current_admin
 from app.db.session import get_db

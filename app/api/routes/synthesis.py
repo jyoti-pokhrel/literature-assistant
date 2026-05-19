@@ -39,8 +39,8 @@ class ConnectionManager:
 
 manager = ConnectionManager()
 router = APIRouter(prefix="/synthesis", tags=["Synthesis"])
-from app.db.session import gap_reports_collection, cached_searches_collection
-from app.schemas.synthesis import (
+from app.db.session import gap_reports_collection, cached_searches_collection  # noqa: E402
+from app.schemas.synthesis import (  # noqa: E402
     SynthesisHistoryItem,
     SynthesisHistoryResponse,
     SynthesisRequest,
@@ -48,7 +48,7 @@ from app.schemas.synthesis import (
     SynthesisJobStatus,
     JobStatusEnum,
 )
-from app.services.retrieval.history import save_search_history
+from app.services.retrieval.history import save_search_history  # noqa: E402
 
 load_dotenv(dotenv_path=Path(__file__).resolve().parent.parent.parent.parent / ".env")
 
@@ -357,7 +357,7 @@ async def websocket_endpoint(websocket: WebSocket, job_id: str):
         
         while True:
             # Keep connection open; we only push updates from the background task
-            data = await websocket.receive_text()
+            _ = await websocket.receive_text()
             # Could handle client messages here if needed
     except WebSocketDisconnect:
         manager.disconnect(job_id, websocket)

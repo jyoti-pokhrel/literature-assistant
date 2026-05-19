@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import re
+from enum import Enum
 from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel, Field, field_validator, model_validator
@@ -272,8 +273,6 @@ class SynthesisHistoryResponse(BaseModel):
 
 
 # ── Background Jobs ──────────────────────────────────────────────────────────
-
-from enum import Enum
 
 class JobStatusEnum(str, Enum):
     PENDING = "pending"

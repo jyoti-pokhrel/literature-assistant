@@ -14,14 +14,8 @@ from dotenv import load_dotenv
 
 load_dotenv(dotenv_path=Path(__file__).resolve().parent.parent.parent.parent / ".env")
 
-# Model configuration
-PRIMARY_MODEL: str = os.getenv("SYNTHESIS_MODEL_PRIMARY", "")
-if not PRIMARY_MODEL:
-    raise RuntimeError("SYNTHESIS_MODEL_PRIMARY is not set in .env")
-
-FALLBACK_MODEL: str = os.getenv("SYNTHESIS_MODEL_FALLBACK", "")
-if not FALLBACK_MODEL:
-    raise RuntimeError("SYNTHESIS_MODEL_FALLBACK is not set in .env")
+PRIMARY_MODEL: str = os.getenv("SYNTHESIS_MODEL_PRIMARY") or "google/gemini-2.5-pro"
+FALLBACK_MODEL: str = os.getenv("SYNTHESIS_MODEL_FALLBACK") or "anthropic/claude-3.5-sonnet"
 
 OPENROUTER_API_KEY: str = os.getenv("OPENROUTER_API_KEY", "")
 

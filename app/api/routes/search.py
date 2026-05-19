@@ -1,11 +1,10 @@
 import asyncio
 import logging
-from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, status
 
-from app.api.dependencies import get_current_user, check_quota, check_search_limit
-from app.db.session import get_db, search_history_collection
+from app.api.dependencies import get_current_user, check_search_limit
+from app.db.session import get_db
 from app.schemas.gap_analysis import GapAnalysisRequest, GapAnalysisResponse
 from app.schemas.paper import (
     PaperSearchRequest,
