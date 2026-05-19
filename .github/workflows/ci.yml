@@ -127,6 +127,23 @@ jobs:
           docker stop ra-smoke || true
           exit 1
 
+  deploy:
+    name: Deploy to Render
+    needs: [lint, test, docker]
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    steps:
+      - name: Trigger Render Deploy Hook
+        env:
+          RENDER_DEPLOY_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+        run: |
+          if [ -z "$RENDER_DEPLOY_HOOK" ]; then
+            echo "Error: RENDER_DEPLOY_HOOK_URL secret is not configured in GitHub Secrets."
+            exit 1
+          fi
+          echo "Triggering Render deployment..."
+          curl -f -X POST "$RENDER_DEPLOY_HOOK"
+
   e2e:
     name: Playwright E2E
     if: github.event_name == 'workflow_dispatch' && inputs.run_e2e
