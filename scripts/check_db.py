@@ -1,10 +1,12 @@
 import asyncio
 import motor.motor_asyncio
 import os
+from pathlib import Path
 from dotenv import load_dotenv
 
 async def main():
-    load_dotenv()
+    env_path = Path(__file__).resolve().parent.parent / '.env'
+    load_dotenv(dotenv_path=env_path)
     client = motor.motor_asyncio.AsyncIOMotorClient(os.getenv('MONGODB_URL'))
     db = client[os.getenv('DB_NAME', 'research_agent')]
     
