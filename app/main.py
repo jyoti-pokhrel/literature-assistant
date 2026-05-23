@@ -43,7 +43,6 @@ async def lifespan(app: FastAPI):
     def _bg_warmup():
         try:
             from app.services.synthesis.embeddings import warm_up_model
-            from app.utils.warmup import warm_up_apis
 
             warm_up_model()
             # Since warm_up_apis is async, we need to run it in a loop

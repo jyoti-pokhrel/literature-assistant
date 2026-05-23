@@ -61,7 +61,7 @@ def _build_cluster_dashboard(
         cluster_id = int(label)
         # We include -1 (noise) in cluster 0 if everything else failed
         # but normally we skip noise for distinct cluster shapes
-        if cluster_id == -1 and any(l != -1 for l in raw_labels):
+        if cluster_id == -1 and any(lbl != -1 for lbl in raw_labels):
             continue
         
         # Normalize cluster_id: if all are -1, group them in 0

@@ -12,13 +12,8 @@ from dotenv import load_dotenv
 
 load_dotenv(dotenv_path=Path(__file__).resolve().parent.parent.parent.parent / ".env")
 
-PRIMARY_MODEL: str = os.getenv("EMBEDDING_MODEL")
-if not PRIMARY_MODEL:
-    raise RuntimeError("EMBEDDING_MODEL is not set in .env")
-
-FALLBACK_MODEL: str = os.getenv("EMBEDDING_FALLBACK_MODEL")
-if not FALLBACK_MODEL:
-    raise RuntimeError("EMBEDDING_FALLBACK_MODEL is not set in .env")
+PRIMARY_MODEL: str = os.getenv("EMBEDDING_MODEL") or "all-MiniLM-L6-v2"
+FALLBACK_MODEL: str = os.getenv("EMBEDDING_FALLBACK_MODEL") or "all-mpnet-base-v2"
 
 logger = logging.getLogger(__name__)
 

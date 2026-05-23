@@ -102,8 +102,8 @@ def validate_gap_against_supported_papers(
     for i, p_vec in enumerate(paper_vecs):
         sim = _cosine_similarity(target_vec, p_vec)
         # Check if the paper's "contribution" area matches our "gap"
-        # 0.60 is a safer threshold for semantic overlap in technical text
-        if sim > 0.60:
+        # 0.75 is a safer threshold for semantic overlap in technical text
+        if sim > 0.75:
             matches.append(
                 {
                     "paper_id": cluster_papers[i].get("paper_id"),
@@ -189,9 +189,9 @@ Return JSON only:
 
 # Cosine similarity thresholds
 _HALLUCINATION_THRESHOLD = (
-    0.25  # below → almost certainly hallucinated (e.g. CNN vs ViT scores ~0.24)
+    0.18  # below → almost certainly hallucinated (e.g. CNN vs ViT scores ~0.24)
 )
-_WEAK_SUPPORT_THRESHOLD = 0.40  # below → weakly supported
+_WEAK_SUPPORT_THRESHOLD = 0.30  # below → weakly supported
 
 
 def _compute_grounding(

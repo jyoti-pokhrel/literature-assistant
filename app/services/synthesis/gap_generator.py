@@ -14,14 +14,8 @@ from dotenv import load_dotenv
 
 load_dotenv(dotenv_path=Path(__file__).resolve().parent.parent.parent.parent / ".env")
 
-# Model configuration
-PRIMARY_MODEL: str = os.getenv("SYNTHESIS_MODEL_PRIMARY", "")
-if not PRIMARY_MODEL:
-    raise RuntimeError("SYNTHESIS_MODEL_PRIMARY is not set in .env")
-
-FALLBACK_MODEL: str = os.getenv("SYNTHESIS_MODEL_FALLBACK", "")
-if not FALLBACK_MODEL:
-    raise RuntimeError("SYNTHESIS_MODEL_FALLBACK is not set in .env")
+PRIMARY_MODEL: str = os.getenv("SYNTHESIS_MODEL_PRIMARY") or "google/gemini-2.5-pro"
+FALLBACK_MODEL: str = os.getenv("SYNTHESIS_MODEL_FALLBACK") or "anthropic/claude-3.5-sonnet"
 
 OPENROUTER_API_KEY: str = os.getenv("OPENROUTER_API_KEY", "")
 
@@ -685,7 +679,7 @@ async def generate_gaps_for_cluster(
 
             # Apply penalty if the gap is potentially addressed by newer papers
             if cross_val.get("status") == "potentially_addressed":
-                final_score = round(final_score * 0.7, 2)
+                final_score = round(final_score * 0.85, 2)
 
             evidence = _build_evidence(cluster_papers)
             score_breakdown = build_gap_score_breakdown(
@@ -766,23 +760,27 @@ async def generate_all_gaps(
     sorted_clusters = sorted(cluster_map.items(), key=lambda x: len(x[1]), reverse=True)
 
     # Process all clusters with the LLM for maximum gap coverage
-    max_llm_clusters = 100
+    max_llm_clusters = 15
 
-    results = []
-    for i, (cid, cprs) in enumerate(sorted_clusters):
-        # Allow all clusters to use the LLM if they meet the minimum size
+    # Use a semaphore to limit concurrent LLM calls to prevent aggressive rate limits
+    sem = asyncio.Semaphore(3)
+
+    async def _process_cluster(i: int, cid: int, cprs: list[dict]):
         force_heuristic = i >= max_llm_clusters
-        try:
-            res = await generate_gaps_for_cluster(
-                cid, cprs, topic, pattern, _all, force_heuristic=force_heuristic
-            )
-            results.append(res)
-        except Exception as e:
-            results.append(e)
+        async with sem:
+            try:
+                # Add a small stagger to prevent sending all requests at the exact same millisecond
+                if not force_heuristic and i > 0:
+                    await asyncio.sleep(0.5 * min(i, 5))
+                return await generate_gaps_for_cluster(
+                    cid, cprs, topic, pattern, _all, force_heuristic=force_heuristic
+                )
+            except Exception as e:
+                return e
 
-        # Add a delay between LLM calls to prevent upstream rate limits
-        if not force_heuristic and i < len(sorted_clusters) - 1:
-            await asyncio.sleep(2.0)
+    # Process all clusters concurrently
+    tasks = [_process_cluster(i, cid, cprs) for i, (cid, cprs) in enumerate(sorted_clusters)]
+    results = await asyncio.gather(*tasks)
 
     gaps: list[SynthesisGap] = []
     llm_theme_labels: dict[int, str] = {}
