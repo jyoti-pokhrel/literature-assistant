@@ -273,7 +273,7 @@ See `.env.example` for the full list. The required ones:
 | --- | --- |
 | `MONGODB_URL`, `DB_NAME` | MongoDB connection (Atlas or local) |
 | `OPENROUTER_API_KEY` | LLM provider for synthesis / gap generation |
-| `MODEL_NAME`, `SYNTHESIS_MODEL_PRIMARY`, `SYNTHESIS_MODEL_FALLBACK` | LLM model IDs |
+| `SYNTHESIS_MODEL_PRIMARY`, `SYNTHESIS_MODEL_FALLBACK` | LLM model IDs |
 | `EMBEDDING_MODEL`, `EMBEDDING_FALLBACK_MODEL` | sentence-transformers model names |
 | `SECRET_KEY`, `ALGORITHM`, `ACCESS_TOKEN_EXPIRE_MINUTES` | JWT settings |
 | `SEMANTIC_SCHOLAR_API_KEY`, `TAVILY_API_KEY`, `OPENALEX_API_KEY` | Optional, but raise rate limits |

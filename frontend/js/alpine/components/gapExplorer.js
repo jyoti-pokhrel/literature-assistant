@@ -77,8 +77,8 @@ document.addEventListener('alpine:init', () => {
 
         validGaps() {
             return this.gaps().filter((gap) => {
-                const isHallucinated = 
-                    gap.llm_verification?.status?.toLowerCase() === 'hallucinated' || 
+                const isHallucinated =
+                    gap.llm_verification?.status?.toLowerCase() === 'hallucinated' ||
                     gap.citation_validation?.status?.toLowerCase() === 'hallucinated';
                 return !isHallucinated;
             });
@@ -260,10 +260,10 @@ document.addEventListener('alpine:init', () => {
 
             const filtered = this.gaps().filter((gap) => {
                 // EXCLUDE HALLUCINATED GAPS
-                const isHallucinated = 
-                    gap.llm_verification?.status?.toLowerCase() === 'hallucinated' || 
+                const isHallucinated =
+                    gap.llm_verification?.status?.toLowerCase() === 'hallucinated' ||
                     gap.citation_validation?.status?.toLowerCase() === 'hallucinated';
-                
+
                 if (isHallucinated) return false;
 
                 const score = this.confidence(gap);
@@ -560,11 +560,11 @@ document.addEventListener('alpine:init', () => {
                 const idx = parseInt(n, 10) - 1;
                 const citation = citations[idx];
                 const link = this.getCitationLink(citation);
-                
+
                 if (link) {
                     return `<a href="${link}" target="_blank" rel="noopener noreferrer" class="cite-badge">${match}</a>`;
                 }
-                
+
                 // No URL: strip the citation marker entirely so it doesn't show in the UI
                 return '';
             });

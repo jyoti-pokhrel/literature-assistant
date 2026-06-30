@@ -338,7 +338,7 @@ async def run_synthesis_pipeline(
 
     import functools
 
-    dynamic_min_cluster = max(2, len(normalized_papers) // 20)
+    dynamic_min_cluster = max(3, len(normalized_papers) // 10)
     reduced_2d, reduced_nd, labels, cluster_accuracy = await loop.run_in_executor(
         None,
         functools.partial(

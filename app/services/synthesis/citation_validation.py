@@ -147,25 +147,36 @@ async def verify_gap_with_llm(
         evidence_text += f"[{i + 1}] {context}\n\n"
 
     prompt = f"""
-Validate the following research gap against the provided evidence from cited papers.
+You are a strict citation fact-checker. Validate the research gap below against the paper evidence provided.
 
 RESEARCH GAP:
 Title: {gap_fields.get("gap_title")}
 Failure: {gap_fields.get("what_fails")}
 Missing Piece: {gap_fields.get("missing_piece")}
+Description: {gap_fields.get("description", "")}
 
 EVIDENCE FROM CITED PAPERS:
 {evidence_text}
 
-TASK:
-1. Check if the "Failure" and "Missing Piece" are explicitly or implicitly supported by the evidence.
-2. Check if any cited paper actually SOLVES the "Missing Piece" (which would make the gap invalid).
-3. Assign a final status: "Validated", "Hallucinated", or "Weakly Supported".
+TASK — perform ALL 4 checks:
+
+1. DOMAIN CHECK: For every specific technical term, application domain, or evaluation concept mentioned in the gap (e.g. "partial observability", "safety", "latency", "noise robustness", "multi-agent"), verify it is explicitly present in the abstract/evidence of the paper it is cited from. If a term appears in the gap but NOT in the cited paper's evidence, that is a hallucination.
+
+2. CLAIM CHECK: For each sentence in the gap that ends with a citation [N], verify that the cited paper [N]'s evidence actually supports that specific claim. Do NOT give credit for vague topical overlap — the paper must explicitly address the claimed limitation or finding.
+
+3. NUMERIC CHECK: If the gap mentions any specific numbers, percentages, or metrics, verify each one is explicitly stated in the cited paper. Any unverified number is a hallucination.
+
+4. RESOLUTION CHECK: Does any cited paper already solve the "Missing Piece"? If yes, the gap is invalid.
+
+Decide the overall status:
+- "Validated": ALL claims are directly supported by the cited evidence with no hallucinated terms or numbers.
+- "Weakly Supported": Claims are generally topically relevant but some specific terms, concepts, or framing are not explicitly found in the cited text.
+- "Hallucinated": One or more sentences cite a paper that clearly does NOT support the specific claim, OR specific numbers/domains are introduced that do not appear in the evidence.
 
 Return JSON only:
 {{
   "status": "Validated" | "Hallucinated" | "Weakly Supported",
-  "reason": "Brief explanation",
+  "reason": "Specific explanation identifying which claims are unsupported and why",
   "confidence": 0.0 to 1.0
 }}
 """

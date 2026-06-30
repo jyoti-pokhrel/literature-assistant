@@ -102,8 +102,8 @@ def reduce_and_cluster(
         )
 
     # makes UMAP use 75% of data as context → over-smooth blob → few clusters.
-    # A local neighbourhood (≤8) reveals finer topological structure.
-    neighbors = min(8, n - 1)
+    # A local neighbourhood (≤15) reveals broader topological structure (fewer clusters).
+    neighbors = min(15, n - 1)
     nd_components = min(5, n - 1)
 
     # We need at least 2 dimensions for visualization; run to max of the two
