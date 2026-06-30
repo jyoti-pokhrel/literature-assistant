@@ -15,6 +15,15 @@ document.addEventListener('alpine:init', () => {
                     this.autoSelectFirstGap();
                 });
             });
+            this.$watch('$store.app.isLoading', (loading) => {
+                if (!loading) {
+                    this.$nextTick(() => {
+                        this.renderClusterMap();
+                        this.renderCharts();
+                        this.autoSelectFirstGap();
+                    });
+                }
+            });
             this.$watch('$store.app.theme', () => this.$nextTick(() => this.renderCharts()));
             this.$watch('$store.app.explorer.selectedGapId', () => this.$nextTick(() => this.renderCharts()));
             this.$watch('$store.app.explorer.filters.minConfidence', () => this.syncMapFilterHighlight());
