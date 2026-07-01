@@ -366,7 +366,6 @@ def generate_pdf_report(
             ("umap_scatter", "Semantic Cluster Mapping (UMAP)"),
             ("confidence_bars", "Gap Confidence Distribution"),
             ("year_distribution", "Temporal Publication Density"),
-            ("metric_frequency", "Evaluation Metric Prevalence"),
         ]
 
         found_viz = False

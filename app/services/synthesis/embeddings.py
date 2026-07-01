@@ -12,8 +12,8 @@ from dotenv import load_dotenv
 
 load_dotenv(dotenv_path=Path(__file__).resolve().parent.parent.parent.parent / ".env")
 
-PRIMARY_MODEL: str = os.getenv("EMBEDDING_MODEL") or "all-MiniLM-L6-v2"
-FALLBACK_MODEL: str = os.getenv("EMBEDDING_FALLBACK_MODEL") or "all-mpnet-base-v2"
+PRIMARY_MODEL: str = os.getenv("EMBEDDING_MODEL")
+FALLBACK_MODEL: str = os.getenv("EMBEDDING_FALLBACK_MODEL")
 
 logger = logging.getLogger(__name__)
 
@@ -61,7 +61,6 @@ def warm_up_model() -> None:
 
 # Text construction
 
-
 def _normalize(text: str) -> str:
     if not text:
         return ""
@@ -74,8 +73,9 @@ def _build_texts(papers: list[dict]) -> list[str]:
 
     texts: list[str] = []
     for paper in papers:
-        # Abstract: first 400 chars
-        abstract = _normalize((paper.get("abstract") or "")[:400])
+        # Abstract: first 800 chars
+        abstract = paper.get("abstract", "")
+        abstract = _normalize(abstract[:800])
         title = _normalize(paper.get("title", ""))
         lims = " ".join(
             _normalize(t) for t in (paper.get("normalized_limitations") or [])[:5] if t
@@ -98,7 +98,6 @@ def _build_texts(papers: list[dict]) -> list[str]:
 
 
 # Public API
-
 
 def generate_embeddings(papers: list[dict]) -> np.ndarray:
     if not papers:

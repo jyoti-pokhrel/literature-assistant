@@ -14,12 +14,11 @@ from dotenv import load_dotenv
 
 load_dotenv(dotenv_path=Path(__file__).resolve().parent.parent.parent.parent / ".env")
 
-PRIMARY_MODEL: str = os.getenv("SYNTHESIS_MODEL_PRIMARY") or "google/gemini-2.5-pro"
-FALLBACK_MODEL: str = os.getenv("SYNTHESIS_MODEL_FALLBACK") or "anthropic/claude-3.5-sonnet"
+PRIMARY_MODEL: str = os.getenv("SYNTHESIS_MODEL_PRIMARY")
+FALLBACK_MODEL: str = os.getenv("SYNTHESIS_MODEL_FALLBACK")
 
 OPENROUTER_API_KEY: str = os.getenv("OPENROUTER_API_KEY", "")
 
-MODEL_NAME: str = os.getenv("MODEL_NAME", "google/gemini-flash-1.5")
 
 LLM_PROVIDER: str = os.getenv("LLM_PROVIDER", "remote").lower()
 
@@ -96,7 +95,7 @@ def _build_cluster_context(cluster_papers: list[dict]) -> str:
         title = p.get("title", "Unknown")
         year = p.get("year", "?")
         # Abstract: first 350 chars
-        abstract = (p.get("abstract") or "")[:350].strip()
+        abstract = (p.get("abstract") or "")[:500].strip()
         limitations = "; ".join((p.get("normalized_limitations") or [])[:5])
         future_work = "; ".join((p.get("normalized_future_work") or [])[:5])
         methods_raw = (
@@ -126,6 +125,7 @@ def _gap_prompt(
     topic: str,
     pattern: dict,
     themes: dict,
+    other_themes: list[str] | None = None,
 ) -> str:
     context = _build_cluster_context(cluster_papers)
     n_papers = min(len(cluster_papers), 8)
@@ -147,6 +147,20 @@ def _gap_prompt(
     cluster_fw = ", ".join(themes.get("top_future_work") or []) or "not yet identified"
     theme_label = themes.get("theme_label", "unspecified")
 
+    other_themes_context = ""
+    if other_themes:
+        # Filter out empty or unspecified themes
+        filtered_other = [t for t in other_themes if t and "unspecified" not in t.lower()]
+        if filtered_other:
+            distinct_other = sorted(list(set(filtered_other)))
+            other_themes_context = (
+                "\nDISTINCTNESS CONSTRAINT:\n"
+                "To ensure research gaps are distinct across different clusters, here are themes of the other clusters in this literature review:\n"
+                "  - " + "\n  - ".join(distinct_other) + "\n"
+                "CRITICAL: Do NOT copy, duplicate, or heavily overlap with these themes or their titles. "
+                "Ensure that your generated `theme_label` and `gap_title` are uniquely differentiated and specific to the unique details, applications, and papers of THIS cluster.\n"
+            )
+
     return f"""You are an expert Research Analyst specializing in identifying unresolved research gaps from academic literature.
 
 Your task: Analyze the {n_papers} papers below on the topic "{topic}" and produce precise, highly-critical, evidence-backed research gap that represents the most significant unresolved problem in this cluster.
@@ -160,7 +174,7 @@ Global field patterns:
 This cluster's theme: {theme_label}
   - Shared limitations:  {cluster_lims}
   - Open future work:    {cluster_fw}
-
+{other_themes_context}
 PAPERS IN THIS CLUSTER:
 {context}
 
@@ -181,15 +195,15 @@ STEP 2 — QUALITY RULES
   ✗ If fewer than 2 papers clearly support a claim, do NOT make that claim.
   ✓ Only cite [N] when you can complete this test: "Paper [N] says '___', which proves ___."
 
-▸ ANTI-HALLUCINATION (CRITICAL):
-  ✗ NEVER invent or hallucinate specific numbers, percentages (e.g., ">20% drop"), or metrics unless they are EXPLICITLY written in the paper context provided above.
-  ✗ NEVER introduce specific technical concepts (like "partial observability") unless they actually appear in the text for the cited paper.
-  ✓ Use qualitative terms (e.g., "significant degradation", "robustness drop") if exact numbers are not provided in the abstract.
+▸ ANTI-HALLUCINATION (CRITICAL — highest priority rule):
+  ✗ NEVER invent specific numbers, percentages, drop rates, or thresholds (e.g., ">20% drop", "40% win rate", "3x slower") UNLESS that exact figure is EXPLICITLY written in the paper context provided above.
+  ✗ NEVER introduce specific technical concepts unless they actually appear in the text for the cited paper.
+  ✗ This rule overrides ALL other rules, including the SPECIFICITY rule below.
+  ✓ Use qualitative terms (e.g., "significant degradation", "substantial robustness drop", "markedly reduced performance") whenever exact figures are not present in the abstracts.
 
 ▸ SPECIFICITY — Every claim must name the exact mechanism that fails:
   ✗ BAD:  "Current methods do not scale well."
-  ✓ GOOD: "Attention-based coordination mechanisms degrade by >35% throughput when
-           agent count exceeds 64 due to quadratic message complexity [2]."
+  ✓ GOOD: "Attention-based coordination mechanisms exhibit substantial throughput degradation when agent count exceeds 64 due to quadratic message complexity [2]."
 
 ▸ MATHEMATICAL RIGOR & NOTATION PRESERVATION (CRITICAL):
   ✓ ALWAYS preserve original variable names (|S|, |A|, |B|, \gamma, \epsilon) and mathematical notation exactly as they appear in the paper abstracts.
@@ -197,19 +211,24 @@ STEP 2 — QUALITY RULES
   ✓ Ensure all exponents, subscripts, and superscripts are correctly represented using standard text or LaTeX-style notation (e.g., ^-3, _0).
   ✗ NEVER substitute Greek letters with plain English words if the symbol is provided.
 
-▸ CITATIONS — One [N] per sentence, placed at the sentence end:
+▸ CITATIONS (CRITICAL WRITING STYLE RULE) — Place citation numbers [N] ONLY at the very end of sentences (before or immediately after the period). Never place citation numbers in the middle of a sentence, and NEVER use citation numbers as nouns, subjects, or objects of a verb. The text must read naturally if all citation brackets `[N]` were removed.
+  ✗ FORBIDDEN: Using citation markers as nouns or subjects (e.g., "[1] shows", "[2] and [3] emphasize", "According to [1]", "As discussed in [2]").
   ✗ BAD:  "Paper [1] and [2] both show this."
-  ✓ GOOD: "Transformer-based policies fail to generalize across environment shifts [1].
-           Reward shaping mitigates this but introduces instability under partial
-           observability [3]."
+  ✗ BAD:  "According to [1], standard policies fail in complex environments."
+  ✗ BAD:  "Similarly, [2] and [3] emphasize the challenges of real-time processing."
+  ✓ GOOD: "Transformer-based policies fail to generalize across environment shifts [1]."
+  ✓ GOOD: "Real-time processing of multimodal data presents significant latency challenges in healthcare applications [2, 3]."
 
-▸ DESCRIPTION — Write exactly 5 sentences following this structure:
-    Sentence 1: State the core technical failure that repeats across papers [N].
-    Sentence 2: Explain WHY the current approach hits this limit, with evidence [N].
-    Sentence 3: Show a specific empirical or theoretical consequence [N].
-    Sentence 4: Identify what is missing (dataset / metric / method / theory) [N].
-    Sentence 5: Cite the paper(s) whose future-work or limitation statements confirm why
-                existing approaches cannot close this gap without a new direction [N].
+▸ SENTENCE GROUNDING RULE (CRITICAL — enforced per sentence):
+  Before writing each sentence that ends with [N], complete this internal check:
+    a) Open the context block for paper [N] shown above (Contribution, Limitations, Future work).
+    b) Identify the EXACT phrase or concept from paper [N] that supports your sentence.
+    c) Only include a domain, technical term, or concept (e.g. "partial observability", "safety", "latency", "noise") if that EXACT term appears in paper [N]'s text block.
+    d) If no matching phrase exists in paper [N], rewrite the sentence using only terms that DO appear, or choose a different citation.
+  ✗ FORBIDDEN: Importing a term from your general knowledge that is not in the paper's context.
+  ✗ FORBIDDEN: Using paper [N] to support a sentence about a domain or concept that paper [N] never mentions.
+
+▸ DESCRIPTION — Write a detailed paragraph describing the research gap. Explain the key limitations identified, why these limitations exist in current methodologies, and what is missing or needed to address them. Append citation numbers [N] only at the end of a sentence when a specific paper's evidence is being directly referenced.
 
 ▸ PROPOSED DIRECTION — Must describe a concrete experiment, not a wish:
   ✗ BAD:  "Future work should explore better methods."
@@ -223,7 +242,7 @@ EXAMPLE OF A COMPLETE HIGH-QUALITY RESPONSE
   "gaps": [
     {{
       "gap_title": "Credit Assignment Collapse in Large Cooperative Teams",
-      "description": "Cooperative MARL methods that rely on shared team reward fail to assign meaningful individual credit when more than 32 agents act simultaneously [1]. QMIX and VDN decompose the joint value function monotonically, which provably cannot represent non-monotone team interactions that emerge at scale [2]. Empirical evaluation shows a >40% drop in win rate on SMAC hard maps when teams exceed 20 units, a regime none of the surveyed methods were benchmarked on [3]. No public benchmark currently tests credit-assignment fidelity beyond 16 agents, leaving the scaling failure invisible in standard evaluations [1]. Existing value-decomposition architectures cannot be extended to handle this without redesigning the mixing network to allow conditional, non-monotone credit [2].",
+      "description": "Cooperative MARL methods that rely on shared team reward fail to assign meaningful individual credit when more than 32 agents act simultaneously [1]. QMIX and VDN decompose the joint value function monotonically, which provably cannot represent non-monotone team interactions that emerge at scale [2]. Empirical evaluations consistently show significant win-rate degradation on SMAC hard maps when teams exceed 20 units, a regime none of the surveyed methods were benchmarked on [3]. No public benchmark currently tests credit-assignment fidelity beyond 16 agents, leaving the scaling failure invisible in standard evaluations [1]. Existing value-decomposition architectures cannot be extended to handle this without redesigning the mixing network to allow conditional, non-monotone credit [2].",
       "what_fails": "Monotone value-decomposition networks (QMIX, VDN) cannot represent non-monotone interactions that emerge when cooperative agent teams exceed ~32 members.",
       "why_it_exists": "The monotonicity constraint was introduced to guarantee convergence but inadvertently caps representational capacity, a trade-off the field has not yet resolved.",
       "missing_piece": "A scalable, non-monotone mixing architecture with formal credit-attribution guarantees, validated on benchmarks with 32–128 agents.",
@@ -242,7 +261,7 @@ Produce EXACTLY ONE gap in the "gaps" array — the single most critical, well-g
   "gaps": [
     {{
       "gap_title": "Precise technical title, max 12 words",
-      "description": "Exactly 5 sentences following the structure above. Each sentence ends with [N].",
+      "description": "A detailed paragraph describing the research gap. Use citation [N] numbers only at the end of sentences where directly required.",
       "what_fails": "One sentence naming the exact mechanism, algorithm, or assumption that fails.",
       "why_it_exists": "One sentence giving the root cause (data scarcity / architectural limit / evaluation blind-spot / theoretical constraint).",
       "missing_piece": "One sentence: the specific artefact (dataset / metric / model / proof) that does not yet exist.",
@@ -552,6 +571,8 @@ async def generate_gaps_for_cluster(
     pattern: Any = {},
     all_papers: list[dict] | None = None,
     force_heuristic: bool = False,
+    other_themes: list[str] | None = None,
+    precalculated_themes: dict | None = None,
 ) -> tuple[list[SynthesisGap], str | None]:
 
     gap_serial = f"GAP-{cluster_id + 1:03d}"
@@ -560,7 +581,7 @@ async def generate_gaps_for_cluster(
     confidence_score = compute_gap_score(cluster_papers, _all_papers)
 
     # Heuristic themes for prompt injection
-    themes = extract_cluster_themes(cluster_papers)
+    themes = precalculated_themes or extract_cluster_themes(cluster_papers)
 
     pattern_data = (
         pattern
@@ -582,7 +603,14 @@ async def generate_gaps_for_cluster(
         return [fallback], None
 
     try:
-        prompt = _gap_prompt(cluster_id, cluster_papers, topic, pattern_data, themes)
+        prompt = _gap_prompt(
+            cluster_id,
+            cluster_papers,
+            topic,
+            pattern_data,
+            themes,
+            other_themes=other_themes,
+        )
 
         raw: str | None = None
         last_exc: Exception | None = None
@@ -759,21 +787,38 @@ async def generate_all_gaps(
     # Sort clusters by size descending to prioritise LLM calls for the largest clusters.
     sorted_clusters = sorted(cluster_map.items(), key=lambda x: len(x[1]), reverse=True)
 
+    # Pre-calculate themes for all clusters to provide distinctness constraints
+    cluster_themes = {}
+    for cid, cprs in sorted_clusters:
+        cluster_themes[cid] = extract_cluster_themes(cprs)
+
     # Process all clusters with the LLM for maximum gap coverage
-    max_llm_clusters = 15
+    max_llm_clusters = 10
 
     # Use a semaphore to limit concurrent LLM calls to prevent aggressive rate limits
     sem = asyncio.Semaphore(3)
 
     async def _process_cluster(i: int, cid: int, cprs: list[dict]):
         force_heuristic = i >= max_llm_clusters
+        other_themes_list = [
+            t.get("theme_label")
+            for other_cid, t in cluster_themes.items()
+            if other_cid != cid and t.get("theme_label")
+        ]
         async with sem:
             try:
                 # Add a small stagger to prevent sending all requests at the exact same millisecond
                 if not force_heuristic and i > 0:
                     await asyncio.sleep(0.5 * min(i, 5))
                 return await generate_gaps_for_cluster(
-                    cid, cprs, topic, pattern, _all, force_heuristic=force_heuristic
+                    cid,
+                    cprs,
+                    topic,
+                    pattern,
+                    _all,
+                    force_heuristic=force_heuristic,
+                    other_themes=other_themes_list,
+                    precalculated_themes=cluster_themes.get(cid),
                 )
             except Exception as e:
                 return e
