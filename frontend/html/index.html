@@ -808,24 +808,13 @@
                         <template x-for="(gap, index) in filteredGaps()" :key="gapKey(gap, index)">
                           <li class="gap-entry" :class="{ 'is-selected': $store.app.explorer.selectedGapId === gapKey(gap, index) }" @click="selectGap(gap)">
                             <div class="gap-entry-folio-row" style="justify-content: space-between;">
-                              <div style="display: flex; align-items: center; gap: 12px;">
-                                <span class="gap-entry-folio" x-text="`Cluster ${(gap.cluster_id ?? '–').toString().padStart(2, '0')}`"></span>
-                                <span class="gap-trend-pill" :data-trend="clusterTrend(findCluster(gap.cluster_id))">
-                                  <svg class="pill-trend-icon" width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                                    <path :d="clusterTrendIcon(findCluster(gap.cluster_id))"/>
-                                  </svg>
-                                  <span x-text="`${clusterTrend(findCluster(gap.cluster_id))} Gap`"></span>
-                                </span>
-                              </div>
-                              <div style="font-size: 0.75rem; color: var(--text-muted); font-weight: 500; letter-spacing: -0.01em;">
+                              <span class="gap-entry-folio" x-text="`Cluster ${(gap.cluster_id ?? '–').toString().padStart(2, '0')}`"></span>
+                              <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: 500; letter-spacing: -0.01em;">
                                 <span x-text="Number(gap.confidence_score).toFixed(2) + ' confidence'"></span>
-                              </div>
+                              </span>
                             </div>
                             <h3 class="gap-entry-title" x-text="gap.gap_title || 'Untitled research gap'"></h3>
                             <p class="gap-entry-desc" x-show="hasValue(gap.description)" x-html="renderTextWithCitations(gap.description, gap)"></p>
-                            <div style="display: flex; align-items: center; gap: 8px; margin-top: 8px; flex-wrap: wrap;">
-                                <!-- Validation Status Removed from here -->
-                            </div>
                           </li>
                         </template>
                     </ol>
@@ -938,58 +927,7 @@
                              </div>
                            </section>
 
-                           <!-- Validation Section -->
-                           <section class="gap-rail-section" 
-                                    x-show="selectedGap().citation_validation || selectedGap().llm_verification || selectedGap().cross_paper_validation"
-                                    x-data="{ 
-                                      status() {
-                                        const cross = selectedGap().cross_paper_validation?.status?.toLowerCase();
-                                        if (cross === 'potentially_addressed') return 'potentially_addressed';
 
-                                        const llm = selectedGap().llm_verification?.status?.toLowerCase();
-                                        const cit = selectedGap().citation_validation?.status?.toLowerCase();
-                                        if (llm === 'hallucinated' || cit === 'hallucinated') return 'hallucinated';
-                                        if (llm === 'weakly supported' || cit === 'weakly_supported') return 'weakly_supported';
-                                        if (llm === 'validated' || cit === 'grounded') return 'validated';
-                                        return 'unknown';
-                                      }
-                                    }">
-                             <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem;">
-                               <h4 class="gap-rail-section-label" style="margin-bottom: 0;">Validation</h4>
-                               
-                                <!-- Status Pill -->
-                                <div style="display: flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; text-transform: capitalize; background: rgba(100, 100, 100, 0.1); color: var(--text-muted);">
-                                 
-                                 <!-- Tick icon (Grounded) -->
-                                 <template x-if="status() === 'validated'">
-                                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                                 </template>
-
-                                 <!-- Warning icon (Weakly Supported) -->
-                                 <template x-if="status() === 'weakly_supported'">
-                                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
-                                 </template>
-
-                                 <!-- Info icon (Potentially Addressed) -->
-                                 <template x-if="status() === 'potentially_addressed'">
-                                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
-                                 </template>
-
-                                 <!-- Error icon (Hallucinated) -->
-                                 <template x-if="status() === 'hallucinated'">
-                                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-                                 </template>
-
-                                 <span x-text="status() === 'validated' ? 'Validated' : status().replace('_', ' ')"></span>
-                               </div>
-                             </div>
-
-                              <div class="validation-box" 
-                                   style="border-radius: 12px; padding: 1.25rem; background: rgba(100, 100, 100, 0.03); border: 1px solid rgba(100, 100, 100, 0.1);">
-                               <p style="margin: 0; font-size: 0.95rem; line-height: 1.6; color: var(--text-main);"
-                                   x-text="[selectedGap().cross_paper_validation?.reason, selectedGap().llm_verification?.reason, selectedGap().citation_validation?.reasoning].filter(Boolean).join(' ') || validationLabel(selectedGap())"></p>
-                             </div>
-                           </section>
 
 
 
