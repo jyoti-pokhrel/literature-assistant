@@ -957,18 +957,8 @@
                              <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem;">
                                <h4 class="gap-rail-section-label" style="margin-bottom: 0;">Validation</h4>
                                
-                               <!-- Status Pill -->
-                               <div style="display: flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; text-transform: capitalize;"
-                                    :style="{
-                                      background: status() === 'validated' ? 'rgba(34, 197, 94, 0.1)' : 
-                                                  status() === 'weakly_supported' ? 'rgba(245, 158, 11, 0.1)' : 
-                                                  status() === 'potentially_addressed' ? 'rgba(59, 130, 246, 0.1)' :
-                                                  status() === 'hallucinated' ? 'rgba(239, 68, 68, 0.1)' : 'rgba(100, 100, 100, 0.1)',
-                                      color: status() === 'validated' ? 'rgb(34, 197, 94)' : 
-                                             status() === 'weakly_supported' ? 'rgb(245, 158, 11)' : 
-                                             status() === 'potentially_addressed' ? 'rgb(59, 130, 246)' :
-                                             status() === 'hallucinated' ? 'rgb(239, 68, 68)' : 'rgb(100, 100, 100)'
-                                    }">
+                                <!-- Status Pill -->
+                                <div style="display: flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; text-transform: capitalize; background: rgba(100, 100, 100, 0.1); color: var(--text-muted);">
                                  
                                  <!-- Tick icon (Grounded) -->
                                  <template x-if="status() === 'validated'">
@@ -994,26 +984,10 @@
                                </div>
                              </div>
 
-                             <div class="validation-box" 
-                                  style="border-radius: 12px; padding: 1.25rem;"
-                                  :style="{
-                                    background: status() === 'validated' ? 'rgba(34, 197, 94, 0.03)' : 
-                                                status() === 'weakly_supported' ? 'rgba(245, 158, 11, 0.03)' : 
-                                                status() === 'potentially_addressed' ? 'rgba(59, 130, 246, 0.03)' :
-                                                'rgba(239, 68, 68, 0.03)',
-                                    border: status() === 'validated' ? '1px solid rgba(34, 197, 94, 0.15)' : 
-                                            status() === 'weakly_supported' ? '1px solid rgba(245, 158, 11, 0.15)' : 
-                                            status() === 'potentially_addressed' ? '1px solid rgba(59, 130, 246, 0.15)' :
-                                            '1px solid rgba(239, 68, 68, 0.15)'
-                                  }">
-                               <p style="margin: 0; font-size: 0.95rem; line-height: 1.6;" 
-                                  :style="{
-                                    color: status() === 'validated' ? 'rgb(34, 197, 94)' : 
-                                           status() === 'weakly_supported' ? 'rgb(245, 158, 11)' : 
-                                           status() === 'potentially_addressed' ? 'rgb(59, 130, 246)' :
-                                           status() === 'hallucinated' ? 'rgb(239, 68, 68)' : 'var(--text-main)'
-                                  }"
-                                  x-text="[selectedGap().cross_paper_validation?.reason, selectedGap().llm_verification?.reason, selectedGap().citation_validation?.reasoning].filter(Boolean).join(' ') || validationLabel(selectedGap())"></p>
+                              <div class="validation-box" 
+                                   style="border-radius: 12px; padding: 1.25rem; background: rgba(100, 100, 100, 0.03); border: 1px solid rgba(100, 100, 100, 0.1);">
+                               <p style="margin: 0; font-size: 0.95rem; line-height: 1.6; color: var(--text-main);"
+                                   x-text="[selectedGap().cross_paper_validation?.reason, selectedGap().llm_verification?.reason, selectedGap().citation_validation?.reasoning].filter(Boolean).join(' ') || validationLabel(selectedGap())"></p>
                              </div>
                            </section>
 
