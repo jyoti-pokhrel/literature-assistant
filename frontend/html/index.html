@@ -980,12 +980,7 @@
             @cluster:select.window="handleClusterSelect($event)" @map:clear.window="handleMapClear()"
             x-show="!$store.app.isLoading">
 
-            <!-- Zone 2: The Executive Summary (BLUF) -->
-            <section class="results-summary">
-              <p class="synthesis-bluf"
-                x-html="renderTextWithCitations($store.app.result?.gapData?.synthesis?.summary_text) || '<strong>Synthesized ' + papers().length + ' papers</strong> and identified <strong>' + validGaps().length + ' core research gaps</strong> across ' + clusters().length + ' thematic clusters.'">
-              </p>
-            </section>
+
 
             <!-- Zone 3: The Deep-Dive Workspace (Tabbed Navigation) -->
             <nav class="results-tab-bar" role="tablist">
