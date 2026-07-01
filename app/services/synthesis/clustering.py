@@ -102,7 +102,7 @@ def reduce_and_cluster(
             0.0,
         )
 
-    neighbors = min(5, n - 1)
+    neighbors = min(7, n - 1)
     nd_components = min(5, n - 1)
 
     # We need at least 2 dimensions for visualization; run to max of the two

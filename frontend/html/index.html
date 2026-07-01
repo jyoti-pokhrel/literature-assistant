@@ -899,21 +899,6 @@
                             <p class="gap-rail-section-body" x-html="renderTextWithCitations(selectedGap().proposed_direction, selectedGap())"></p>
                           </section>
 
-                          <section class="gap-rail-section">
-                            <h4 class="gap-rail-section-label">Supporting papers</h4>
-                            <ol class="gap-rail-papers">
-                              <template x-for="(paper, index) in supportingPapers(selectedGap())" :key="paper.paper_id || paper.title || index">
-                                <li @click="selectPaper(findPaperByReference(paper))">
-                                  <span class="gap-rail-paper-idx" x-text="(index + 1).toString().padStart(2, '0')"></span>
-                                  <div>
-                                    <strong class="gap-rail-paper-title" x-text="paper.title"></strong>
-                                    <span class="gap-rail-paper-meta" x-text="supportingPaperMeta(paper)"></span>
-                                  </div>
-                                </li>
-                              </template>
-                            </ol>
-                          </section>
-
                            <section class="gap-rail-section" x-show="scoreBreakdown(selectedGap()).length">
                              <h4 class="gap-rail-section-label">Score</h4>
                              <div class="score-leader-list">

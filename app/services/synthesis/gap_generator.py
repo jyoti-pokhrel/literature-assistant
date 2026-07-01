@@ -218,6 +218,15 @@ QUALITY RULES
    ✗ "Current methods do not scale well."
    ✓ "Attention-based coordination degrades substantially when agent count exceeds 64 due to quadratic message complexity [2]."
 
+   NAME THE METHOD — ABSOLUTE RULE (no exceptions):
+   Whenever a paper's contribution, method, or technique is mentioned, state its EXACT name (the algorithm, model, framework, architecture, or approach as named in the paper).
+   NEVER use vague placeholders like "new methods", "proposed methods", "their approach", "a novel technique", or "new algorithms".
+     ✗ "Papers [1] propose new methods but do not compare them against existing techniques."
+     ✗ "The proposed approach in [1] lacks rigorous evaluation."
+     ✓ "QMIX proposes monotone value decomposition but does not compare against non-monotone baselines [1]."
+     ✓ "The Transformer-XL architecture achieves longer context but lacks evaluation on multi-domain benchmarks [2]."
+   If the paper's method name is not explicitly stated in the provided context, use the most specific descriptive phrase available (e.g. "the attention-routing mechanism in [1]"), never just "methods" or "techniques".
+
 5. MATHEMATICAL NOTATION
    • Preserve all variable names (|S|, |A|, γ, ε) and complexity expressions exactly as written.
    • Never simplify or transliterate Greek letters or exponent notation.

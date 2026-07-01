@@ -297,16 +297,26 @@ document.addEventListener('alpine:init', () => {
                 return this.confidence(b) - this.confidence(a);
             });
 
-            // Always show at least 2 gaps. If fewer than 2 passed the filter,
-            // pad with the least-hallucinated gaps (highest confidence_score)
-            // that are not already in the list.
-            if (sorted.length < 2) {
-                const validIds = new Set(sorted.map((g, i) => this.gapKey(g, i)));
-                const hallucinated = this.gaps()
-                    .filter((g) => isHallucinated(g) && !validIds.has(this.gapKey(g)))
-                    .sort((a, b) => Number(b.confidence_score ?? 0) - Number(a.confidence_score ?? 0));
-                return [...sorted, ...hallucinated.slice(0, 2 - sorted.length)];
+
+            const allHallucinatedPool = this.gaps()
+                .filter((g) => isHallucinated(g))
+                .sort((a, b) => Number(b.confidence_score ?? 0) - Number(a.confidence_score ?? 0));
+
+            if (sorted.length === 0) {
+
+                return allHallucinatedPool.slice(0, 3);
             }
+
+            const supplementCount = sorted.length <= 2 ? 2 : sorted.length === 3 ? 1 : 0;
+
+            if (supplementCount > 0) {
+                const shownIds = new Set(sorted.map((g, i) => this.gapKey(g, i)));
+                const supplements = allHallucinatedPool
+                    .filter((g) => !shownIds.has(this.gapKey(g)))
+                    .slice(0, supplementCount);
+                return [...sorted, ...supplements];
+            }
+
 
             return sorted;
         },
@@ -567,16 +577,29 @@ document.addEventListener('alpine:init', () => {
                 }));
         },
 
+        sanitizeText(text) {
+            if (!text) return text;
+
+            return String(text)
+                .replace(
+                    /\b(all\s+(?:papers|studies|works|articles)\s+in\s+this\s+(?:cluster|study|group|dataset|corpus)\s+)/gi,
+                    ''
+                )
+               
+                .replace(/^([a-z])/, (c) => c.toUpperCase())
+                .trim();
+        },
+
         renderTextWithCitations(text, gap) {
             if (!this.hasValue(text)) return '';
             const citations = this.supportingPapers(gap);
 
-            // Step 1: split grouped citations like [1, 2] into individual [1][2]
-            let processed = String(text).replace(/\[(\d+(?:\s*,\s*\d+)+)\]/g, (_, inner) => {
+            let processed = this.sanitizeText(String(text));
+
+            processed = processed.replace(/\[(\d+(?:\s*,\s*\d+)+)\]/g, (_, inner) => {
                 return inner.split(',').map(n => `[${n.trim()}]`).join('');
             });
 
-            // Step 2: render each [N] as a badge (linked if URL exists, hide if not)
             return processed.replace(/\[(\d+)\]/g, (match, n) => {
                 const idx = parseInt(n, 10) - 1;
                 const citation = citations[idx];
@@ -586,7 +609,6 @@ document.addEventListener('alpine:init', () => {
                     return `<a href="${link}" target="_blank" rel="noopener noreferrer" class="cite-badge">${match}</a>`;
                 }
 
-                // No URL: strip the citation marker entirely so it doesn't show in the UI
                 return '';
             });
         },
