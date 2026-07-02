@@ -107,7 +107,7 @@ async def get_optional_user(
 
 async def check_quota(current_user: dict = Depends(get_current_user)):
     """Dependency to check and increment user quota."""
-    if current_user.get("role") == "admin":
+    if current_user.get("role") in {"admin", "system_user"}:
         return current_user
 
     # Reset quota if it's a new day
@@ -142,7 +142,7 @@ async def check_quota(current_user: dict = Depends(get_current_user)):
 
 async def check_search_limit(current_user: dict = Depends(get_current_user)):
     """Dependency to enforce a strict limit of 10 searches per user."""
-    if current_user.get("role") == "admin":
+    if current_user.get("role") in {"admin", "system_user"}:
         return current_user
 
     username = current_user.get("username")
@@ -178,19 +178,19 @@ async def check_search_limit(current_user: dict = Depends(get_current_user)):
 
 
 async def require_admin(current_user: dict = Depends(get_current_user)):
-    if current_user.get("role") != "admin":
+    if current_user.get("role") not in {"admin", "system_user"}:
         raise HTTPException(status_code=403, detail="Admin privileges required")
     return current_user
 
 
 async def require_researcher(current_user: dict = Depends(get_current_user)):
-    if current_user.get("role") not in {"admin", "researcher"}:
+    if current_user.get("role") not in {"system_user", "admin", "researcher"}:
         raise HTTPException(status_code=403, detail="Researcher privileges required")
     return current_user
 
 
 async def require_viewer(current_user: dict = Depends(get_current_user)):
-    if current_user.get("role") not in {"admin", "researcher", "viewer"}:
+    if current_user.get("role") not in {"system_user", "admin", "researcher", "viewer"}:
         raise HTTPException(status_code=403, detail="Insufficient privileges")
     return current_user
 

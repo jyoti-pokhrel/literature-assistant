@@ -10,7 +10,7 @@ class User(BaseModel):
     username: str
     email: str
     hashed_password: Optional[str] = None  # absent for Google OAuth users
-    role: Literal["admin", "researcher", "viewer"] = "researcher"
+    role: Literal["system_user", "admin", "researcher", "viewer"] = "researcher"
     is_verified: bool = False
     auth_provider: str = "local"  # "local" or "google"
     

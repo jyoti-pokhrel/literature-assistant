@@ -232,10 +232,11 @@ document.addEventListener('alpine:init', () => {
             get displayName() { return this.username || ''; },
             get initial() { return (this.username || '?').trim().charAt(0).toUpperCase() || '?'; },
             get subtitle() {
+                if (this.role === 'system_user') return 'System User';
                 if (this.role === 'admin') return 'Admin';
                 return this.authProvider === 'google' ? 'Google account' : 'Researcher';
             },
-            get isAdmin() { return this.role === 'admin'; },
+            get isAdmin() { return this.role === 'admin' || this.role === 'system_user'; },
         },
         mode: 'landing',
         currentView: 'form',

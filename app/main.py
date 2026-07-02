@@ -148,6 +148,37 @@ async def _bootstrap_db() -> None:
     except Exception:
         log.exception("Failed to bootstrap citation_cache indexes")
 
+    # Seed or promote default System User 'Sachu'
+    try:
+        from app.db.session import users_collection
+        if users_collection is not None:
+            existing = await users_collection.find_one({"username": "Sachu"})
+            if existing:
+                if existing.get("role") != "system_user":
+                    await users_collection.update_one(
+                        {"_id": existing["_id"]},
+                        {"$set": {"role": "system_user", "is_verified": True}}
+                    )
+                    log.info("Promoted existing user 'Sachu' to system_user")
+            else:
+                from app.core.security import get_password_hash
+                from datetime import datetime, timezone
+                default_system_user = {
+                    "username": "Sachu",
+                    "email": "sachu@agent.ai",
+                    "password": get_password_hash("SystemUser123!"),
+                    "role": "system_user",
+                    "is_verified": True,
+                    "auth_provider": "local",
+                    "created_at": datetime.now(timezone.utc),
+                    "quota_limit": 9999,
+                    "quota_used": 0,
+                }
+                await users_collection.insert_one(default_system_user)
+                log.info("Created default system_user account: Sachu / sachu@agent.ai")
+    except Exception as exc:
+        log.warning("Failed to seed default system user: %s", exc)
+
 
 @app.on_event("shutdown")
 async def _shutdown_db() -> None:
