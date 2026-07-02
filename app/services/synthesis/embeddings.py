@@ -73,8 +73,9 @@ def _build_texts(papers: list[dict]) -> list[str]:
 
     texts: list[str] = []
     for paper in papers:
+        # Abstract: first 800 chars
         abstract = paper.get("abstract", "")
-        abstract = _normalize(abstract)
+        abstract = _normalize(abstract[:800])
         title = _normalize(paper.get("title", ""))
         lims = " ".join(
             _normalize(t) for t in (paper.get("normalized_limitations") or [])[:5] if t

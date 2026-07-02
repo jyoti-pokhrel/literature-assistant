@@ -49,7 +49,6 @@ def _hdbscan_cluster(
         min_cluster_size=min_cluster_size,
         min_samples=1,  # less strict density → more clusters found in sparse sets
         gen_min_span_tree=True,  # required for validity score
-        cluster_selection_method="leaf",  # finer-grained clusters
     )
     labels = clusterer.fit_predict(reduced).astype(int)
     n_clusters = len(set(labels)) - (1 if -1 in labels else 0)
@@ -102,7 +101,9 @@ def reduce_and_cluster(
             0.0,
         )
 
-    neighbors = min(5, n - 1)
+    # makes UMAP use 75% of data as context → over-smooth blob → few clusters.
+    # A local neighbourhood (≤15) reveals broader topological structure (fewer clusters).
+    neighbors = min(15, n - 1)
     nd_components = min(5, n - 1)
 
     # We need at least 2 dimensions for visualization; run to max of the two

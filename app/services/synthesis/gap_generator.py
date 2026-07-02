@@ -91,11 +91,11 @@ async def _get_http_session() -> aiohttp.ClientSession:
 
 def _build_cluster_context(cluster_papers: list[dict]) -> str:
     lines: list[str] = []
-    for i, p in enumerate(cluster_papers, 1):
+    for i, p in enumerate(cluster_papers[:8], 1):
         title = p.get("title", "Unknown")
         year = p.get("year", "?")
         # Abstract: first 350 chars
-        abstract = (p.get("abstract") or "")[:800].strip()
+        abstract = (p.get("abstract") or "")[:500].strip()
         limitations = "; ".join((p.get("normalized_limitations") or [])[:5])
         future_work = "; ".join((p.get("normalized_future_work") or [])[:5])
         methods_raw = (
@@ -128,7 +128,7 @@ def _gap_prompt(
     other_themes: list[str] | None = None,
 ) -> str:
     context = _build_cluster_context(cluster_papers)
-    n_papers = len(cluster_papers)
+    n_papers = min(len(cluster_papers), 8)
 
     top_methods = (
         ", ".join(str(m) for m in (pattern.get("top_methods") or [])[:5]) or "N/A"
@@ -161,106 +161,118 @@ def _gap_prompt(
                 "Ensure that your generated `theme_label` and `gap_title` are uniquely differentiated and specific to the unique details, applications, and papers of THIS cluster.\n"
             )
 
-    return f"""You are an expert Research Analyst identifying unresolved research gaps from academic literature.
+    return f"""You are an expert Research Analyst specializing in identifying unresolved research gaps from academic literature.
 
-TASK
-Analyze the {n_papers} papers below on "{topic}". Identify the single most critical, evidence-backed research gap in this cluster.
+Your task: Analyze the {n_papers} papers below on the topic "{topic}" and produce precise, highly-critical, evidence-backed research gap that represents the most significant unresolved problem in this cluster.
 
-CONTEXT 
-Field-wide patterns:
-  Methods: {top_methods} | Limitations: {top_limitations} | Metrics: {top_metrics}
+LITERATURE CONTEXT
+Global field patterns:
+  - Dominant methods:     {top_methods}
+  - Dominant limitations: {top_limitations}
+  - Dominant metrics:     {top_metrics}
 
-This cluster — {theme_label}:
-  Shared limitations: {cluster_lims}
-  Open future work:   {cluster_fw}
+This cluster's theme: {theme_label}
+  - Shared limitations:  {cluster_lims}
+  - Open future work:    {cluster_fw}
 {other_themes_context}
-PAPERS:
+PAPERS IN THIS CLUSTER:
 {context}
 
-REASON INTERNALLY (do not output)
-Before writing JSON, think through:
-  a) What specific mechanism/assumption repeatedly fails across ≥2 papers?
-  b) Is it a method conflict, empirical blindspot, or system failure?
-  c) What must a researcher build or prove to close this gap?
+STEP 1 — REASON FIRST (internal, not output)
+Before writing the JSON, think through:
+  a) What specific mechanism, component, or assumption repeatedly fails across ≥2 papers?
+  b) Is it a method conflict, empirical blindspot, system failure, or interaction failure?
+  c) What would a researcher need to build or prove to close this gap?
   d) Which paper numbers [N] directly support each claim?
-  e) Does every sentence start with a technical subject (method / system / metric)? If any sentence starts with "Paper", "Papers", "Multiple papers", "Several works", "[N]", or "According to", rewrite it.
 
-QUALITY RULES
+STEP 2 — QUALITY RULES
 
-1. GROUNDING & CITATIONS (highest priority)
-   • Cite [N] ONLY when paper [N]'s Contribution/Limitations/Future Work directly supports the claim.
-   • Before citing [N], confirm: "Paper [N] says '___', which proves ___." If you cannot, remove the citation.
-   • Never import a concept from general knowledge that does not appear in paper [N]'s text.
-   • Place [N] ONLY at the END of a sentence — never mid-sentence, never as a subject/noun.
-     ✗ "[1] shows..." / "According to [1]..." / "Paper [1] and [2] both show..."
-     ✓ "Attention mechanisms degrade under distribution shift [1, 2]."
-   • If fewer than 2 papers clearly support a claim, omit it.
+▸ GROUNDING (most important rule):
+  A citation [N] is ONLY valid if the claim in that sentence is directly supported by
+  paper [N]'s "Contribution", "Limitations", or "Future work" text shown above.
+  ✗ NEVER cite a paper just because it is in the cluster — check its actual content.
+  ✗ NEVER cite a CNN paper to support a claim about Transformers (or vice versa).
+  ✗ If fewer than 2 papers clearly support a claim, do NOT make that claim.
+  ✓ Only cite [N] when you can complete this test: "Paper [N] says '___', which proves ___."
 
-2. SENTENCE SUBJECTS — ABSOLUTE RULE (no exceptions)
-   Every sentence MUST begin with a technical subject: the method, system, algorithm, metric, or dataset.
-   The following openings are FORBIDDEN in every field of the JSON output:
-     ✗ "Papers [1] and [2]..."
-     ✗ "Paper [N]..."
-     ✗ "Multiple papers in this cluster..."
-     ✗ "Several works in this cluster..."
-     ✗ "[1] shows..." / "[N] highlight..."
-     ✗ "According to [N]..."
-   Correct form: lead with the technical subject, place the citation at the END of the sentence.
-     ✓ "Monotone value-decomposition networks cannot represent non-monotone interactions at scale [1, 2]."
-     ✓ "Standard benchmarks do not test credit-assignment fidelity beyond 16 agents [3]."
+▸ ANTI-HALLUCINATION (CRITICAL — highest priority rule):
+  ✗ NEVER invent specific numbers, percentages, drop rates, or thresholds (e.g., ">20% drop", "40% win rate", "3x slower") UNLESS that exact figure is EXPLICITLY written in the paper context provided above.
+  ✗ NEVER introduce specific technical concepts unless they actually appear in the text for the cited paper.
+  ✗ This rule overrides ALL other rules, including the SPECIFICITY rule below.
+  ✓ Use qualitative terms (e.g., "significant degradation", "substantial robustness drop", "markedly reduced performance") whenever exact figures are not present in the abstracts.
 
-3. ANTI-HALLUCINATION (overrides all other rules)
-   • Never invent numbers, percentages, or thresholds (e.g., ">20% drop") unless explicitly in the paper text above.
-   • Never introduce technical terms not present in the cited paper's context block.
-   • Use qualitative phrasing when figures are absent: "significant degradation", "markedly reduced performance".
+▸ SPECIFICITY — Every claim must name the exact mechanism that fails:
+  ✗ BAD:  "Current methods do not scale well."
+  ✓ GOOD: "Attention-based coordination mechanisms exhibit substantial throughput degradation when agent count exceeds 64 due to quadratic message complexity [2]."
 
-4. SPECIFICITY — Name the exact failing mechanism.
-   ✗ "Current methods do not scale well."
-   ✓ "Attention-based coordination degrades substantially when agent count exceeds 64 due to quadratic message complexity [2]."
+▸ MATHEMATICAL RIGOR & NOTATION PRESERVATION (CRITICAL):
+  ✓ ALWAYS preserve original variable names (|S|, |A|, |B|, \gamma, \epsilon) and mathematical notation exactly as they appear in the paper abstracts.
+  ✓ NEVER simplify complexity notation; if a paper mentions O~(|S||A||B|(1-gamma)^{-3}epsilon^{-2}), do NOT change it to "sab(1-gamma-3epsilon-2)".
+  ✓ Ensure all exponents, subscripts, and superscripts are correctly represented using standard text or LaTeX-style notation (e.g., ^-3, _0).
+  ✗ NEVER substitute Greek letters with plain English words if the symbol is provided.
 
-5. MATHEMATICAL NOTATION
-   • Preserve all variable names (|S|, |A|, γ, ε) and complexity expressions exactly as written.
-   • Never simplify or transliterate Greek letters or exponent notation.
+▸ CITATIONS (CRITICAL WRITING STYLE RULE) — Place citation numbers [N] ONLY at the very end of sentences (before or immediately after the period). Never place citation numbers in the middle of a sentence, and NEVER use citation numbers as nouns, subjects, or objects of a verb. The text must read naturally if all citation brackets `[N]` were removed.
+  ✗ FORBIDDEN: Using citation markers as nouns or subjects (e.g., "[1] shows", "[2] and [3] emphasize", "According to [1]", "As discussed in [2]").
+  ✗ BAD:  "Paper [1] and [2] both show this."
+  ✗ BAD:  "According to [1], standard policies fail in complex environments."
+  ✗ BAD:  "Similarly, [2] and [3] emphasize the challenges of real-time processing."
+  ✓ GOOD: "Transformer-based policies fail to generalize across environment shifts [1]."
+  ✓ GOOD: "Real-time processing of multimodal data presents significant latency challenges in healthcare applications [2, 3]."
 
-6. PROPOSED DIRECTION — Write 3–5 sentences covering:
-   (1) What system/model/framework to build.
-   (2) The methodology and experimental steps.
-   (3) The benchmark/dataset/evaluation protocol.
-   (4) A measurable success criterion.
-   ✗ "Future work should explore better methods."
-   ✓ "Design a transformer-based mixing network conditioned on local observation context using counterfactual baselines. Train end-to-end on SMAC-v2 with team sizes 8–128 under partial observability. Measure win-rate retention and per-agent credit fidelity, with success defined as staying within 10% of 8-agent baseline performance at 128 agents."
+▸ SENTENCE GROUNDING RULE (CRITICAL — enforced per sentence):
+  Before writing each sentence that ends with [N], complete this internal check:
+    a) Open the context block for paper [N] shown above (Contribution, Limitations, Future work).
+    b) Identify the EXACT phrase or concept from paper [N] that supports your sentence.
+    c) Only include a domain, technical term, or concept (e.g. "partial observability", "safety", "latency", "noise") if that EXACT term appears in paper [N]'s text block.
+    d) If no matching phrase exists in paper [N], rewrite the sentence using only terms that DO appear, or choose a different citation.
+  ✗ FORBIDDEN: Importing a term from your general knowledge that is not in the paper's context.
+  ✗ FORBIDDEN: Using paper [N] to support a sentence about a domain or concept that paper [N] never mentions.
 
-EXAMPLE RESPONSE
+▸ DESCRIPTION — Write a detailed paragraph describing the research gap. Explain the key limitations identified, why these limitations exist in current methodologies, and what is missing or needed to address them. Append citation numbers [N] only at the end of a sentence when a specific paper's evidence is being directly referenced.
+
+▸ PROPOSED DIRECTION — Must describe a concrete experiment, not a wish:
+  ✗ BAD:  "Future work should explore better methods."
+  ✓ GOOD: "Design a hierarchical credit-assignment framework that decouples
+           individual rewards from team rewards and evaluate it on SMAC-v2
+           with agent counts from 8 to 128."
+
+EXAMPLE OF A COMPLETE HIGH-QUALITY RESPONSE
 {{
   "theme_label": "Multi-Agent Credit Assignment",
-  "gaps": [{{
-    "gap_title": "Credit Assignment Collapse in Large Cooperative Teams",
-    "description": "Cooperative MARL methods that rely on shared team reward fail to assign meaningful individual credit when more than 32 agents act simultaneously [1]. QMIX and VDN decompose the joint value function monotonically, which provably cannot represent non-monotone interactions that emerge at scale [2]. No public benchmark currently tests credit-assignment fidelity beyond 16 agents, leaving this scaling failure invisible in standard evaluations [1, 3].",
-    "what_fails": "Monotone value-decomposition networks (QMIX, VDN) cannot represent non-monotone interactions when cooperative teams exceed ~32 members.",
-    "why_it_exists": "The monotonicity constraint guarantees convergence but inadvertently caps representational capacity — a trade-off the field has not yet resolved.",
-    "missing_piece": "A scalable non-monotone mixing architecture with formal credit-attribution guarantees, validated on benchmarks with 32–128 agents.",
-    "pattern_detected": "Over-reliance on monotone value decomposition in large cooperative settings.",
-    "proposed_direction": "Develop a transformer-based mixing network conditioned on local observation context using counterfactual baselines to isolate each agent's marginal contribution. Train end-to-end on SMAC-v2 with team sizes 8–128 under partial observability. Measure win-rate retention and per-agent credit fidelity across scales. Success is defined as maintaining win-rate within 10% of the 8-agent baseline at 128 agents.",
-    "confidence_score": 0.82
-  }}]
+  "gaps": [
+    {{
+      "gap_title": "Credit Assignment Collapse in Large Cooperative Teams",
+      "description": "Cooperative MARL methods that rely on shared team reward fail to assign meaningful individual credit when more than 32 agents act simultaneously [1]. QMIX and VDN decompose the joint value function monotonically, which provably cannot represent non-monotone team interactions that emerge at scale [2]. Empirical evaluations consistently show significant win-rate degradation on SMAC hard maps when teams exceed 20 units, a regime none of the surveyed methods were benchmarked on [3]. No public benchmark currently tests credit-assignment fidelity beyond 16 agents, leaving the scaling failure invisible in standard evaluations [1]. Existing value-decomposition architectures cannot be extended to handle this without redesigning the mixing network to allow conditional, non-monotone credit [2].",
+      "what_fails": "Monotone value-decomposition networks (QMIX, VDN) cannot represent non-monotone interactions that emerge when cooperative agent teams exceed ~32 members.",
+      "why_it_exists": "The monotonicity constraint was introduced to guarantee convergence but inadvertently caps representational capacity, a trade-off the field has not yet resolved.",
+      "missing_piece": "A scalable, non-monotone mixing architecture with formal credit-attribution guarantees, validated on benchmarks with 32–128 agents.",
+      "pattern_detected": "Over-reliance on monotone value decomposition in large cooperative settings.",
+      "proposed_direction": "Develop a transformer-based mixing network that conditions credit assignment on local observation context and evaluate it on SMAC-v2 across team sizes from 8 to 128 agents.",
+      "confidence_score": 0.82
+    }}
+  ]
 }}
 
 YOUR OUTPUT
-Return ONLY valid JSON — no markdown, no extra text. Produce EXACTLY ONE gap.
-Every field must be a non-empty English sentence. Never output null, N/A, or leave fields empty.
+Return ONLY the JSON object below — no markdown fences, no extra text.
+Produce EXACTLY ONE gap in the "gaps" array — the single most critical, well-grounded gap:
 {{
-  "theme_label": "3–6 word technical theme for this cluster",
-  "gaps": [{{
-    "gap_title": "Precise technical title, max 12 words",
-    "description": "A concise, evidence-backed paragraph that clearly defines the research gap. Cover: what specific method, assumption, or mechanism fails and under what conditions (cite [N]); why existing approaches cannot resolve it; and what evaluation or benchmark gap keeps the problem undetected. Use precise technical language, avoid vague filler phrases, and place each citation [N] at the end of the sentence it supports. Never open with a meta-sentence about the papers or cluster (e.g. \"Multiple papers in this cluster...\") — start directly with the technical problem.",
-    "what_fails": "1–2 sentences: the exact mechanism, algorithm, or assumption that fails, and the conditions under which it breaks down.",
-    "why_it_exists": "1–2 sentences: root cause (data scarcity / architectural limit / evaluation blindspot / theoretical constraint) and why the field has not resolved it yet.",
-    "missing_piece": "One sentence: the specific artefact (dataset / metric / model / proof) that does not yet exist.",
-    "pattern_detected": "One short phrase: the overarching trend across these papers.",
-    "proposed_direction": "3–5 sentences: (1) what to build, (2) methodology, (3) evaluation protocol, (4) measurable success criterion.",
-    "confidence_score": <float 0.0–1.0 reflecting evidence strength>
-  }}]
-}}"""
+  "theme_label": "3-6 word technical theme that describes this cluster",
+  "gaps": [
+    {{
+      "gap_title": "Precise technical title, max 12 words",
+      "description": "A detailed paragraph describing the research gap. Use citation [N] numbers only at the end of sentences where directly required.",
+      "what_fails": "One sentence naming the exact mechanism, algorithm, or assumption that fails.",
+      "why_it_exists": "One sentence giving the root cause (data scarcity / architectural limit / evaluation blind-spot / theoretical constraint).",
+      "missing_piece": "One sentence: the specific artefact (dataset / metric / model / proof) that does not yet exist.",
+      "pattern_detected": "One short phrase: the overarching trend seen across these papers.",
+      "proposed_direction": "One full sentence: a concrete experiment, system, or study that would close this gap.",
+      "confidence_score": 0.0
+    }}
+  ]
+}}
+EVERY field must be a non-empty English sentence. NEVER output null, undefined, N/A, or leave any field empty.
+confidence_score: float 0.0–1.0 reflecting how strongly the evidence supports this gap."""
 
 
 # LLM callers
@@ -394,43 +406,6 @@ def _clean_val(v: Any, default: str = "") -> str:
     if lower_s in junk or re.sub(r"[^a-z0-9]", "", lower_s) in junk:
         return default
     return s
-
-
-_PAPER_SUBJECT_RE = re.compile(
-    r"(?i)"
-    r"(?:"
-    r"(?:papers?\s*(?:\[\d+\]\s*(?:,\s*|and\s*|&\s*)?)*\s*(?:and\s*)?(?:\[\d+\])?\s*(?:both\s+)?(?:highlight|show|demonstrate|find|suggest|indicate|reveal|note|report|argue|propose|identify|observe|confirm|support|illustrate|establish|present|describe)\s*)"  # Papers [1] and [2] highlight
-    r"|(?:multiple\s+papers?(?:\s+in\s+this\s+cluster)?\s*,?\s*(?:including\s+(?:\[\d+\]\s*(?:,\s*|and\s*)?)+)?\s*)"  # Multiple papers in this cluster, including [1],
-    r"|(?:several\s+works?(?:\s+in\s+this\s+cluster)?\s*)"  # Several works in this cluster
-    r"|(?:according\s+to\s+(?:\[\d+\]\s*(?:,\s*|and\s*)?)+,?\s*)"  # According to [1],
-    r"|(?:(?:\[\d+\]\s*(?:,\s*|and\s*)?)+\s+(?:show|highlight|demonstrate|find|suggest|indicate)\s*)"  # [1] and [2] show
-    r")",
-    re.VERBOSE,
-)
-
-
-def _strip_paper_subject_sentences(text: str) -> str:
-    """Remove paper-subject preambles from every sentence in *text*.
-
-    Transforms:
-        'Papers [1] and [2] highlight the challenge of X.' -> 'The challenge of X.'
-        'According to [1], Y fails.'                       -> 'Y fails.'
-    """
-    if not text:
-        return text
-
-    # Split into sentences (keep delimiters)
-    sentences = re.split(r"(?<=[.!?])\s+", text)
-    cleaned: list[str] = []
-    for sentence in sentences:
-        stripped = _PAPER_SUBJECT_RE.sub("", sentence).strip()
-        if stripped:
-            # Capitalise the first letter if it was lowercased by stripping
-            cleaned.append(stripped[0].upper() + stripped[1:])
-        else:
-            # Safe Fallback: If stripping removes the entire sentence, keep original
-            cleaned.append(sentence)
-    return " ".join(cleaned)
 
 
 # Evidence helpers
@@ -742,12 +717,12 @@ async def generate_gaps_for_cluster(
                 "gap_title": clean(
                     "gap_title", f"Research gap in cluster {cluster_id}"
                 ),
-                "description": _strip_paper_subject_sentences(renumber_text(clean("description"))),
-                "what_fails": _strip_paper_subject_sentences(renumber_text(clean("what_fails"))),
-                "why_it_exists": _strip_paper_subject_sentences(renumber_text(clean("why_it_exists"))),
+                "description": renumber_text(clean("description")),
+                "what_fails": renumber_text(clean("what_fails")),
+                "why_it_exists": renumber_text(clean("why_it_exists")),
                 "missing_piece": renumber_text(clean("missing_piece")),
                 "pattern_detected": clean("pattern_detected"),
-                "proposed_direction": _strip_paper_subject_sentences(renumber_text(clean("proposed_direction"))),
+                "proposed_direction": renumber_text(clean("proposed_direction")),
             }
 
             gaps_out.append(
