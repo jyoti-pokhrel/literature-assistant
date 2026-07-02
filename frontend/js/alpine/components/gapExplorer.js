@@ -85,12 +85,7 @@ document.addEventListener('alpine:init', () => {
         },
 
         validGaps() {
-            return this.gaps().filter((gap) => {
-                const isHallucinated =
-                    gap.llm_verification?.status?.toLowerCase() === 'hallucinated' ||
-                    gap.citation_validation?.status?.toLowerCase() === 'hallucinated';
-                return !isHallucinated;
-            });
+            return this.gaps();
         },
 
         clusters() {
@@ -267,13 +262,7 @@ document.addEventListener('alpine:init', () => {
             const max = Number(filters.maxConfidence ?? 1);
             const clusterId = filters.clusterId === null || filters.clusterId === undefined ? '' : String(filters.clusterId);
 
-            const isHallucinated = (gap) =>
-                gap.llm_verification?.status?.toLowerCase() === 'hallucinated' ||
-                gap.citation_validation?.status?.toLowerCase() === 'hallucinated';
-
             const filtered = this.gaps().filter((gap) => {
-                if (isHallucinated(gap)) return false;
-
                 const score = this.confidence(gap);
                 const text = [
                     gap.gap_title,
@@ -296,17 +285,6 @@ document.addEventListener('alpine:init', () => {
                 if (filters.sortBy === 'cluster') return Number(a.cluster_id ?? 0) - Number(b.cluster_id ?? 0);
                 return this.confidence(b) - this.confidence(a);
             });
-
-            // Always show at least 2 gaps. If fewer than 2 passed the filter,
-            // pad with the least-hallucinated gaps (highest confidence_score)
-            // that are not already in the list.
-            if (sorted.length < 2) {
-                const validIds = new Set(sorted.map((g, i) => this.gapKey(g, i)));
-                const hallucinated = this.gaps()
-                    .filter((g) => isHallucinated(g) && !validIds.has(this.gapKey(g)))
-                    .sort((a, b) => Number(b.confidence_score ?? 0) - Number(a.confidence_score ?? 0));
-                return [...sorted, ...hallucinated.slice(0, 2 - sorted.length)];
-            }
 
             return sorted;
         },

@@ -105,9 +105,7 @@ def _build_cluster_dashboard(
 
     gaps_by_cluster: dict[int, list[dict]] = {}
     for gap in gaps:
-        if (gap.llm_verification.get("status", "").lower() == "hallucinated") or (
-            gap.citation_validation.get("status", "").lower() == "hallucinated"
-        ):
+        if gap.citation_validation.get("status", "").lower() == "hallucinated":
             continue
 
         gaps_by_cluster.setdefault(gap.cluster_id, []).append(
@@ -413,8 +411,7 @@ async def run_synthesis_pipeline(
     valid_viz_gaps = [
         g
         for g in gaps
-        if (g.llm_verification.get("status", "").lower() != "hallucinated")
-        and (g.citation_validation.get("status", "").lower() != "hallucinated")
+        if g.citation_validation.get("status", "").lower() != "hallucinated"
     ]
 
     viz_dict_future = loop.run_in_executor(
@@ -557,10 +554,7 @@ def _generate_copy_text(topic: str, gaps: list[SynthesisGap]) -> str:
     valid_gaps = [
         g
         for g in gaps
-        if not (
-            (g.llm_verification.get("status", "").lower() == "hallucinated")
-            or (g.citation_validation.get("status", "").lower() == "hallucinated")
-        )
+        if g.citation_validation.get("status", "").lower() != "hallucinated"
     ]
 
     for idx, gap in enumerate(valid_gaps, 1):
