@@ -10,7 +10,7 @@ window.ResearchAgent.routes = {
 };
 
 window.ResearchAgent.exploreDefaults = Object.freeze({
-    pageSize: 40,
+    pageSize: 20,
 });
 
 window.ResearchAgent.defaults = Object.freeze({
@@ -18,7 +18,7 @@ window.ResearchAgent.defaults = Object.freeze({
     year: '',
     venue: '',
     strictVenue: false,
-    maxResults: 40,
+    maxResults: 20,
 });
 
 window.ResearchAgent.searchHistoryKey = 'research-agent-search-history-v2';
