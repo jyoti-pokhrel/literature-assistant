@@ -60,21 +60,141 @@ async def get_all_users(
     }
 
 
+from pydantic import BaseModel, EmailStr, Field
+
+class AdminUserCreate(BaseModel):
+    username: str = Field(..., min_length=3, max_length=20, pattern=r"^[a-zA-Z0-9_-]+$")
+    email: EmailStr
+    password: str = Field(..., min_length=8)
+    role: str = "admin"
+
+
+@router.post("/users")
+async def create_user_by_system(
+    data: AdminUserCreate, admin: dict = Depends(get_current_admin)
+):
+    """Directly create a user with a specific role, accessible only to System User."""
+    if admin.get("role") != "system_user":
+        raise HTTPException(
+            status_code=403,
+            detail="Permission Denied: Access restricted to System User."
+        )
+        
+    db = get_db()
+    
+    # Check if username or email already exists
+    existing = await db.users.find_one({
+        "$or": [{"username": data.username}, {"email": data.email}]
+    })
+    if existing:
+        raise HTTPException(
+            status_code=400,
+            detail="Username or email already registered"
+        )
+        
+    from app.core.security import get_password_hash
+    hashed_password = get_password_hash(data.password)
+    
+    user_doc = {
+        "username": data.username,
+        "email": data.email,
+        "password": hashed_password,
+        "is_verified": True,
+        "is_active": True,
+        "auth_provider": "local",
+        "role": data.role,
+        "created_at": datetime.now(timezone.utc),
+        "quota_limit": 100 if data.role not in {"admin", "system_user"} else 9999,
+        "quota_used": 0,
+        "last_quota_reset": datetime.now(timezone.utc),
+    }
+    
+    await db.users.insert_one(user_doc)
+    
+    await log_activity(
+        user_id=str(admin["_id"]),
+        username=admin["username"],
+        action=f"System User created account {data.username} with role {data.role}",
+        activity_type="admin_action"
+    )
+    
+    return {"message": f"User {data.username} created successfully with role {data.role}"}
+
+
+@router.get("/system-dashboard-stats")
+async def get_system_dashboard_stats(admin: dict = Depends(get_current_admin)):
+    """Get advanced system stats, accessible only to the System User."""
+    if admin.get("role") != "system_user":
+        raise HTTPException(
+            status_code=403,
+            detail="Permission Denied: Access restricted to System User."
+        )
+    
+    db = get_db()
+    
+    # Retrieve all admins in the system
+    cursor = db.users.find({"role": "admin"}, {"password": 0})
+    admins_list = []
+    async for u in cursor:
+        u["_id"] = str(u["_id"])
+        admins_list.append(u)
+        
+    # Get count of admins
+    admin_count = len(admins_list)
+    
+    health = {
+        "status": "healthy" if db is not None else "unhealthy",
+        "database": "MongoDB Connected",
+        "admin_count": admin_count,
+        "system_user_protected": True
+    }
+    
+    return {
+        "admins": admins_list,
+        "health": health
+    }
+
+
 @router.patch("/users/{username}")
 async def update_user(
     username: str, data: UserUpdate, admin: dict = Depends(get_current_admin)
 ):
     """Update a user's role, quota, or status."""
     db = get_db()
-    update_data = {k: v for k, v in data.dict().items() if v is not None}
+    
+    target_user = await db.users.find_one({"username": username})
+    if not target_user:
+        raise HTTPException(status_code=404, detail="User not found")
 
+    update_data = {k: v for k, v in data.dict().items() if v is not None}
     if not update_data:
         raise HTTPException(status_code=400, detail="No update data provided")
 
-    result = await db.users.update_one({"username": username}, {"$set": update_data})
+    current_role = admin.get("role")
+    target_role = target_user.get("role")
+    target_username = target_user.get("username")
 
-    if result.matched_count == 0:
-        raise HTTPException(status_code=404, detail="User not found")
+    is_target_system = (target_role == "system_user" or target_username == "Sachu")
+    
+    if is_target_system:
+        if "is_active" in update_data and update_data["is_active"] is False:
+            raise HTTPException(status_code=403, detail="Permission Denied: System User accounts cannot be deactivated.")
+        if "role" in update_data and update_data["role"] != "system_user":
+            raise HTTPException(status_code=403, detail="Permission Denied: System User role cannot be changed.")
+        if current_role != "system_user":
+            raise HTTPException(status_code=403, detail="Permission Denied: Admins cannot edit System User accounts.")
+
+    if target_role == "admin" and current_role == "admin":
+        raise HTTPException(status_code=403, detail="Permission Denied: Admins cannot edit other Admin accounts.")
+
+    new_role = update_data.get("role")
+    if new_role:
+        if new_role in {"admin", "system_user"} and current_role != "system_user":
+            raise HTTPException(status_code=403, detail="Permission Denied: Only the System User can promote users to Admin or System User roles.")
+        if target_role == "admin" and new_role != "admin" and current_role != "system_user":
+            raise HTTPException(status_code=403, detail="Permission Denied: Only the System User can demote Admin accounts.")
+
+    result = await db.users.update_one({"username": username}, {"$set": update_data})
 
     await log_activity(
         user_id=str(admin["_id"]),
@@ -91,10 +211,22 @@ async def update_user(
 async def delete_user(username: str, admin: dict = Depends(get_current_admin)):
     """Delete a user account."""
     db = get_db()
-    result = await db.users.delete_one({"username": username})
     
-    if result.deleted_count == 0:
+    target_user = await db.users.find_one({"username": username})
+    if not target_user:
         raise HTTPException(status_code=404, detail="User not found")
+
+    target_role = target_user.get("role")
+    target_username = target_user.get("username")
+    current_role = admin.get("role")
+
+    if target_role == "system_user" or target_username == "Sachu":
+        raise HTTPException(status_code=403, detail="Permission Denied: The System User account cannot be deleted.")
+
+    if target_role == "admin" and current_role == "admin":
+        raise HTTPException(status_code=403, detail="Permission Denied: Admins cannot delete other Admin accounts.")
+
+    result = await db.users.delete_one({"username": username})
 
     await log_activity(
         user_id=str(admin["_id"]),

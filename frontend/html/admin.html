@@ -286,6 +286,11 @@
                 <button class="nav-link" :class="{ 'active': activeTab === 'analytics' }" @click="activeTab = 'analytics'">
                     <span>Analytics</span>
                 </button>
+                <template x-if="currentUserRole === 'system_user'">
+                    <button class="nav-link" :class="{ 'active': activeTab === 'system_dashboard' }" @click="activeTab = 'system_dashboard'">
+                        <span>System Dashboard</span>
+                    </button>
+                </template>
                 <div style="margin: 1.5rem 0.5rem; height: 1px; background: var(--rule);"></div>
                 <button class="nav-link" @click="window.location.href = '/'">
                     <span>Exit Admin</span>
@@ -389,11 +394,29 @@
                                             <td style="text-transform: capitalize; font-weight: 600;" x-text="user.role"></td>
                                             <td><span class="status-pill" :class="getUserStatusClass(user)" x-text="getUserStatusLabel(user)"></span></td>
                                             <td>
-                                                <div style="display: flex; gap: 0.5rem;">
-                                                    <template x-if="user.role !== 'admin'">
-                                                        <button class="btn-action" @click="promoteToAdmin(user)">Promote</button>
+                                                <div style="display: flex; gap: 0.5rem; align-items: center;">
+                                                    <!-- If target is a System User, it is protected -->
+                                                    <template x-if="user.role === 'system_user' || user.username === 'Sachu'">
+                                                        <span class="status-pill status-verified" style="background: var(--bg-surface); border: 1px solid var(--border-color); font-weight: 750;">Protected</span>
                                                     </template>
-                                                    <button class="btn-action btn-danger" @click="deleteUser(user)">Delete</button>
+                                                    
+                                                    <!-- If target is NOT a System User -->
+                                                    <template x-if="user.role !== 'system_user' && user.username !== 'Sachu'">
+                                                        <div style="display: flex; gap: 0.5rem;">
+                                                            <!-- Promote to Admin button (System User only, for non-admins) -->
+                                                            <template x-if="currentUserRole === 'system_user' && user.role !== 'admin'">
+                                                                <button class="btn-action" @click="promoteToAdmin(user)">Promote</button>
+                                                            </template>
+                                                            
+                                                            <!-- Demote Admin button (System User only, for admins) -->
+                                                            <template x-if="currentUserRole === 'system_user' && user.role === 'admin'">
+                                                                <button class="btn-action btn-warning" @click="demoteAdmin(user)">Demote</button>
+                                                            </template>
+                                                            
+                                                            <!-- Delete user button -->
+                                                            <button class="btn-action btn-danger" @click="deleteUser(user)">Delete</button>
+                                                        </div>
+                                                    </template>
                                                 </div>
                                             </td>
                                         </tr>
@@ -436,6 +459,99 @@
                         </div>
                     </div>
                 </template>
+ 
+                <template x-if="activeTab === 'system_dashboard'">
+                    <div x-cloak class="reveal-view">
+                        <div class="dashboard-row">
+                            <!-- Advanced Controls Card -->
+                            <div class="admin-card">
+                                <div class="card-header"><h3>Direct User Provisioning</h3></div>
+                                <div style="padding: 1.5rem;">
+                                    <form @submit.prevent="createAdminUser()">
+                                        <div style="margin-bottom: 1rem;">
+                                            <label style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.35rem; color: var(--ink-2);">Username</label>
+                                            <input type="text" x-model="newAdmin.username" placeholder="e.g. jsmith" required
+                                                style="width: 100%; padding: 0.65rem; border-radius: var(--radius-sm); border: 1px solid var(--border-color); background: var(--bg-surface); color: var(--ink);">
+                                        </div>
+                                        <div style="margin-bottom: 1rem;">
+                                            <label style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.35rem; color: var(--ink-2);">Email</label>
+                                            <input type="email" x-model="newAdmin.email" placeholder="e.g. user@agent.ai" required
+                                                style="width: 100%; padding: 0.65rem; border-radius: var(--radius-sm); border: 1px solid var(--border-color); background: var(--bg-surface); color: var(--ink);">
+                                        </div>
+                                        <div style="margin-bottom: 1rem;">
+                                            <label style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.35rem; color: var(--ink-2);">Password</label>
+                                            <input type="password" x-model="newAdmin.password" placeholder="At least 8 characters" required
+                                                style="width: 100%; padding: 0.65rem; border-radius: var(--radius-sm); border: 1px solid var(--border-color); background: var(--bg-surface); color: var(--ink);">
+                                        </div>
+                                        <div style="margin-bottom: 1.5rem;">
+                                            <label style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.35rem; color: var(--ink-2);">Role</label>
+                                            <select x-model="newAdmin.role"
+                                                style="width: 100%; padding: 0.65rem; border-radius: var(--radius-sm); border: 1px solid var(--border-color); background: var(--bg-surface); color: var(--ink);">
+                                                <option value="admin">Admin</option>
+                                                <option value="researcher">Researcher</option>
+                                                <option value="viewer">Viewer</option>
+                                                <option value="system_user">System User</option>
+                                            </select>
+                                        </div>
+                                        <button type="submit" class="btn-action" style="width: 100%; justify-content: center; padding: 0.75rem;">Create Account</button>
+                                    </form>
+                                </div>
+                            </div>
+                            
+                            <!-- System Health & Overview -->
+                            <div class="admin-card">
+                                <div class="card-header"><h3>System Health & Operations</h3></div>
+                                <div style="padding: 1.5rem;">
+                                    <div style="display: flex; justify-content: space-between; padding: 0.75rem 0; border-bottom: 1px solid var(--rule);">
+                                        <span style="font-weight: 600; color: var(--ink-2);">Database Status</span>
+                                        <span style="font-weight: 800; color: var(--success);" x-text="systemStats.health.database || 'Connected'"></span>
+                                    </div>
+                                    <div style="display: flex; justify-content: space-between; padding: 0.75rem 0; border-bottom: 1px solid var(--rule);">
+                                        <span style="font-weight: 600; color: var(--ink-2);">Admin Accounts</span>
+                                        <span style="font-weight: 800; color: var(--ink);" x-text="systemStats.health.admin_count || 0"></span>
+                                    </div>
+                                    <div style="display: flex; justify-content: space-between; padding: 0.75rem 0; border-bottom: 1px solid var(--rule);">
+                                        <span style="font-weight: 600; color: var(--ink-2);">Root User Protection</span>
+                                        <span style="font-weight: 800; color: var(--brand-primary);">Active</span>
+                                    </div>
+                                    <div style="display: flex; justify-content: space-between; padding: 0.75rem 0;">
+                                        <span style="font-weight: 600; color: var(--ink-2);">System Self-Diagnostics</span>
+                                        <span style="font-weight: 800; color: var(--success);">Healthy</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- List of Admins (Under direct control of System User) -->
+                        <div class="admin-card" style="margin-top: var(--s-2);">
+                            <div class="card-header"><h3>Admin Account Directory</h3></div>
+                            <div class="admin-table-container">
+                                <table class="admin-table">
+                                    <thead><tr><th>Username</th><th>Email</th><th>Role</th><th>Created At</th><th>Actions</th></tr></thead>
+                                    <tbody>
+                                        <template x-for="adm in systemStats.admins" :key="adm._id">
+                                            <tr>
+                                                <td style="font-weight: 800;" x-text="adm.username"></td>
+                                                <td style="opacity: 0.7;" x-text="adm.email"></td>
+                                                <td style="text-transform: capitalize; font-weight: 600; color: var(--brand-primary);" x-text="adm.role"></td>
+                                                <td style="opacity: 0.65; font-size: 0.85rem;" x-text="adm.created_at ? new Date(adm.created_at).toLocaleDateString() : 'N/A'"></td>
+                                                <td>
+                                                    <div style="display: flex; gap: 0.5rem;">
+                                                        <button class="btn-action btn-warning" @click="demoteAdmin(adm)">Demote</button>
+                                                        <button class="btn-action btn-danger" @click="deleteUser(adm)">Delete</button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        </template>
+                                        <template x-if="!systemStats.admins || systemStats.admins.length === 0">
+                                            <tr><td colspan="5" style="text-align: center; opacity: 0.5; padding: 2rem;">No Admin accounts registered.</td></tr>
+                                        </template>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </template>
             </main>
         </div>
     </div>
@@ -451,24 +567,111 @@
                 users: [],
                 trending: [],
                 charts: {},
+                currentUserRole: '',
+                currentUsername: '',
+                systemStats: { admins: [], health: {} },
+                newAdmin: { username: '', email: '', password: '', role: 'admin' },
 
                 async init() {
                     if (!isLoggedIn()) { window.location.href = '/html/login.html'; return; }
                     document.documentElement.setAttribute('data-theme', this.theme);
                     await this.loadAll();
+
+                    this.$watch('activeTab', value => {
+                        if (value === 'system_dashboard' && this.currentUserRole !== 'system_user') {
+                            this.activeTab = 'overview';
+                            alert("Permission Denied: Access restricted to System User.");
+                        }
+                    });
                 },
 
                 async loadAll() {
                     try {
-                        const [s, u, t] = await Promise.all([
+                        const [s, u, t, meRes] = await Promise.all([
                             authenticatedFetch(`${BASE_URL}/admin/stats`),
                             authenticatedFetch(`${BASE_URL}/admin/users?limit=50`),
-                            authenticatedFetch(`${BASE_URL}/admin/analytics/trending`)
+                            authenticatedFetch(`${BASE_URL}/admin/analytics/trending`),
+                            authenticatedFetch(`${BASE_URL}/users/me`)
                         ]);
                         if (s.ok) this.stats = await s.json();
                         if (u.ok) this.users = (await u.json()).users;
                         if (t.ok) this.trending = await t.json();
+                        if (meRes.ok) {
+                            const me = await meRes.json();
+                            this.currentUserRole = me.role;
+                            this.currentUsername = me.username;
+                            this.adminName = me.username;
+                        }
+
+                        if (this.currentUserRole === 'system_user') {
+                            await this.loadSystemStats();
+                        }
                     } catch (e) { console.error("Load failed", e); }
+                },
+
+                async loadSystemStats() {
+                    try {
+                        const res = await authenticatedFetch(`${BASE_URL}/admin/system-dashboard-stats`);
+                        if (res.ok) {
+                            this.systemStats = await res.json();
+                        }
+                    } catch (e) {
+                        console.error("Failed to load System stats", e);
+                    }
+                },
+
+                async createAdminUser() {
+                    if (!this.newAdmin.username || !this.newAdmin.email || !this.newAdmin.password) {
+                        alert("Please fill in all fields.");
+                        return;
+                    }
+                    try {
+                        const res = await authenticatedFetch(`${BASE_URL}/admin/users`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(this.newAdmin)
+                        });
+                        
+                        if (res.ok) {
+                            alert(`User ${this.newAdmin.username} created successfully!`);
+                            this.newAdmin = { username: '', email: '', password: '', role: 'admin' };
+                            await this.loadAll();
+                        } else {
+                            const err = await res.json();
+                            alert(`Failed to create user: ${err.detail || 'Unknown error'}`);
+                        }
+                    } catch (e) {
+                        console.error("Failed to create admin user", e);
+                        alert("An error occurred during user creation.");
+                    }
+                },
+
+                async demoteAdmin(user) {
+                    if (this.currentUserRole !== 'system_user') {
+                        alert("Permission Denied: Only the System User can demote Admin accounts.");
+                        return;
+                    }
+                    if (!confirm(`Are you sure you want to demote Admin "${user.username}" to Researcher?`)) {
+                        return;
+                    }
+                    try {
+                        const res = await authenticatedFetch(`${BASE_URL}/admin/users/${user.username}`, {
+                            method: 'PATCH',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ role: 'researcher' })
+                        });
+                        if (res.ok) {
+                            user.role = 'researcher';
+                            alert('Admin demoted successfully.');
+                            await this.loadAll();
+                        } else {
+                            const err = await res.json();
+                            alert(`Failed to demote Admin: ${err.detail || 'Unknown error'}`);
+                        }
+                    } catch (e) {
+                        console.error("Demotion failed", e);
+                        alert("An error occurred during demotion.");
+                    }
                 },
 
                 async initChart(id, key) {
@@ -516,9 +719,17 @@
                 getUserStatusClass(u) { return u.is_active === false ? 'status-banned' : (u.is_verified ? 'status-verified' : 'status-pending'); },
                 getUserStatusLabel(u) { return u.is_active === false ? 'Banned' : (u.is_verified ? 'Verified' : 'Pending'); },
                 formatNumber(n) { return n >= 1000 ? (n/1000).toFixed(1)+'k' : n; },
-                getPageTitle() { return this.activeTab === 'overview' ? 'Overview' : (this.activeTab === 'users' ? 'Users' : 'Analytics'); },
+                getPageTitle() {
+                    if (this.activeTab === 'system_dashboard') return 'System User Dashboard';
+                    return this.activeTab === 'overview' ? 'Overview' : (this.activeTab === 'users' ? 'Users' : 'Analytics');
+                },
                 toggleTheme() { this.theme = this.theme === 'light' ? 'dark' : 'light'; localStorage.setItem('theme', this.theme); document.documentElement.setAttribute('data-theme', this.theme); },
+                
                 async promoteToAdmin(user) {
+                    if (this.currentUserRole !== 'system_user') {
+                        alert("Permission Denied: Only the System User can manage Admin roles.");
+                        return;
+                    }
                     if (!confirm(`Are you sure you want to promote "${user.username}" to Admin? They will have full access to this dashboard.`)) {
                         return;
                     }
@@ -533,6 +744,7 @@
                         if (res.ok) {
                             user.role = 'admin';
                             alert('User promoted successfully.');
+                            await this.loadAll();
                         } else {
                             const error = await res.json();
                             alert(`Failed to promote: ${error.detail || 'Unknown error'}`);
@@ -544,6 +756,14 @@
                 },
 
                 async deleteUser(user) {
+                    if (user.role === 'system_user' || user.username === 'Sachu') {
+                        alert("Permission Denied: The System User account cannot be deleted.");
+                        return;
+                    }
+                    if (user.role === 'admin' && this.currentUserRole !== 'system_user') {
+                        alert("Permission Denied: Admins cannot delete other Admin accounts.");
+                        return;
+                    }
                     if (!confirm(`Are you sure you want to delete user "${user.username}"? This action cannot be undone.`)) {
                         return;
                     }
@@ -559,6 +779,7 @@
                                 this.stats.users.total--;
                             }
                             alert('User deleted successfully.');
+                            await this.loadAll();
                         } else {
                             const error = await res.json();
                             alert(`Failed to delete user: ${error.detail || 'Unknown error'}`);
