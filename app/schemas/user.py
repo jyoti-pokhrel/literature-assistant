@@ -57,6 +57,21 @@ class UserQuota(BaseModel):
     last_reset: Optional[datetime]
 
 
+class UpdateUsername(BaseModel):
+    new_username: str = Field(
+        ...,
+        min_length=3,
+        max_length=20,
+        pattern=r"^[a-zA-Z0-9_-]+$",
+        description="New username: 3-20 chars, alphanumeric with underscores/hyphens",
+    )
+
+
+class UpdatePassword(BaseModel):
+    current_password: str = Field(..., min_length=1, description="Current password for verification")
+    new_password: str = Field(..., min_length=8, max_length=100, description="New password")
+
+
 class UserUpdate(BaseModel):
     role: Optional[str] = None
     quota_limit: Optional[int] = None
