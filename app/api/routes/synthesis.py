@@ -627,8 +627,7 @@ async def download_synthesis_report(
     gaps = [
         g
         for g in all_gaps
-        if g.llm_verification.get("status", "").lower() != "hallucinated"
-        and g.citation_validation.get("status", "").lower() != "hallucinated"
+        if g.citation_validation.get("status", "").lower() != "hallucinated"
     ]
 
     clusters = [ClusterSummary(**c) for c in (doc.get("clusters") or [])]
