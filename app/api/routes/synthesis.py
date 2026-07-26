@@ -161,7 +161,7 @@ async def detect_gaps(
             response.is_cached = True
             response.generated_at = cached_report.get("created_at", datetime.datetime.utcnow().isoformat())
             
-            # Save search to history even if cached
+            # Save search to history even if cached (fire-and-forget)
             filters = {
                 "year": payload.year,
                 "venue": payload.venue,
@@ -169,13 +169,15 @@ async def detect_gaps(
                 "max_results": payload.max_results,
                 "type": "synthesis"
             }
-            await save_search_history(
-                current_user["username"], 
-                payload.topic, 
-                filters, 
-                cached_data.get("papers_analyzed", 0),
-                report_id=cached_data.get("report_id"),
-                user_id=str(current_user["_id"])
+            asyncio.create_task(
+                save_search_history(
+                    current_user["username"],
+                    payload.topic,
+                    filters,
+                    cached_data.get("papers_analyzed", 0),
+                    report_id=cached_data.get("report_id"),
+                    user_id=str(current_user["_id"])
+                )
             )
             return response
 
@@ -203,8 +205,8 @@ async def detect_gaps(
                     logger.error("Failed to cache search: %s", e)
 
             asyncio.create_task(_save_cache())
-            
-        # Save search to history
+
+        # Save search to history (fire-and-forget — returns immediately even if MongoDB is slow)
         filters = {
             "year": payload.year,
             "venue": payload.venue,
@@ -212,13 +214,15 @@ async def detect_gaps(
             "max_results": payload.max_results,
             "type": "synthesis"
         }
-        await save_search_history(
-            current_user["username"], 
-            payload.topic, 
-            filters, 
-            result.papers_analyzed,
-            report_id=result.report_id,
-            user_id=str(current_user["_id"])
+        asyncio.create_task(
+            save_search_history(
+                current_user["username"],
+                payload.topic,
+                filters,
+                result.papers_analyzed,
+                report_id=result.report_id,
+                user_id=str(current_user["_id"])
+            )
         )
         return result
     except Exception as exc:
@@ -289,23 +293,6 @@ async def detect_gaps_async(
                     "updated_at": job.updated_at,
                     "report_id": result.report_id
                 })
-                
-                # Save search to history automatically on completion
-                filters = {
-                    "year": payload.year,
-                    "venue": payload.venue,
-                    "strict_venue": payload.strict_venue,
-                    "max_results": payload.max_results,
-                    "type": "synthesis"
-                }
-                await save_search_history(
-                    current_user["username"], 
-                    payload.topic, 
-                    filters, 
-                    result.papers_analyzed,
-                    report_id=result.report_id,
-                    user_id=str(current_user["_id"])
-                )
         except Exception as exc:
             logger.exception("Background synthesis failed for job %s: %s", job_id, exc)
             job = job_store.get(job_id)
@@ -447,7 +434,7 @@ async def stream_detect_gaps(
                     cached_data["is_cached"] = True
                     cached_data["generated_at"] = cached_report.get("created_at", datetime.datetime.utcnow().isoformat())
                     
-                    # Save search to history even if cached
+                    # Save search to history even if cached (fire-and-forget)
                     filters = {
                         "year": payload.year,
                         "venue": payload.venue,
@@ -455,13 +442,15 @@ async def stream_detect_gaps(
                         "max_results": payload.max_results,
                         "type": "synthesis"
                     }
-                    await save_search_history(
-                        current_user["username"], 
-                        payload.topic, 
-                        filters, 
-                        cached_data.get("papers_analyzed", 0),
-                        report_id=cached_data.get("report_id"),
-                        user_id=str(current_user["_id"])
+                    asyncio.create_task(
+                        save_search_history(
+                            current_user["username"],
+                            payload.topic,
+                            filters,
+                            cached_data.get("papers_analyzed", 0),
+                            report_id=cached_data.get("report_id"),
+                            user_id=str(current_user["_id"])
+                        )
                     )
                     await queue.put({"type": "result", "data": cached_data})
                     return
@@ -474,7 +463,7 @@ async def stream_detect_gaps(
                 user_id=str(current_user["_id"])
             )
             
-            # 3. Save search to history automatically
+            # 3. Save search to history automatically (fire-and-forget)
             filters = {
                 "year": payload.year,
                 "venue": payload.venue,
@@ -482,13 +471,15 @@ async def stream_detect_gaps(
                 "max_results": payload.max_results,
                 "type": "synthesis"
             }
-            await save_search_history(
-                current_user["username"], 
-                payload.topic, 
-                filters, 
-                result.papers_analyzed,
-                report_id=result.report_id,
-                user_id=str(current_user["_id"])
+            asyncio.create_task(
+                save_search_history(
+                    current_user["username"],
+                    payload.topic,
+                    filters,
+                    result.papers_analyzed,
+                    report_id=result.report_id,
+                    user_id=str(current_user["_id"])
+                )
             )
 
             # 4. Save to cache asynchronously

@@ -5,12 +5,7 @@ import logging
 import uuid
 from collections import Counter, defaultdict
 from datetime import datetime, timezone, timedelta
-from pathlib import Path
 from typing import Awaitable, Callable
-
-from dotenv import load_dotenv
-
-load_dotenv(dotenv_path=Path(__file__).resolve().parent.parent.parent.parent / ".env")
 
 from app.db.session import gap_reports_collection  # noqa: E402
 from app.schemas.synthesis import (  # noqa: E402

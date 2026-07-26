@@ -5,12 +5,7 @@ import logging
 import os
 import re
 import threading
-from pathlib import Path
-
 import numpy as np
-from dotenv import load_dotenv
-
-load_dotenv(dotenv_path=Path(__file__).resolve().parent.parent.parent.parent / ".env")
 
 PRIMARY_MODEL: str = os.getenv("EMBEDDING_MODEL")
 FALLBACK_MODEL: str = os.getenv("EMBEDDING_FALLBACK_MODEL")
