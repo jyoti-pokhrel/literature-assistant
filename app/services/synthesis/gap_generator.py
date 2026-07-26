@@ -6,13 +6,9 @@ import logging
 import math
 import os
 import re
-from pathlib import Path
 from typing import Any
 
 import aiohttp
-from dotenv import load_dotenv
-
-load_dotenv(dotenv_path=Path(__file__).resolve().parent.parent.parent.parent / ".env")
 
 PRIMARY_MODEL: str = os.getenv("SYNTHESIS_MODEL_PRIMARY")
 FALLBACK_MODEL: str = os.getenv("SYNTHESIS_MODEL_FALLBACK")
@@ -48,22 +44,22 @@ from app.services.analysis.scoring import (  # noqa: E402
 logger = logging.getLogger(__name__)
 
 # Minimum cluster size to warrant LLM gap generation
-MIN_CLUSTER_SIZE_FOR_LLM = 2
+MIN_CLUSTER_SIZE_FOR_LLM = 3
 
 
 class GapLLMClient:
     """Simple wrapper to provide the .generate() interface for citation validation."""
 
-    async def generate(self, prompt: str, response_format: dict = None) -> str:
+    async def generate(self, prompt: str, response_format: dict = None, max_tokens: int = 1500) -> str:
         # Use existing routing logic
         if LLM_PROVIDER == "local" or (not OPENROUTER_API_KEY and LOCAL_LLM_URL):
-            return await _call_local_model(prompt)
+            return await _call_local_model(prompt, max_tokens=max_tokens)
         else:
             # Try primary then fallback
             last_exc = None
             for model_name in [PRIMARY_MODEL, FALLBACK_MODEL]:
                 try:
-                    return await _call_openrouter(prompt, model_name)
+                    return await _call_openrouter(prompt, model_name, max_tokens=max_tokens)
                 except Exception as exc:
                     last_exc = exc
             raise last_exc or RuntimeError("All LLM models failed in client.")
@@ -278,7 +274,7 @@ confidence_score: float 0.0–1.0 reflecting how strongly the evidence supports 
 # LLM callers
 
 
-async def _call_openrouter(prompt: str, model: str, *, _retries: int = 2) -> str:
+async def _call_openrouter(prompt: str, model: str, *, _retries: int = 1, max_tokens: int = 1500) -> str:
 
     if not OPENROUTER_API_KEY:
         raise RuntimeError("OPENROUTER_API_KEY is not set in .env")
@@ -287,7 +283,7 @@ async def _call_openrouter(prompt: str, model: str, *, _retries: int = 2) -> str
         "model": model,
         "messages": [{"role": "user", "content": prompt}],
         "temperature": 0.0,
-        "max_tokens": 1500,
+        "max_tokens": max_tokens,
     }
     headers = {
         "Authorization": f"Bearer {OPENROUTER_API_KEY}",
@@ -334,13 +330,13 @@ async def _call_openrouter(prompt: str, model: str, *, _retries: int = 2) -> str
     raise RuntimeError(f"Model {model} exhausted all retries.")
 
 
-async def _call_local_model(prompt: str) -> str:
+async def _call_local_model(prompt: str, max_tokens: int = 1500) -> str:
     """POST to a local Ollama-compatible endpoint."""
     payload = {
         "model": LOCAL_MODEL_NAME,
         "prompt": prompt,
         "stream": False,
-        "options": {"temperature": 0.0, "num_predict": 1400},
+        "options": {"temperature": 0.0, "num_predict": max_tokens},
     }
     session = await _get_http_session()
     async with session.post(
@@ -354,9 +350,9 @@ async def _call_local_model(prompt: str) -> str:
         return str(raw.get("response") or raw.get("content") or "").strip()
 
 
-async def _call_llm(prompt: str) -> str:
+async def _call_llm(prompt: str, max_tokens: int = 1500) -> str:
     if LLM_PROVIDER == "local" or (not OPENROUTER_API_KEY and LOCAL_LLM_URL):
-        return await _call_local_model(prompt)
+        return await _call_local_model(prompt, max_tokens=max_tokens)
 
     # Build model chain: PRIMARY → FALLBACK
     model_chain = list(dict.fromkeys([PRIMARY_MODEL, FALLBACK_MODEL]))
@@ -364,7 +360,7 @@ async def _call_llm(prompt: str) -> str:
     last_exc: Exception | None = None
     for model in model_chain:
         try:
-            return await _call_openrouter(prompt, model)
+            return await _call_openrouter(prompt, model, max_tokens=max_tokens)
         except Exception as exc:
             logger.warning("Model %s failed: %s", model, exc)
             last_exc = exc
@@ -373,15 +369,16 @@ async def _call_llm(prompt: str) -> str:
 
 
 def _extract_json(text: str) -> dict:
-    # Strip markdown code fences if present
     text = re.sub(r"^```(?:json)?|```$", "", text, flags=re.MULTILINE).strip()
     try:
         return json.loads(text)
     except json.JSONDecodeError:
-        match = re.search(r"\{.*\}", text, re.DOTALL)
-        if match:
-            return json.loads(match.group(0))
-        raise
+        decoder = json.JSONDecoder()
+        try:
+            result, _ = decoder.raw_decode(text)
+            return result
+        except json.JSONDecodeError:
+            raise
 
 
 def _clean_val(v: Any, default: str = "") -> str:
@@ -573,12 +570,11 @@ async def generate_gaps_for_cluster(
     force_heuristic: bool = False,
     other_themes: list[str] | None = None,
     precalculated_themes: dict | None = None,
+    llm_client: GapLLMClient | None = None,
 ) -> tuple[list[SynthesisGap], str | None]:
 
     gap_serial = f"GAP-{cluster_id + 1:03d}"
     _all_papers = all_papers or cluster_papers
-
-    confidence_score = compute_gap_score(cluster_papers, _all_papers)
 
     # Heuristic themes for prompt injection
     themes = precalculated_themes or extract_cluster_themes(cluster_papers)
@@ -591,6 +587,7 @@ async def generate_gaps_for_cluster(
 
     # Skip tiny clusters or those outside top K — use heuristic only
     if force_heuristic or len(cluster_papers) < MIN_CLUSTER_SIZE_FOR_LLM:
+        confidence_score = compute_gap_score(cluster_papers, _all_papers)
         fallback = _heuristic_gap(
             cluster_id,
             cluster_papers,
@@ -688,19 +685,26 @@ async def generate_gaps_for_cluster(
             def clean(key: str, default: str = "") -> str:
                 return _clean_val(gap_data.get(key)) or default
 
-            gap_fields_for_val = {
-                "what_fails": clean("what_fails"),
-                "missing_piece": clean("missing_piece"),
-            }
-            cross_val = validate_gap_against_supported_papers(
-                gap_fields_for_val, cluster_papers
-            )
-
             base_score = _score_from_evidence(cluster_papers, cluster_id, text_content)
             try:
                 llm_conf = float(gap_data.get("confidence_score", base_score))
             except (ValueError, TypeError):
                 llm_conf = base_score
+
+            # Skip cross-validation for low-confidence gaps (likely heuristic/weak)
+            if base_score < 0.3:
+                cross_val = {
+                    "status": "validated",
+                    "reason": "Skipped for low-confidence gap.",
+                }
+            else:
+                gap_fields_for_val = {
+                    "what_fails": clean("what_fails"),
+                    "missing_piece": clean("missing_piece"),
+                }
+                cross_val = validate_gap_against_supported_papers(
+                    gap_fields_for_val, cluster_papers
+                )
 
             # Blend objective evidence score with the gap-specific LLM confidence
             final_score = round(0.6 * base_score + 0.4 * llm_conf, 2)
@@ -743,7 +747,7 @@ async def generate_gaps_for_cluster(
                     citation_validation=validate_gap_citations(gap_fields, citations),
                     cross_paper_validation=cross_val,
                     llm_verification=await verify_gap_with_llm(
-                        gap_fields, citations, GapLLMClient()
+                        gap_fields, citations, llm_client
                     ),
                 )
             )
@@ -798,6 +802,9 @@ async def generate_all_gaps(
     # Use a semaphore to limit concurrent LLM calls to prevent aggressive rate limits
     sem = asyncio.Semaphore(3)
 
+    # Shared LLM client for all verification calls in this run
+    llm_client = GapLLMClient()
+
     async def _process_cluster(i: int, cid: int, cprs: list[dict]):
         force_heuristic = i >= max_llm_clusters
         other_themes_list = [
@@ -809,7 +816,7 @@ async def generate_all_gaps(
             try:
                 # Add a small stagger to prevent sending all requests at the exact same millisecond
                 if not force_heuristic and i > 0:
-                    await asyncio.sleep(0.5 * min(i, 5))
+                    await asyncio.sleep(0.1 * min(i, 3))
                 return await generate_gaps_for_cluster(
                     cid,
                     cprs,
@@ -819,6 +826,7 @@ async def generate_all_gaps(
                     force_heuristic=force_heuristic,
                     other_themes=other_themes_list,
                     precalculated_themes=cluster_themes.get(cid),
+                    llm_client=llm_client,
                 )
             except Exception as e:
                 return e

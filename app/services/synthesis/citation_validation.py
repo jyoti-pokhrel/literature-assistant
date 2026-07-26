@@ -182,7 +182,7 @@ Return JSON only:
 """
     try:
         response = await llm_client.generate(
-            prompt, response_format={"type": "json_object"}
+            prompt, response_format={"type": "json_object"}, max_tokens=300
         )
         import json
 
