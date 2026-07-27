@@ -2,6 +2,8 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 
+from pydantic import BaseModel, EmailStr, Field
+
 from app.api.dependencies import get_current_admin
 from app.db.session import get_db
 from app.schemas.user import UserUpdate
@@ -59,8 +61,6 @@ async def get_all_users(
         "skip": skip
     }
 
-
-from pydantic import BaseModel, EmailStr, Field
 
 class AdminUserCreate(BaseModel):
     username: str = Field(..., min_length=3, max_length=20, pattern=r"^[a-zA-Z0-9_-]+$")
@@ -194,7 +194,7 @@ async def update_user(
         if target_role == "admin" and new_role != "admin" and current_role != "system_user":
             raise HTTPException(status_code=403, detail="Permission Denied: Only the System User can demote Admin accounts.")
 
-    result = await db.users.update_one({"username": username}, {"$set": update_data})
+    await db.users.update_one({"username": username}, {"$set": update_data})
 
     await log_activity(
         user_id=str(admin["_id"]),
@@ -226,7 +226,7 @@ async def delete_user(username: str, admin: dict = Depends(get_current_admin)):
     if target_role == "admin" and current_role == "admin":
         raise HTTPException(status_code=403, detail="Permission Denied: Admins cannot delete other Admin accounts.")
 
-    result = await db.users.delete_one({"username": username})
+    await db.users.delete_one({"username": username})
 
     await log_activity(
         user_id=str(admin["_id"]),

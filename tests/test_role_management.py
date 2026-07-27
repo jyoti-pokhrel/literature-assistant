@@ -1,9 +1,7 @@
 import pytest
-from fastapi import FastAPI
 from httpx import AsyncClient, ASGITransport
 from app.main import app
 from app.api.dependencies import get_current_admin
-from app.db.session import get_db
 
 # Mock database dependency for tests
 class MockDB:
